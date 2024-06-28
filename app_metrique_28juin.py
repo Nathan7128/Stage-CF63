@@ -23,7 +23,7 @@ with col2 :
     
 st.divider()
 
-student = pd.read_excel(f"Tableau métriques/{annee}/{choix_data}/{file_student}")
+student = pd.read_excel(f"Tableau métriques/student/{annee}/{choix_data}/{file_student}")
 student.rename({student.columns[0] : "Métriques"}, axis = 1, inplace = True)
 pvalue = st.number_input("Valeur max pvalue", min_value=0.0, max_value=1.0, step = 0.001, format="%.3f")
 student_sort = student[student.pvalue < pvalue]
@@ -36,7 +36,9 @@ st.dataframe(student_sort, width = 500, hide_index=True)
 
 st.divider()
 
-metrique = pd.read_excel(f"Tableau métriques/{annee}/{choix_data}/{file_metrique}", index_col=0)
-metrique_sort = metrique[student[student.pvalue < pvalue]["Métriques"].tolist()]
+
+
+metrique_student = pd.read_excel(f"Tableau métriques/student/{annee}/{choix_data}/{file_metrique}", index_col=0)
+metrique_student_sort = metrique_student[student[student.pvalue < pvalue]["Métriques"].tolist()]
 st.markdown(f"<p style='text-align: center;'>Tableau des métriques (avec pvalue < {pvalue}) par équipes, en moyenne par match</p>", unsafe_allow_html=True)
-st.dataframe(metrique_sort)
+st.dataframe(metrique_student_sort)
