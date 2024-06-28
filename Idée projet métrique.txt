@@ -1,0 +1,8 @@
+faire acp en comparant les variables corélées a la diff de but sur un match
+
+
+
+Régression logistique :
+Regarder les métriques par lot de 5 matchs
+faire une moyenne par match par équipe de chaque métriques sur ces 5 matchs.
+créer le data set avec ces lots
