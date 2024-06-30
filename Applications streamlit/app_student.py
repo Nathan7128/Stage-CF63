@@ -4,10 +4,13 @@ import pandas as pd
 col1, col2 = st.columns(2)
 
 with col1 :
-    annee = st.radio("Choisir année", options = ["2022_2023", "2023_2024"])
+    annee = st.radio("Choisir année", options = ["2021_2022", "2022_2023", "2023_2024"])
 
 with col2 :
-    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"])
+    if annee != "2021_2022" :
+        choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"])
+    else :
+        choix_data = st.radio("Fournisseur data", options = ["Skill Corner"])
     if choix_data == "Skill Corner" :
         path_student = ["student_physical.xlsx", "student_running.xlsx", "student_pressure.xlsx", "student_passe.xlsx"]
         path_metrique = ["metrique_physical.xlsx", "metrique_running.xlsx", "metrique_pressure.xlsx", "metrique_passe.xlsx"]
@@ -38,7 +41,7 @@ st.divider()
 
 
 
-metrique_student = pd.read_excel(f"Tableau métriques/student/{annee}/{choix_data}/{file_metrique}", index_col=0)
+metrique_student = pd.read_excel(f"Tableau métriques/Valeurs par équipes/{annee}/{choix_data}/{file_metrique}", index_col=0)
 metrique_student_sort = metrique_student[student[student.pvalue < pvalue]["Métriques"].tolist()]
 st.markdown(f"<p style='text-align: center;'>Tableau des métriques (avec pvalue < {pvalue}) par équipes, en moyenne par match</p>", unsafe_allow_html=True)
 st.dataframe(metrique_student_sort)
