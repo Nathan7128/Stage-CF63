@@ -39,11 +39,9 @@ for i in range(3) :
           "run_type" : ["run_in_behind", "run_ahead_of_the_ball", "support_run", "pulling_wide_run", "coming_short_run", "underlap_run",
                     "overlap_run", "dropping_off_run", "pulling_half_space_run", "cross_receiver_run"]})
      
-     passe_data = pd.DataFrame(passe_data_json)
+     passe_data = pd.DataFrame(passe_data_json).set_index("team_name")
      passe_data = passe_data[passe_data.quality_check == True]
      passe_data.fillna(0, inplace = True)
-
-     passe_data = pd.DataFrame(passe_data_json).set_index("team_name")
 
      nb_matchs = pd.Series(index = passe_data.index.unique())
      for team in nb_matchs.index :
@@ -61,7 +59,7 @@ for i in range(3) :
      passe_data_standard = scaler.fit_transform(passe_data)
      passe_data_standard = pd.DataFrame(passe_data_standard, index = passe_data.index, columns = passe_data.columns)
 
-     passe_data /= nb_matchs
+     passe_data = passe_data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
 
      top5 = dico["ranking"][:5]
      top15 = dico["ranking"][5:]
@@ -75,7 +73,7 @@ for i in range(3) :
      df_final["Moyenne Top 5"] = top5_df.mean(axis = 0)
      df_final["Moyenne Bottom 15"] = top15_df.mean(axis = 0)
 
-     df_final["Diff Moyennes"] = abs(top5_df_standard.mean(axis = 0) - top15_df_standard.mean(axis = 0))
+     df_final["Diff Moyennes\n(données normalisées)"] = abs(top5_df_standard.mean(axis = 0) - top15_df_standard.mean(axis = 0))
 
      df_final["Ecart type Top 5"] = top5_df.std(axis = 0)
      df_final["Ecart type Bottom 15"] = top15_df.std(axis = 0)
@@ -86,6 +84,6 @@ for i in range(3) :
      df_final["Max Top 5"] = top5_df.max(axis = 0)
      df_final["Max Bottom 15"] = top15_df.max(axis = 0)
 
-     df_final.sort_values(by = "Diff Moyennes", inplace = True, ascending = False)
+     df_final.sort_values(by = "Diff Moyennes\n(données normalisées)", inplace = True, ascending = False)
 
      df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_passes.xlsx")

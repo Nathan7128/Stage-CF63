@@ -6,6 +6,8 @@ import numpy as np
 
 import os
 
+from sklearn.preprocessing import StandardScaler
+
 secret_password = os.getenv("mdp_skillcorner")
 client = SkillcornerClient(username = "Nathan.talbot@etu.uca.fr", password = secret_password)
 
@@ -33,24 +35,40 @@ for i in range(3) :
 
      dico = liste_dico[i]
 
-     physical_data_json = client.get_physical(params = {"data_version" : 3, 'competition_edition': dico["comp_id"], "group_by" : "team",
-                                                            "possession" : ["tip", "otip"]})
-     physical_data = pd.DataFrame(physical_data_json).set_index("team_name")
-     physical_data.drop(["team_id", "count_match", "count_match_failed"], inplace = True, axis = 1)
-     physical_data = physical_data.reindex(dico["ranking"])
+     physical_data_json = client.get_physical(params = {"data_version" : 3, 'competition_edition': dico["comp_id"], "possession" : ["tip", "otip"], "physical_check_passed" : "true"})     
+     physical_data = pd.DataFrame(physical_data_json).set_index("team_name").fillna(0)
+
+     nb_matchs = pd.Series(index = physical_data.index.unique())
+     for team in nb_matchs.index :
+          nb_matchs[team] = len(physical_data.loc[team].match_id.unique())
+     nb_matchs.reindex(dico["ranking"])
+
+     drop = ["player_name", "player_short_name", "player_id", "player_birthdate", "team_id", "match_name", "match_id", "match_date", "competition_name", "competition_id", "season_name",
+             "season_id", "competition_edition_id", "position", "position_group", "minutes_full_tip", "minutes_full_otip", "physical_check_passed"]
+
+     physical_data.drop(drop, inplace = True, axis = 1)
+
+     physical_data = physical_data.groupby("team_name").sum().reindex(dico["ranking"])
+
+     scaler = StandardScaler()
+     physical_data_standard = scaler.fit_transform(physical_data)
+     physical_data_standard = pd.DataFrame(physical_data_standard, index = physical_data.index, columns = physical_data.columns)
+
+     physical_data = physical_data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
 
      top5 = dico["ranking"][:5]
      top15 = dico["ranking"][5:]
      top5_df = physical_data.loc[top5]
      top15_df = physical_data.loc[top15]
+     top5_df_standard = physical_data_standard.loc[top5]
+     top15_df_standard = physical_data_standard.loc[top15]
 
      df_final = pd.DataFrame(index = top5_df.columns)
 
      df_final["Moyenne Top 5"] = top5_df.mean(axis = 0)
      df_final["Moyenne Bottom 15"] = top15_df.mean(axis = 0)
 
-     df_final["Ratio Moyennes"] = df_final["Moyenne Top 5"]/df_final["Moyenne Bottom 15"]
-     df_final.loc[df_final["Ratio Moyennes"] < 1, "Ratio Moyennes"] **= -1
+     df_final["Diff Moyennes\n(données normalisées)"] = abs(top5_df_standard.mean(axis = 0) - top15_df_standard.mean(axis = 0))
 
      df_final["Ecart type Top 5"] = top5_df.std(axis = 0)
      df_final["Ecart type Bottom 15"] = top15_df.std(axis = 0)
@@ -61,8 +79,6 @@ for i in range(3) :
      df_final["Max Top 5"] = top5_df.max(axis = 0)
      df_final["Max Bottom 15"] = top15_df.max(axis = 0)
 
-     df_final.replace([np.inf, -np.inf], 0, inplace=True)
-     df_final.fillna(0, inplace = True)
-     df_final.sort_values(by = "Ratio Moyennes", inplace = True, ascending = False)
+     df_final.sort_values(by = "Diff Moyennes\n(données normalisées)", inplace = True, ascending = False)
 
      df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_physical.xlsx")
