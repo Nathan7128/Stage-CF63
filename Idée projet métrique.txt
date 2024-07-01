@@ -10,4 +10,10 @@ créer le data set avec ces lots
 
 Moyenne métriques :
 Pour chaque années :
-calculer moyenne par équipe pour chaque métrique 
+Skill Corner :
+Faire la somme de toutes les métriques regroupées par équipe
+normaliser les données
+faire la différence entre les moyennes des 2 groupes
+QUESTIONS :
+Normaliser les données avant ou après les séparer en 2 groupes ?
+Utiliser SKLEARN ou faire à la main (x - mean)/std ?
