@@ -17,3 +17,5 @@ faire la différence entre les moyennes des 2 groupes
 QUESTIONS :
 Normaliser les données avant ou après les séparer en 2 groupes ?
 Utiliser SKLEARN ou faire à la main (x - mean)/std ?
+
+A faire : créer colonne évolutions en % entre le top 5 et top 15 pour chaques métrique et pourquoi pas comparer les 2 tops grace a cette colonne
