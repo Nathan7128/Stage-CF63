@@ -82,3 +82,4 @@ for i in range(3) :
      df_final.sort_values(by = "Diff Moyennes\n(données normalisées)", inplace = True, ascending = False)
 
      df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_physical.xlsx")
+     physical_data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\metrique_physical.xlsx", header = True, index = True)

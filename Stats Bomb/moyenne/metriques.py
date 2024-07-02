@@ -8,6 +8,8 @@ import numpy as np
 
 from scipy.stats import ttest_ind
 
+from sklearn.preprocessing import StandardScaler
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -35,37 +37,48 @@ liste_dico = [{"comp_id" : 281,
 
 for i in range(3) :
 
-    dico = liste_dico[i]
+     dico = liste_dico[i]
 
-    team_stat_import = sb.team_season_stats(ligue2_id, dico["comp_id"], creds = creds)
-    team_stat = team_stat_import.set_index("team_name").drop(["account_id", "team_id", "competition_id", "competition_name",
-                                        "season_id", "season_name", "team_female", "team_season_minutes"], axis = 1)
-    team_stat = team_stat.reindex(dico["ranking"])
+     team_stat_import = sb.team_season_stats(ligue2_id, dico["comp_id"], creds = creds)
 
-    top5 = dico["ranking"][:5]
-    top15 = dico["ranking"][5:]
-    top5_df = team_stat.loc[top5]
-    top15_df = team_stat.loc[top15]
+     team_stat = team_stat_import.set_index("team_name")
 
-    df_final = pd.DataFrame(index = top5_df.columns)
+     nb_matchs = team_stat.team_season_matches
 
-    df_final["Moyenne Top 5"] = top5_df.mean(axis = 0)
-    df_final["Moyenne Bottom 15"] = top15_df.mean(axis = 0)
+     drop = ["account_id", "team_id", "competition_id", "competition_name", "season_id", "season_name", "team_female", "team_season_matches", "team_season_minutes"]
+     team_stat.drop(drop, inplace = True, axis = 1)
 
-    df_final["Ratio Moyennes"] = df_final["Moyenne Top 5"]/df_final["Moyenne Bottom 15"]
-    df_final.loc[df_final["Ratio Moyennes"] < 1, "Ratio Moyennes"] **= -1
+     team_stat = team_stat.reindex(dico["ranking"])
 
-    df_final["Ecart type Top 5"] = top5_df.std(axis = 0)
-    df_final["Ecart type Bottom 15"] = top15_df.std(axis = 0)
+     scaler = StandardScaler()
+     team_stat_standard = scaler.fit_transform(team_stat)
+     team_stat_standard = pd.DataFrame(team_stat_standard, index = team_stat.index, columns = team_stat.columns)
 
-    df_final["Min Top 5"] = top5_df.min(axis = 0)
-    df_final["Min Bottom 15"] = top15_df.min(axis = 0)
+     top5 = dico["ranking"][:5]
+     top15 = dico["ranking"][5:]
+     top5_df = team_stat.loc[top5]
+     top15_df = team_stat.loc[top15]
+     top5_df_standard = team_stat_standard.loc[top5]
+     top15_df_standard = team_stat_standard.loc[top15]
 
-    df_final["Max Top 5"] = top5_df.max(axis = 0)
-    df_final["Max Bottom 15"] = top15_df.max(axis = 0)
+     df_final = pd.DataFrame(index = top5_df.columns)
 
-    df_final.replace([np.inf, -np.inf], 0, inplace=True)
-    df_final.fillna(0, inplace = True)
-    df_final.sort_values(by = "Ratio Moyennes", inplace = True, ascending = False)
+     df_final["Moyenne Top 5"] = top5_df.mean(axis = 0)
+     df_final["Moyenne Bottom 15"] = top15_df.mean(axis = 0)
 
-    df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\moyenne_metriques.xlsx")
+     df_final["Diff Moyennes\n(données normalisées)"] = abs(top5_df_standard.mean(axis = 0) - top15_df_standard.mean(axis = 0))
+
+     df_final["Ecart type Top 5"] = top5_df.std(axis = 0)
+     df_final["Ecart type Bottom 15"] = top15_df.std(axis = 0)
+
+     df_final["Min Top 5"] = top5_df.min(axis = 0)
+     df_final["Min Bottom 15"] = top15_df.min(axis = 0)
+
+     df_final["Max Top 5"] = top5_df.max(axis = 0)
+     df_final["Max Bottom 15"] = top15_df.max(axis = 0)
+
+     df_final.sort_values(by = "Diff Moyennes\n(données normalisées)", inplace = True, ascending = False)
+
+     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\moyenne_metriques.xlsx")
+
+     team_stat.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\metriques.xlsx")

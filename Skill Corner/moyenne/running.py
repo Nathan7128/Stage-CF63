@@ -87,3 +87,4 @@ for i in range(3) :
      df_final.sort_values(by = "Diff Moyennes\n(données normalisées)", inplace = True, ascending = False)
 
      df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_running.xlsx")
+     running_data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\metrique_running.xlsx")
