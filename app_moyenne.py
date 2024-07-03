@@ -50,3 +50,5 @@ metrique_moyenne = pd.read_excel(f"Tableau métriques/moyenne/{annee}/{choix_dat
 metrique_moyenne_sort = metrique_moyenne[moyenne["Métriques"][moyenne_sort_df.selection.rows]]
 st.markdown(f"<p style='text-align: center;'>Tableau des métriques retenues, par équipes, en moyenne par match</p>", unsafe_allow_html=True)
 st.dataframe(metrique_moyenne_sort)
+
+st.write("Salut")
