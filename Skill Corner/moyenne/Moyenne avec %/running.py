@@ -35,40 +35,39 @@ for i in range(3) :
 
      dico = liste_dico[i]
 
-     physical_data_json = client.get_physical(params = {"data_version" : 3, 'competition_edition': dico["comp_id"], "possession" : ["tip", "otip"], "physical_check_passed" : "true"})     
-     physical_data = pd.DataFrame(physical_data_json).set_index("team_name").fillna(0)
+     data_import = pd.read_excel(f"data/{dico["annee"]}/Skill Corner/data_running.xlsx", index_col = 0)
+     
+     data = pd.DataFrame(data_import).set_index("team_name")
+     data = data[data.quality_check == True]
+     data.fillna(0, inplace = True)
 
-     nb_matchs = pd.Series(index = physical_data.index.unique())
+     nb_matchs = pd.Series(index = data.index.unique())
      for team in nb_matchs.index :
-          nb_matchs[team] = len(physical_data.loc[team].match_id.unique())
-     nb_matchs.reindex(dico["ranking"])
+          nb_matchs[team] = len(data.loc[team].match_id.unique())
+     nb_matchs = nb_matchs.reindex(dico["ranking"])
 
-     drop = ["player_name", "player_short_name", "player_id", "player_birthdate", "team_id", "match_name", "match_id", "match_date", "competition_name", "competition_id", "season_name",
-             "season_id", "competition_edition_id", "position", "position_group", "minutes_full_tip", "minutes_full_otip", "physical_check_passed"]
+     drop = ["quality_check", "player_id", "match_id", "player_name", "short_name", "player_birthdate", "match_name", "match_date", "team_id",
+               "competition_id", "competition_name", "season_id", "season_name", "competition_edition_id", "position", "group", "result", "venue",
+               "third", "channel", "minutes_played_per_match", "adjusted_min_tip_per_match"]
+     data.drop(drop, inplace = True, axis = 1)
+     sample = data.columns[["sample" in i for i in data.columns]]
+     data.drop(sample, inplace = True, axis = 1)
+     
+     data = data.groupby("team_name").sum().reindex(dico["ranking"])
 
-     physical_data.drop(drop, inplace = True, axis = 1)
-
-     physical_data = physical_data.groupby("team_name").sum().reindex(dico["ranking"])
-
-     scaler = StandardScaler()
-     physical_data_standard = scaler.fit_transform(physical_data)
-     physical_data_standard = pd.DataFrame(physical_data_standard, index = physical_data.index, columns = physical_data.columns)
-
-     physical_data = physical_data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
+     data = data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
 
      top5 = dico["ranking"][:5]
      top15 = dico["ranking"][5:]
-     top5_df = physical_data.loc[top5]
-     top15_df = physical_data.loc[top15]
-     top5_df_standard = physical_data_standard.loc[top5]
-     top15_df_standard = physical_data_standard.loc[top15]
+     top5_df = data.loc[top5]
+     top15_df = data.loc[top15]
 
      df_final = pd.DataFrame(index = top5_df.columns)
 
      df_final["Moyenne Top 5"] = top5_df.mean(axis = 0)
      df_final["Moyenne Bottom 15"] = top15_df.mean(axis = 0)
 
-     df_final["Diff Moyennes\n(données normalisées)"] = abs(top5_df_standard.mean(axis = 0) - top15_df_standard.mean(axis = 0))
+     df_final["Diff. Top 5 avec Bottom 15 en %"] = (100*(df_final["Moyenne Top 5"] - df_final["Moyenne Bottom 15"])/abs(df_final["Moyenne Bottom 15"])).round(2)
 
      df_final["Ecart type Top 5"] = top5_df.std(axis = 0)
      df_final["Ecart type Bottom 15"] = top15_df.std(axis = 0)
@@ -79,7 +78,7 @@ for i in range(3) :
      df_final["Max Top 5"] = top5_df.max(axis = 0)
      df_final["Max Bottom 15"] = top15_df.max(axis = 0)
 
-     df_final.sort_values(by = "Diff Moyennes\n(données normalisées)", inplace = True, ascending = False)
+     df_final = df_final.reindex(abs(df_final).sort_values(by = "Diff. Top 5 avec Bottom 15 en %", ascending = False).index)
 
-     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_physical.xlsx")
-     physical_data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\metrique_physical.xlsx", header = True, index = True)
+     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_running.xlsx")
+     data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\metrique_running.xlsx")

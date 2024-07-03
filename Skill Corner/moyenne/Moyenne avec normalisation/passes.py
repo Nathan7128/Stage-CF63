@@ -35,36 +35,36 @@ for i in range(3) :
 
      dico = liste_dico[i]
 
-     pressure_data_json = client.get_in_possession_on_ball_pressures(params = {'competition_edition': dico["comp_id"], "pressure_intensity" : ["low", "medium", "high"]})
+     passe_data_json = pd.read_excel(f"data/{dico["annee"]}/Skill Corner/data_passes.xlsx")
      
-     pressure_data = pd.DataFrame(pressure_data_json).set_index("team_name")
-     pressure_data = pressure_data[pressure_data.quality_check == True]
-     pressure_data.fillna(0, inplace = True)
+     passe_data = pd.DataFrame(passe_data_json).set_index("team_name")
+     passe_data = passe_data[passe_data.quality_check == True]
+     passe_data.fillna(0, inplace = True)
 
-     nb_matchs = pd.Series(index = pressure_data.index.unique())
+     nb_matchs = pd.Series(index = passe_data.index.unique())
      for team in nb_matchs.index :
-          nb_matchs[team] = len(pressure_data.loc[team].match_id.unique())
-     nb_matchs.reindex(dico["ranking"])
+          nb_matchs[team] = len(passe_data.loc[team].match_id.unique())
+     nb_matchs = nb_matchs.reindex(dico["ranking"])
 
      drop = ["quality_check", "player_id", "player_name", "short_name", "player_birthdate", "match_id", "match_name", "match_date", "team_id",
             "competition_id", "competition_name", "season_id", "season_name", "competition_edition_id", "position", "group", "result", "venue",
             "third", "channel", "minutes_played_per_match", "adjusted_min_tip_per_match"]
-     pressure_data.drop(drop, inplace = True, axis = 1)
+     passe_data.drop(drop, inplace = True, axis = 1)
 
-     pressure_data = pressure_data.groupby("team_name").sum().reindex(dico["ranking"])
+     passe_data = passe_data.groupby("team_name").sum().reindex(dico["ranking"])
 
      scaler = StandardScaler()
-     pressure_data_standard = scaler.fit_transform(pressure_data)
-     pressure_data_standard = pd.DataFrame(pressure_data_standard, index = pressure_data.index, columns = pressure_data.columns)
+     passe_data_standard = scaler.fit_transform(passe_data)
+     passe_data_standard = pd.DataFrame(passe_data_standard, index = passe_data.index, columns = passe_data.columns)
 
-     pressure_data = pressure_data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
+     passe_data = passe_data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
 
      top5 = dico["ranking"][:5]
      top15 = dico["ranking"][5:]
-     top5_df = pressure_data.loc[top5]
-     top15_df = pressure_data.loc[top15]
-     top5_df_standard = pressure_data_standard.loc[top5]
-     top15_df_standard = pressure_data_standard.loc[top15]
+     top5_df = passe_data.loc[top5]
+     top15_df = passe_data.loc[top15]
+     top5_df_standard = passe_data_standard.loc[top5]
+     top15_df_standard = passe_data_standard.loc[top15]
 
      df_final = pd.DataFrame(index = top5_df.columns)
 
@@ -84,5 +84,6 @@ for i in range(3) :
 
      df_final.sort_values(by = "Diff Moyennes\n(données normalisées)", inplace = True, ascending = False)
 
-     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_pressure.xlsx")
-     pressure_data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\metrique_pressure.xlsx", header = True, index = True)
+     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_passes.xlsx")
+
+     passe_data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\metrique_passes.xlsx")

@@ -6,8 +6,6 @@ import numpy as np
 
 import os
 
-from sklearn.preprocessing import StandardScaler
-
 secret_password = os.getenv("mdp_skillcorner")
 client = SkillcornerClient(username = "Nathan.talbot@etu.uca.fr", password = secret_password)
 
@@ -35,45 +33,46 @@ for i in range(3) :
 
      dico = liste_dico[i]
 
-     passe_data_json = client.get_in_possession_passes(params = {'competition_edition': dico["comp_id"],
-          "run_type" : ["run_in_behind", "run_ahead_of_the_ball", "support_run", "pulling_wide_run", "coming_short_run", "underlap_run",
-                    "overlap_run", "dropping_off_run", "pulling_half_space_run", "cross_receiver_run"]})
+     data_import = pd.read_excel(f"data/{dico["annee"]}/Skill Corner/data_pressure.xlsx", index_col = 0)
      
-     passe_data = pd.DataFrame(passe_data_json).set_index("team_name")
-     passe_data = passe_data[passe_data.quality_check == True]
-     passe_data.fillna(0, inplace = True)
+     data = pd.DataFrame(data_import).set_index("team_name")
+     data = data[data.quality_check == True]
+     data.fillna(0, inplace = True)
 
-     nb_matchs = pd.Series(index = passe_data.index.unique())
+     nb_matchs = pd.Series(index = data.index.unique())
      for team in nb_matchs.index :
-          nb_matchs[team] = len(passe_data.loc[team].match_id.unique())
-     nb_matchs.reindex(dico["ranking"])
+          nb_matchs[team] = len(data.loc[team].match_id.unique())
+     nb_matchs = nb_matchs.reindex(dico["ranking"])
 
-     drop = ["quality_check", "player_id", "player_name", "short_name", "player_birthdate", "match_id", "match_name", "match_date", "team_id",
+     drop = ["quality_check", "player_id", "player_name", "short_name", "player_birthdate", "match_name", "match_date", "team_id",
             "competition_id", "competition_name", "season_id", "season_name", "competition_edition_id", "position", "group", "result", "venue",
             "third", "channel", "minutes_played_per_match", "adjusted_min_tip_per_match"]
-     passe_data.drop(drop, inplace = True, axis = 1)
+     data.drop(drop, inplace = True, axis = 1)
+     sample = data.columns[["sample" in i for i in data.columns]]
+     data.drop(sample, inplace = True, axis = 1)
 
-     passe_data = passe_data.groupby("team_name").sum().reindex(dico["ranking"])
+     # modif métriques ratios
+     met_ratio = data.columns[["ratio" in i for i in data.columns]]
+     data = data.groupby(["team_name", "match_id"])
+     nb_joueur_match = data.apply(len)
+     data = data.sum()
+     data[met_ratio] = data[met_ratio].divide(nb_joueur_match, axis = 0)
 
-     scaler = StandardScaler()
-     passe_data_standard = scaler.fit_transform(passe_data)
-     passe_data_standard = pd.DataFrame(passe_data_standard, index = passe_data.index, columns = passe_data.columns)
+     data = data.reset_index().drop("match_id", axis = 1).groupby("team_name", as_index = True).sum().reindex(dico["ranking"])
 
-     passe_data = passe_data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
+     data = data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
 
      top5 = dico["ranking"][:5]
      top15 = dico["ranking"][5:]
-     top5_df = passe_data.loc[top5]
-     top15_df = passe_data.loc[top15]
-     top5_df_standard = passe_data_standard.loc[top5]
-     top15_df_standard = passe_data_standard.loc[top15]
+     top5_df = data.loc[top5]
+     top15_df = data.loc[top15]
 
      df_final = pd.DataFrame(index = top5_df.columns)
 
      df_final["Moyenne Top 5"] = top5_df.mean(axis = 0)
      df_final["Moyenne Bottom 15"] = top15_df.mean(axis = 0)
 
-     df_final["Diff Moyennes\n(données normalisées)"] = abs(top5_df_standard.mean(axis = 0) - top15_df_standard.mean(axis = 0))
+     df_final["Diff. Top 5 avec Bottom 15 en %"] = (100*(df_final["Moyenne Top 5"] - df_final["Moyenne Bottom 15"])/abs(df_final["Moyenne Bottom 15"])).round(2)
 
      df_final["Ecart type Top 5"] = top5_df.std(axis = 0)
      df_final["Ecart type Bottom 15"] = top15_df.std(axis = 0)
@@ -84,8 +83,7 @@ for i in range(3) :
      df_final["Max Top 5"] = top5_df.max(axis = 0)
      df_final["Max Bottom 15"] = top15_df.max(axis = 0)
 
-     df_final.sort_values(by = "Diff Moyennes\n(données normalisées)", inplace = True, ascending = False)
+     df_final = df_final.reindex(abs(df_final).sort_values(by = "Diff. Top 5 avec Bottom 15 en %", ascending = False).index)
 
-     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_passes.xlsx")
-
-     passe_data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\metrique_passes.xlsx")
+     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_pressure.xlsx")
+     data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\metrique_pressure.xlsx")

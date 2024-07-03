@@ -9,13 +9,8 @@ créer le data set avec ces lots
 
 
 Moyenne métriques :
-Pour chaque années :
-Skill Corner :
-Faire la somme de toutes les métriques regroupées par équipe
-normaliser les données
-faire la différence entre les moyennes des 2 groupes
 QUESTIONS :
-Normaliser les données avant ou après les séparer en 2 groupes ?
-Utiliser SKLEARN ou faire à la main (x - mean)/std ?
+Faire une moyenne par match ou par joueur ET par match ?
 
-A faire : créer colonne évolutions en % entre le top 5 et top 15 pour chaques métrique et pourquoi pas comparer les 2 tops grace a cette colonne
+A faire : modif les .py moyenne pour diviser les métriques "ratio" par le nombre de joueur sur chaque matchs pour chaque équipes
+Plus généralement, modif les programmes avec nouvelles améliorations
