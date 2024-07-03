@@ -9,10 +9,7 @@ with col1 :
     annee = st.radio("Choisir année", options = ["2021_2022", "2022_2023", "2023_2024"])
 
 with col2 :
-    if annee != "2021_2022" :
-        choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"])
-    else :
-        choix_data = st.radio("Fournisseur data", options = ["Skill Corner"])
+    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"])
     if choix_data == "Skill Corner" :
         path_moyenne = ["moyenne_physical.xlsx", "moyenne_running.xlsx", "moyenne_pressure.xlsx", "moyenne_passes.xlsx"]
         path_metrique = ["metrique_physical.xlsx", "metrique_running.xlsx", "metrique_pressure.xlsx", "metrique_passes.xlsx"]
