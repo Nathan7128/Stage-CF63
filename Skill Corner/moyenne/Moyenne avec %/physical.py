@@ -1,14 +1,4 @@
-from skillcorner.client import SkillcornerClient
-
 import pandas as pd
-
-import numpy as np
-
-import os
-
-secret_password = os.getenv("mdp_skillcorner")
-client = SkillcornerClient(username = "Nathan.talbot@etu.uca.fr", password = secret_password)
-
 
 
 liste_dico = [{"comp_id" : 549,
@@ -34,21 +24,26 @@ for i in range(3) :
      dico = liste_dico[i]
 
      data_import = pd.read_excel(f"data/{dico["annee"]}/Skill Corner/data_physical.xlsx", index_col = 0)     
-     data = pd.DataFrame(data_import).set_index("team_name").fillna(0)
+     data = data_import.set_index("team_name").fillna(0)
 
      nb_matchs = pd.Series(index = data.index.unique())
      for team in nb_matchs.index :
           nb_matchs[team] = len(data.loc[team].match_id.unique())
      nb_matchs = nb_matchs.reindex(dico["ranking"])
 
-     drop = ["player_name", "player_short_name", "player_id", "player_birthdate", "team_id", "match_name", "match_id", "match_date", "competition_name", "competition_id", "season_name",
+     drop = ["player_name", "player_short_name", "player_id", "player_birthdate", "team_id", "match_name", "match_date", "competition_name", "competition_id", "season_name",
              "season_id", "competition_edition_id", "position", "position_group", "minutes_full_tip", "minutes_full_otip", "physical_check_passed"]
 
      data.drop(drop, inplace = True, axis = 1)
 
-     data = data.groupby("team_name").sum().reindex(dico["ranking"])
+     data = data.groupby(["team_name", "match_id"]).sum()
 
-     data = data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
+     nb_minute_match = pd.read_excel(f"Skill Corner/nb_minute_match_physical/{dico["annee"]}/nb_minute_match_physical.xlsx", index_col = [0, 1]).squeeze()
+     data = data.multiply(900/nb_minute_match, axis = 0)
+
+     data = data.reset_index().drop("match_id", axis = 1).groupby("team_name", as_index = True).sum().reindex(dico["ranking"])
+
+     data = data.divide(nb_matchs, axis = 0)
 
      top5 = dico["ranking"][:5]
      top15 = dico["ranking"][5:]

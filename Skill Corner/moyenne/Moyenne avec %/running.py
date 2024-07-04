@@ -1,15 +1,4 @@
-from skillcorner.client import SkillcornerClient
-
 import pandas as pd
-
-import numpy as np
-
-import os
-
-from sklearn.preprocessing import StandardScaler
-
-secret_password = os.getenv("mdp_skillcorner")
-client = SkillcornerClient(username = "Nathan.talbot@etu.uca.fr", password = secret_password)
 
 
 
@@ -37,7 +26,7 @@ for i in range(3) :
 
      data_import = pd.read_excel(f"data/{dico["annee"]}/Skill Corner/data_running.xlsx", index_col = 0)
      
-     data = pd.DataFrame(data_import).set_index("team_name")
+     data = data_import.set_index("team_name")
      data = data[data.quality_check == True]
      data.fillna(0, inplace = True)
 
@@ -46,16 +35,26 @@ for i in range(3) :
           nb_matchs[team] = len(data.loc[team].match_id.unique())
      nb_matchs = nb_matchs.reindex(dico["ranking"])
 
-     drop = ["quality_check", "player_id", "match_id", "player_name", "short_name", "player_birthdate", "match_name", "match_date", "team_id",
-               "competition_id", "competition_name", "season_id", "season_name", "competition_edition_id", "position", "group", "result", "venue",
-               "third", "channel", "minutes_played_per_match", "adjusted_min_tip_per_match"]
+     drop = ["quality_check", "player_id", "player_name", "short_name", "player_birthdate", "match_name", "match_date", "team_id",
+            "competition_id", "competition_name", "season_id", "season_name", "competition_edition_id", "position", "group", "result", "venue",
+            "third", "channel", "adjusted_min_tip_per_match"]
      data.drop(drop, inplace = True, axis = 1)
      sample = data.columns[["sample" in i for i in data.columns]]
      data.drop(sample, inplace = True, axis = 1)
-     
-     data = data.groupby("team_name").sum().reindex(dico["ranking"])
 
-     data = data.divide(nb_matchs, axis = 0).reindex(dico["ranking"])
+     # modif métriques ratios
+     met_ratio = data.columns[["ratio" in i for i in data.columns]]
+     data = data.groupby(["team_name", "match_id"])
+     nb_joueur_match = data.apply(len)
+     data = data.sum()
+     data[met_ratio] = data[met_ratio].divide(nb_joueur_match, axis = 0)
+
+     nb_minute_match = data.pop("minutes_played_per_match")
+     data = data.multiply(900/nb_minute_match, axis = 0)
+
+     data = data.reset_index().drop("match_id", axis = 1).groupby("team_name", as_index = True).sum().reindex(dico["ranking"])
+
+     data = data.divide(nb_matchs, axis = 0)
 
      top5 = dico["ranking"][:5]
      top15 = dico["ranking"][5:]
