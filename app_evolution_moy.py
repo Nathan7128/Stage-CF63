@@ -43,4 +43,4 @@ evo_style = evo.style.apply(couleur_text_df, axis = 0)
 st.divider()
 
 st.markdown("<p style='text-align: center;'>Tableau de l'évolutions de chaque métriques entre la saison 2021/2022 et 2023/2024</p>", unsafe_allow_html=True)
-st.dataframe(evo, hide_index=True, width = 10000)
+st.dataframe(evo_style, hide_index=True, width = 10000)
