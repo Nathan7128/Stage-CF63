@@ -19,15 +19,9 @@ with col2 :
     else :
         file_evo = "evo_SB.xlsx"
 
-@st.cache_data
-def couleur_df(val) :
-    color = 'green' if val >= 0 else 'red'
-    return f'color : {color}'
 
 evo = pd.read_excel(f"Tableau métriques/Evolutions métriques/{file_evo}")
 evo.rename({evo.columns[0] : "Métriques"}, axis = 1, inplace = True)
-
-evo = evo.style.applymap(couleur_df, subset = ["Évolution en %"])
 
 st.divider()
 
