@@ -44,3 +44,5 @@ st.divider()
 
 st.markdown("<p style='text-align: center;'>Tableau de l'évolutions de chaque métriques entre la saison 2021/2022 et 2023/2024</p>", unsafe_allow_html=True)
 st.dataframe(evo_style, hide_index=True, width = 10000)
+
+st.subheader("Vert : Strictement croissant\tJaune : Décroissant puis croissant\tOrange : Croissant puis décroissant\tRouge : Strictement décroissant")
