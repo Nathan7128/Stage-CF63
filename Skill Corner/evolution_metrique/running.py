@@ -25,22 +25,4 @@ df["Évolution en %"] = 100*(df["2023_2024"] - df["2021_2022"])/abs(df["2021_202
 
 df["Évolution en %"] = df["Évolution en %"].round(2)
 
-def couleur_text_df(col) :
-    color = []
-    for met in df.index :
-        if col.name == "Évolution en %" :
-            if df.loc[met, "2023_2024"] >= df.loc[met, "2022_2023"] and df.loc[met, "2022_2023"] >= df.loc[met, "2021_2022"] :
-                color.append("background-color: green")
-            elif df.loc[met, "2023_2024"] >= df.loc[met, "2022_2023"] and df.loc[met, "2022_2023"] < df.loc[met, "2021_2022"] :
-                color.append("background-color: yellow")
-            elif df.loc[met, "2023_2024"] < df.loc[met, "2022_2023"] and df.loc[met, "2022_2023"] >= df.loc[met, "2021_2022"] :
-                color.append("background-color: orange")
-            else :
-                color.append("background-color: red")
-        else :
-            color.append('')
-    return color
-
-df_style = df.style.apply(couleur_text_df, axis = 0)
-
-df_style.to_excel("Tableau métriques/Evolutions métriques/evo_running.xlsx", index = True, header = True)
+df.to_excel("Tableau métriques/Evolutions métriques/evo_running.xlsx", index = True, header = True)

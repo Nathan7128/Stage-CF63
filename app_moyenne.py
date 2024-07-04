@@ -26,7 +26,7 @@ with col2 :
 @st.cache_data
 def couleur_df(val) :
     color = 'green' if val >= 0 else 'red'
-    return f'color : {color}'
+    return f'background-color : {color}'
 
 st.divider()
 

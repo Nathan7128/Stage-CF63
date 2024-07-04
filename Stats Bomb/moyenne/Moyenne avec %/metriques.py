@@ -1,23 +1,5 @@
-from statsbombpy import sb
-
-import os
-
 import pandas as pd
 
-import numpy as np
-
-from scipy.stats import ttest_ind
-
-from sklearn.preprocessing import StandardScaler
-
-import warnings
-warnings.filterwarnings("ignore")
-
-email = "nathan.talbot@etu.uca.fr"
-password = os.environ["mdp_statsbomb"]
-creds = {"user" : email, "passwd" : password}
-
-ligue2_id = 8
 
 liste_dico = [{"comp_id" : 281,
                 "ranking" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval",
@@ -33,9 +15,15 @@ liste_dico = [{"comp_id" : 281,
                 "ranking" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux", "Guingamp", "Caen", "Le Havre", "Nîmes",
                              "Pau", "Dijon", "Bastia", "Chamois Niortais", "Amiens", "Grenoble Foot", "Valenciennes", "Rodez", 
                              "Quevilly Rouen", "Dunkerque", "Nancy"],
-           "annee" : "2021_2022"}]
+           "annee" : "2021_2022"},
+           {"comp_id" : 108,
+                "ranking" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC", "Auxerre", "Sochaux", "Nancy",
+                             "Guingamp", "Amiens", "Valenciennes", "Le Havre", "AC Ajaccio", "Pau", "Rodez", "Dunkerque", "Caen", 
+                             "Chamois Niortais", "Chambly", "Châteauroux"],
+           "annee" : "2020_2021"}
+           ]
 
-for i in range(3) :
+for i in range(4) :
 
      dico = liste_dico[i]
 
