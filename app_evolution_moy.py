@@ -21,7 +21,24 @@ with col2 :
 
 
 evo = pd.read_excel(f"Tableau métriques/Evolutions métriques/{file_evo}")
-evo.rename({evo.columns[0] : "Métriques"}, axis = 1, inplace = True)
+
+def couleur_text_df(col) :
+    color = []
+    for met in evo.index :
+        if col.name == "Évolution en %" :
+            if evo.loc[met, "2023_2024"] >= evo.loc[met, "2022_2023"] and evo.loc[met, "2022_2023"] >= evo.loc[met, "2021_2022"] :
+                color.append("background-color: green")
+            elif evo.loc[met, "2023_2024"] >= evo.loc[met, "2022_2023"] and evo.loc[met, "2022_2023"] < evo.loc[met, "2021_2022"] :
+                color.append("background-color: yellow")
+            elif evo.loc[met, "2023_2024"] < evo.loc[met, "2022_2023"] and evo.loc[met, "2022_2023"] >= evo.loc[met, "2021_2022"] :
+                color.append("background-color: orange")
+            else :
+                color.append("background-color: red")
+        else :
+            color.append('')
+    return color
+
+evo_style = evo.style.apply(couleur_text_df, axis = 0)
 
 st.divider()
 
