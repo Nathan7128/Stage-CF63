@@ -67,4 +67,4 @@ evo_graphe = evo_graphe.reset_index()
 evo_graphe.index = new_index
 # couleur = (evo_graphe.Top == "Top 5").replace({True : "#FF0000", False : '#0000FF'})
 evo_graphe = evo_graphe.drop(["Métriques", "Top"], axis = 1)
-st.line_chart(evo_graphe.T, height = 1000)
+st.line_chart(evo_graphe.T)
