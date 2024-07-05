@@ -5,12 +5,10 @@ st.set_page_config(page_title=None, page_icon=None, layout="wide", initial_sideb
 
 st.title("Moyennes du nombre de passes avant un but en ligue 2")
 
-data = pd.read_excel("Passes avant un but/moy_passe_but.xlsx")
+data = pd.read_excel("Passes avant un but/moy_passe_but.xlsx", index_col = 0)
 
-annee = st.dataframe(data, on_select = "rerun", selection_mode = "multi-row")
-
-data_sort = data.loc[data.columns[annee.selection.rows]]
+st.dataframe(data)
 
 st.divider()
 
-st.line_chart(data_sort)
+st.line_chart(data)
