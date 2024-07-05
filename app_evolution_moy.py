@@ -57,7 +57,7 @@ with col4 :
     "Rouge : Strictement décroissant"
 
 st.divider()
-st.markdown("<p style='text-align: center;'>Graphique de l'évolution des métriques sélectionnées</p>", unsafe_allow_html=True)
+
 
 evo_graphe = evo_style.data.iloc[met_sel.selection.rows].drop("Évolution en %", axis = 1)
 new_index = []
@@ -67,4 +67,7 @@ evo_graphe = evo_graphe.reset_index()
 evo_graphe.index = new_index
 # couleur = (evo_graphe.Top == "Top 5").replace({True : "#FF0000", False : '#0000FF'})
 evo_graphe = evo_graphe.drop(["Métriques", "Top"], axis = 1)
-st.line_chart(evo_graphe.T)
+contain1 = st.container(border = True)
+with contain1 :
+    st.markdown("<p style='text-align: center;'>Graphique de l'évolution des métriques sélectionnées</p>", unsafe_allow_html=True)
+    st.line_chart(evo_graphe.T)
