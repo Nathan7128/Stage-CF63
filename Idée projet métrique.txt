@@ -8,8 +8,11 @@ faire une moyenne par match par équipe de chaque métriques sur ces 5 matchs.
 créer le data set avec ces lots
 
 
-Moyenne métriques :
-QUESTIONS :
-Faire une moyenne par match ou par joueur ET par match ?
 
-A faire : modif app pour afficher saison 2020/2021 Stats Bomb
+
+
+A FAIRE :
+
+Demander a Clément pour déployer mes programmes sur Docker
+
+réimporter tous les events sur mon pc avec programme importation modifier
