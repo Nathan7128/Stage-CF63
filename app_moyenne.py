@@ -30,7 +30,7 @@ def couleur_df(val) :
 
 st.divider()
 
-moyenne = pd.read_excel(f"Métriques discriminantesTableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}")
+moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}")
 moyenne.rename({moyenne.columns[0] : "Métriques"}, axis = 1, inplace = True)
 nb_metrique = st.slider("Nombre de métriques gardées", min_value=0, max_value = moyenne.shape[0], value = moyenne.shape[0])
 moyenne_sort = moyenne.loc[moyenne.index[:nb_metrique]]
@@ -46,7 +46,7 @@ moyenne_sort_df = st.dataframe(moyenne_sort, hide_index=True, on_select = "rerun
 
 st.divider()
 
-metrique_moyenne = pd.read_excel(f"Tableau métriques/moyenne/{annee}/{choix_data}/{file_metrique}", index_col=0)
+metrique_moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_metrique}", index_col=0)
 metrique_moyenne_sort = metrique_moyenne[moyenne["Métriques"][moyenne_sort_df.selection.rows]]
 st.markdown(f"<p style='text-align: center;'>Tableau des métriques retenues, par équipes, en moyenne par match</p>", unsafe_allow_html=True)
 st.dataframe(metrique_moyenne_sort)
