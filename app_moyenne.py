@@ -30,7 +30,7 @@ def couleur_df(val) :
 
 st.divider()
 
-moyenne = pd.read_excel(f"Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}")
+moyenne = pd.read_excel(f"Métriques discriminantesTableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}")
 moyenne.rename({moyenne.columns[0] : "Métriques"}, axis = 1, inplace = True)
 nb_metrique = st.slider("Nombre de métriques gardées", min_value=0, max_value = moyenne.shape[0], value = moyenne.shape[0])
 moyenne_sort = moyenne.loc[moyenne.index[:nb_metrique]]
