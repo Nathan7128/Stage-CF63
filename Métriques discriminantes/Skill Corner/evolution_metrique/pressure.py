@@ -5,7 +5,7 @@ top_5_df_mean = pd.DataFrame()
 top_15_df_mean = pd.DataFrame()
 
 for i in liste_annees :
-    data_import = pd.read_excel(f"Tableau métriques/moyenne/{i}/Skill Corner/metrique_pressure.xlsx", index_col = 0)
+    data_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{i}/Skill Corner/metrique_pressure.xlsx", index_col = 0)
     top_5_df_mean[i] = data_import.loc[data_import.index[:5]].mean(axis = 0)
     top_15_df_mean[i] = data_import.loc[data_import.index[5:]].mean(axis = 0)
 
@@ -24,4 +24,4 @@ df["Évolution en %"] = 100*(df["2023_2024"] - df["2021_2022"])/abs(df["2021_202
 df["Évolution en %"] = df["Évolution en %"].round(2)
 
 
-df.to_excel("Tableau métriques/Evolutions métriques/evo_pressure.xlsx", index = True, header = True)
+df.to_excel("Métriques discriminantes/Tableau métriques/Evolutions métriques/evo_pressure.xlsx", index = True, header = True)

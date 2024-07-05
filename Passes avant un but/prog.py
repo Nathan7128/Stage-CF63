@@ -10,6 +10,7 @@ dico = {
 
 for i in range (4) :
     df = pd.DataFrame(0.0, index = ["nb_but", "nb_passe"], columns = ["Top 5", "Bottom 15"])
+    df_final = pd.DataFrame(columns = ["Top 5", "Bottom 15", "Total"])
     annee = dico["annee"][i]
     top5 = dico["top5"][i]
     liste_match = pd.read_excel(f"Passes avant un but/data/event_match_ligue2/2023_2024/liste_match.xlsx", index_col=0).squeeze()
@@ -26,7 +27,8 @@ for i in range (4) :
         for poss in goal_bottom15.possession :
             passe_bottom15 = len(event[(event.possession == poss) & (event.type == "Pass")])
             df.loc["nb_passe", "Bottom 15"] += len(passe_bottom15)
+    df["Total"] = df.sum(axis = 0)
+    df_final.loc[annee] = df.loc["nb_passe"]/df.loc["nb_but"]
 
-    df.loc["Moyenne"] = df.loc["nb_passe"]/df.loc["nb_but"]
-    df.loc["Moyenne"].to_excel(f"Passes avant un but/Tableaux/moy{annee}.xlsx")
+df_final.to_excel("Passes avant un but/moy_passe_but.xlsx")
     

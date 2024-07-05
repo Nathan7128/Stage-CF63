@@ -5,7 +5,7 @@ top_5_df_mean = pd.DataFrame()
 top_15_df_mean = pd.DataFrame()
 
 for i in liste_annees :
-    data_import = pd.read_excel(f"Tableau métriques/moyenne/{i}/Stats Bomb/metriques.xlsx", index_col = 0)
+    data_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{i}/Stats Bomb/metriques.xlsx", index_col = 0)
     top_5_df_mean[i] = data_import.loc[data_import.index[:5]].mean(axis = 0)
     top_15_df_mean[i] = data_import.loc[data_import.index[5:]].mean(axis = 0)
 
@@ -29,4 +29,4 @@ df[df["2020_2021"] != 0] = df_notnull
 
 df["Évolution en %"] = df["Évolution en %"].round(2)
 
-df.to_excel("Tableau métriques/Evolutions métriques/evo_SB.xlsx", index = True, header = True)
+df.to_excel("Métriques discriminantes/Tableau métriques/Evolutions métriques/evo_SB.xlsx", index = True, header = True)

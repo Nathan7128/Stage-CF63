@@ -27,7 +27,7 @@ for i in range(4) :
 
      dico = liste_dico[i]
 
-     data_import = pd.read_excel(f"data/{dico["annee"]}/Stats Bomb/data.xlsx", index_col = 0)
+     data_import = pd.read_excel(f"Métriques discriminantes/data/{dico["annee"]}/Stats Bomb/data.xlsx", index_col = 0)
 
      data = data_import.set_index("team_name")
 
@@ -61,6 +61,6 @@ for i in range(4) :
 
      df_final = df_final.reindex(abs(df_final).sort_values(by = "Diff. Top 5 avec Bottom 15 en %", ascending = False).index)
 
-     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\moyenne_metriques.xlsx")
+     df_final.to_excel(f"Métriques discriminantes/Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\moyenne_metriques.xlsx")
 
-     data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\metriques.xlsx")
+     data.to_excel(f"Métriques discriminantes/Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\metriques.xlsx")

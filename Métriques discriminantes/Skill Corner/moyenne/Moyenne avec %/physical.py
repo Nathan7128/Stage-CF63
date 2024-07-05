@@ -23,7 +23,7 @@ for i in range(3) :
 
      dico = liste_dico[i]
 
-     data_import = pd.read_excel(f"data/{dico["annee"]}/Skill Corner/data_physical.xlsx", index_col = 0)     
+     data_import = pd.read_excel(f"Métriques discriminantes/data/{dico["annee"]}/Skill Corner/data_physical.xlsx", index_col = 0)     
      data = data_import.set_index("team_name").fillna(0)
 
      nb_matchs = pd.Series(index = data.index.unique())
@@ -38,7 +38,7 @@ for i in range(3) :
 
      data = data.groupby(["team_name", "match_id"]).sum()
 
-     nb_minute_match = pd.read_excel(f"Skill Corner/nb_minute_match_physical/{dico["annee"]}/nb_minute_match_physical.xlsx", index_col = [0, 1]).squeeze()
+     nb_minute_match = pd.read_excel(f"Métriques discriminantes/Skill Corner/nb_minute_match_physical/{dico["annee"]}/nb_minute_match_physical.xlsx", index_col = [0, 1]).squeeze()
      data = data.multiply(900/nb_minute_match, axis = 0)
 
      data = data.reset_index().drop("match_id", axis = 1).groupby("team_name", as_index = True).sum().reindex(dico["ranking"])
@@ -68,5 +68,5 @@ for i in range(3) :
 
      df_final = df_final.reindex(abs(df_final).sort_values(by = "Diff. Top 5 avec Bottom 15 en %", ascending = False).index)
 
-     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\moyenne_physical.xlsx")
-     data.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Skill Corner\\metrique_physical.xlsx")
+     df_final.to_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{dico["annee"]}/Skill Corner/moyenne_physical.xlsx")
+     data.to_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{dico["annee"]}/Skill Corner/metrique_physical.xlsx")
