@@ -16,10 +16,13 @@ password = os.environ["mdp_statsbomb"]
 creds = {"user" : email, "passwd" : password}
 
 
-liste_annee = ["2023_2024", "2022_2023", "2021_2022", "2020_2021"]
+dico_annee = {"2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC"],
+              "2022_2023" : ["Le Havre", "Metz", "Bordeaux", "Bastia", "Caen"],
+              "2021_2022" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux"],
+              "2020_2021" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC"]}
 
 
-for annee in liste_annee :
+for annee in dico_annee.keys() :
 
     df_annee = pd.DataFrame()
 
@@ -50,14 +53,16 @@ for annee in liste_annee :
 
             df.loc[df.possession.isin(pos_change_side), [0, 1]] = [120, 80] - df[df.possession.isin(pos_change_side)][[0, 1]]
         
-        df_annee = pd.concat([df_annee, df], axis = 0, ignore_index = True)
+            df_annee = pd.concat([df_annee, df], axis = 0, ignore_index = True)
 
-        serie_match += [f"{match}"]*len(df)
+            serie_match += [f"{match}"]*len(df)
 
     df_annee["match_id"] = serie_match
 
     df_annee.drop([2, "possession"], axis = 1, inplace = True)
 
     df_annee.columns = ["x", "y", "Équipe", "match_id"]
+
+    df_annee["Top 5"] = df_annee["Équipe"].isin(dico_annee[annee])
 
     df_annee.to_excel(f"Heatmap SB/deb_action/Avant un but/Tableaux/{annee}/loc_deb_action.xlsx")
