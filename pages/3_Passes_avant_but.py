@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title=None, page_icon=None, layout="wide", initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(layout="wide")
 
 st.title("Moyennes du nombre de passes avant un but en ligue 2")
 

@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.set_page_config(page_title= "Évolution des métriques pour les clubs de Ligue 2", page_icon=None, layout="wide", initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(layout="wide")
 
 col1, col2 = st.columns(2)
 

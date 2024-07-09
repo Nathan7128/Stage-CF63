@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title= "Métriques différenciant le Top 5 du Bottom 15 de Ligue 2", page_icon=None, layout="wide", initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(layout="wide")
 
 col1, col2 = st.columns(2)
 

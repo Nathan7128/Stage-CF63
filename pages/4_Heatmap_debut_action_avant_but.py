@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 
 import cmasher as cmr
 
+st.set_page_config(layout="wide")
+
 st.title("Heatmap des zones de début d'actions menant à un but")
 
 st.divider()
