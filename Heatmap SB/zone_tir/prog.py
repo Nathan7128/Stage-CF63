@@ -36,28 +36,20 @@ for annee in dico_annee.keys() :
 
         event = pd.read_excel(f"Data/Event SB ligue 2/{annee}/{match}.xlsx", index_col = 0)
         event.location = event.location.fillna("[60, 40]").apply(ast.literal_eval)
-
-        goal = event[(event.shot_outcome == "Goal") & (event.shot_type != "Penalty")].set_index(["period", "possession"])
-
-        if len(goal) > 0 :
-
-            deb_action = event.groupby(["period", "possession"], sort = False).head(1).set_index(["period", "possession"]).loc[goal.index]
-            
-            loc_deb_action = pd.DataFrame(deb_action.location.tolist(), index = deb_action.index)
-            
-            df = pd.concat([df, pd.concat([loc_deb_action, deb_action.possession_team], axis = 1)], axis = 0)
+        shot = event[(event.type == "Shot") & (event.shot_type != "Penalty")]
+        shot = pd.concat([shot, pd.DataFrame(shot.location.tolist(), index = shot.index)], axis = 1)
+        shot.drop(["type", "possession", "shot_outcome", "shot_type", "period", "location"], axis = 1, inplace = True)
         
-            df_annee = pd.concat([df_annee, df], axis = 0, ignore_index = True)
+        df_annee = pd.concat([df_annee, shot], axis = 0, ignore_index = True)
 
-            serie_match += [f"{match}"]*len(df)
-
+        serie_match += [f"{match}"]*len(shot)
     df_annee["match_id"] = serie_match
 
     if 2 in df_annee.columns :
         df_annee.drop(2, axis = 1, inplace = True)
 
-    df_annee.columns = ["x", "y", "Équipe", "match_id"]
+    df_annee.columns = ["Équipe", "x", "y", "match_id"]
 
     df_annee["Top 5"] = df_annee["Équipe"].isin(dico_annee[annee])
 
-    df_annee.to_excel(f"Heatmap SB/deb_action/Avant un but/Tableaux/{annee}/loc_deb_action.xlsx")
+    df_annee.to_excel(f"Heatmap SB/zone_tir/Tableaux/{annee}/zone_tir.xlsx")

@@ -36,12 +36,11 @@ for annee in dico_annee.keys() :
 
         event = pd.read_excel(f"Data/Event SB ligue 2/{annee}/{match}.xlsx", index_col = 0)
         event.location = event.location.fillna("[60, 40]").apply(ast.literal_eval)
-
-        goal = event[(event.shot_outcome == "Goal") & (event.shot_type != "Penalty")].set_index(["period", "possession"])
-
-        if len(goal) > 0 :
-
-            deb_action = event.groupby(["period", "possession"], sort = False).head(1).set_index(["period", "possession"]).loc[goal.index]
+        shot = event[(event.type == "Shot") & (event.shot_type != "Penalty")]
+        shot = shot.groupby(["period", "possession"], sort = False).head(1).set_index(["period", "possession"])
+        
+        if len(shot) > 0 :      
+            deb_action = event.groupby(["period", "possession"], sort = False).head(1).set_index(["period", "possession"]).loc[shot.index]
             
             loc_deb_action = pd.DataFrame(deb_action.location.tolist(), index = deb_action.index)
             
@@ -60,4 +59,4 @@ for annee in dico_annee.keys() :
 
     df_annee["Top 5"] = df_annee["Équipe"].isin(dico_annee[annee])
 
-    df_annee.to_excel(f"Heatmap SB/deb_action/Avant un but/Tableaux/{annee}/loc_deb_action.xlsx")
+    df_annee.to_excel(f"Heatmap SB/deb_action/Avant un tir/Tableaux/{annee}/loc_deb_action.xlsx")

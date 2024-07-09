@@ -75,17 +75,3 @@ with col1 :
     heatmap_percen(df_sort, bins_h, bins_v)
 with col2 :
     heatmap_smooth(df_sort)
-
-# @st.cache_data
-# def heatmap_func(data, bins_h, bins_v) :
-#     fig, ax = plt.subplots(nrows = 1, ncols = 2, facecolor = 'none', edgecolor = 'none')
-#     pitch = Pitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0')
-#     pitch.draw(ax = ax[0])
-#     bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_h, bins_v), normalize=True)
-#     pitch.heatmap(bin_statistic1, ax = ax[0], cmap = cmr.nuclear, edgecolor='#f9f9f9')
-#     pitch.label_heatmap(bin_statistic1, color='#f4edf0', ax = ax[0], ha='center', va='center', str_format='{:.0%}')
-#     pitch.draw(ax = ax[1])
-#     pitch.kdeplot(data.x, data.y, cmap = cmr.nuclear, ax = ax[1], fill = True, levels = 100, thresh = 0)
-#     st.pyplot(fig)
-
-# heatmap_func(df_sort, bins_h, bins_v)
