@@ -32,7 +32,7 @@ with col4 :
 
 st.divider()
 
-df = pd.read_excel(f"Heatmap SB/deb_action/Avant un tir/Tableaux/{annee}/loc_deb_action.xlsx", index_col = 0)
+df = pd.read_excel(f"Heatmap SB/deb_action/Avant un tir/Tableaux/{annee}.xlsx", index_col = 0)
 
 if top == "Top 5" :
     df_sort = df[df["Top 5"]]
@@ -47,7 +47,7 @@ st.markdown(f"<p style='text-align: center;'>Heatmap pour le {top} de Ligue 2 su
 
 
 @st.cache_data
-def heatmap_percen(data, bins_h, bins_v) :
+def heatmap_percen(data, bins_h, bins_v, choix_percent) :
     path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
     pitch = Pitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#C2BFBF")
     fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
@@ -56,7 +56,8 @@ def heatmap_percen(data, bins_h, bins_v) :
     fig1.set_edgecolor("none")
     bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_h, bins_v), normalize=True)
     pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#f9f9f9')
-    labels = pitch.label_heatmap(bin_statistic1, color='#f4edf0', ax = ax1, ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
+    if choix_percent :
+        labels = pitch.label_heatmap(bin_statistic1, color='#f4edf0', ax = ax1, ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
     st.pyplot(fig1)
 
 @st.cache_data
@@ -70,8 +71,10 @@ def heatmap_smooth(data) :
     kde = pitch.kdeplot(data.x, data.y, ax = ax2, fill = True, levels = 100, thresh = 0, cmap = cmr.nuclear)
     st.pyplot(fig2)
 
-col1, col2 = st.columns(2)
+col1, col2 = st.columns(2, vertical_alignment = "bottom")
 with col1 :
-    heatmap_percen(df_sort, bins_h, bins_v)
+    with st.columns(5)[2] :
+        choix_percent = st.checkbox("Afficher les '%' des zones")
+    heatmap_percen(df_sort, bins_h, bins_v, choix_percent)
 with col2 :
     heatmap_smooth(df_sort)

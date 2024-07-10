@@ -17,4 +17,6 @@ Demander a Clément pour déployer mes programmes sur Docker
 
 
 QUESTIONS :
-Ne compter que les opens plays pour les débuts d'actions ou compter penalty, corner...
+Ne compter que les opens plays pour les débuts d'actions ou compter penalty, corner… ?
+Compter les corners dans les zones de centre, coup-franc ?
+Conditions des évènements pour but après un centre
