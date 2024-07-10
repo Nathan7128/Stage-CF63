@@ -19,7 +19,7 @@ st.divider()
 col1, col2, col3, col4 = st.columns(4, gap = "large")
 
 with col1 :
-    annee = st.radio("Choisir année", options = ["2021_2022", "2022_2023", "2023_2024"], horizontal = True)
+    annee = st.radio("Choisir année", options = ["2020_2021", "2021_2022", "2022_2023", "2023_2024"], horizontal = True)
 
 with col2 :
     bins_h = st.number_input("Nombre de zone horizontale pour la Heatmap de gauche", min_value = 1, step = 1, value = 6)
