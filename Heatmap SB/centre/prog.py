@@ -11,7 +11,7 @@ dico_annee = {"2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Pa
 
 for annee in dico_annee.keys() :
 
-    event = pd.read_json(f"Data/Heatmap SB/{annee}.json")
+    event = pd.read_json(f"Data_file/Heatmap SB/{annee}.json")
 
     event = event[~event.location.isna()]
 
@@ -24,11 +24,10 @@ for annee in dico_annee.keys() :
     n_event = 4
     for i in centre.index :
         team_i = centre.team
-        event_i = event.loc[i + 1 : i + 1 + n_event]
+        event_i = event.loc[i + 1 : i + n_event]
         if sum(((event_i.shot_outcome == "Goal") | (event_i.type == "Own Goal Against")) & (event_i.team == centre.loc[i, "team"])) > 0 :
             centre.loc[i, "goal"] = 1
     
-    df = centre[["match_id", "team", "goal"]]
     df = pd.concat([centre.match_id, centre.team, centre.goal, pd.DataFrame(centre.location.tolist(), index = centre.index), pd.DataFrame(centre.pass_end_location.tolist(), index = centre.index)], axis = 1, ignore_index = True)
     df.columns = ["match_id", "Équipe", "goal", "x", "y", "x_end", "y_end"]
 
