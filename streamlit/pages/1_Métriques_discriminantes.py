@@ -8,11 +8,15 @@ st.title("Métriques différenciant le Top 5 du Bottom 15 de Ligue 2")
 
 
 
+
 col1, col2 = st.columns([1, 5], gap = "large")
 
 with col1 :
-    annee = st.radio("Choisir saison", options = ["2021_2022", "2022_2023", "2023_2024"])
     choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"])
+    if choix_data == "Skill Corner" :
+        annee = st.radio("Choisir saison", options = ["2021_2022", "2022_2023", "2023_2024"])
+    else :
+        annee = st.radio("Choisir saison", options = ["2020_2021", "2021_2022", "2022_2023", "2023_2024"])
 
 with col2 :    
     if choix_data == "Skill Corner" :
@@ -32,9 +36,25 @@ with col2 :
         liste_cat_type = st.multiselect("Type de la catégorie", dico_type[cat_met][2], default = dico_type[cat_met][2])
         file_moyenne = dico_type[cat_met][0]
         file_metrique = dico_type[cat_met][1]
+
+        moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}", index_col = 0)
+
+        col_keep = [False]*len(moyenne)
+        if cat_met == "Physiques" :
+            for cat_type in liste_cat_type :
+                col_keep = np.logical_or(col_keep, ["_" + cat_type in i for i in moyenne.index])
+
+        else :
+            for cat_type in liste_cat_type :
+                col_keep = np.logical_or(col_keep, [cat_type in i for i in moyenne.index])
+
+        moyenne = moyenne.iloc[col_keep]
     else :
         file_moyenne = "moyenne_metriques.xlsx"
         file_metrique = "metriques.xlsx"
+
+        moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}", index_col = 0)
+
 
 @st.cache_data
 def couleur_df(val) :
@@ -43,18 +63,6 @@ def couleur_df(val) :
 
 st.divider()
 
-moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}", index_col = 0)
-
-col_keep = [False]*len(moyenne)
-if cat_met == "Physiques" :
-    for cat_type in liste_cat_type :
-        col_keep = np.logical_or(col_keep, ["_" + cat_type in i for i in moyenne.index])
-
-else :
-    for cat_type in liste_cat_type :
-        col_keep = np.logical_or(col_keep, [cat_type in i for i in moyenne.index])
-
-moyenne = moyenne.iloc[col_keep]
 
 if len(moyenne) > 0 :
     nb_metrique = st.slider("Nombre de métriques gardées", min_value=0, max_value = moyenne.shape[0], value = moyenne.shape[0])

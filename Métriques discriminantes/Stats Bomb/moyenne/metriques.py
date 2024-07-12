@@ -1,23 +1,5 @@
-from statsbombpy import sb
-
-import os
-
 import pandas as pd
 
-import numpy as np
-
-from scipy.stats import ttest_ind
-
-from sklearn.preprocessing import StandardScaler
-
-import warnings
-warnings.filterwarnings("ignore")
-
-email = "nathan.talbot@etu.uca.fr"
-password = os.environ["mdp_statsbomb"]
-creds = {"user" : email, "passwd" : password}
-
-ligue2_id = 8
 
 liste_dico = [{"comp_id" : 281,
                 "ranking" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval",
@@ -33,40 +15,40 @@ liste_dico = [{"comp_id" : 281,
                 "ranking" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux", "Guingamp", "Caen", "Le Havre", "Nîmes",
                              "Pau", "Dijon", "Bastia", "Chamois Niortais", "Amiens", "Grenoble Foot", "Valenciennes", "Rodez", 
                              "Quevilly Rouen", "Dunkerque", "Nancy"],
-           "annee" : "2021_2022"}]
+           "annee" : "2021_2022"},
+           {"comp_id" : 90,
+                "ranking" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC", "Auxerre", "Sochaux", "Nancy",
+                             "Guingamp", "Amiens", "Valenciennes", "Le Havre", "AC Ajaccio", "Pau", "Rodez", "Dunkerque", "Caen", 
+                             "Chamois Niortais", "Chambly", "Châteauroux"],
+           "annee" : "2020_2021"}
+           ]
 
-for i in range(3) :
+for i in range(4) :
 
      dico = liste_dico[i]
 
-     team_stat_import = sb.team_season_stats(ligue2_id, dico["comp_id"], creds = creds)
+     data_import = pd.read_excel(f"Data_file/Métriques Team sur une Saison Ligue 2 SB + SK/{dico["annee"]}/Stats Bomb/data.xlsx", index_col = 0)
 
-     team_stat = team_stat_import.set_index("team_name")
+     data = data_import.set_index("team_name")
 
-     nb_matchs = team_stat.team_season_matches
+     nb_matchs = data.team_season_matches
 
      drop = ["account_id", "team_id", "competition_id", "competition_name", "season_id", "season_name", "team_female", "team_season_matches", "team_season_minutes"]
-     team_stat.drop(drop, inplace = True, axis = 1)
+     data.drop(drop, inplace = True, axis = 1)
 
-     team_stat = team_stat.reindex(dico["ranking"])
-
-     scaler = StandardScaler()
-     team_stat_standard = scaler.fit_transform(team_stat)
-     team_stat_standard = pd.DataFrame(team_stat_standard, index = team_stat.index, columns = team_stat.columns)
+     data = data.reindex(dico["ranking"])
 
      top5 = dico["ranking"][:5]
      top15 = dico["ranking"][5:]
-     top5_df = team_stat.loc[top5]
-     top15_df = team_stat.loc[top15]
-     top5_df_standard = team_stat_standard.loc[top5]
-     top15_df_standard = team_stat_standard.loc[top15]
+     top5_df = data.loc[top5]
+     top15_df = data.loc[top15]
 
      df_final = pd.DataFrame(index = top5_df.columns)
 
      df_final["Moyenne Top 5"] = top5_df.mean(axis = 0)
      df_final["Moyenne Bottom 15"] = top15_df.mean(axis = 0)
 
-     df_final["Diff Moyennes\n(données normalisées)"] = abs(top5_df_standard.mean(axis = 0) - top15_df_standard.mean(axis = 0))
+     df_final["Diff. Top 5 avec Bottom 15 en %"] = (100*(df_final["Moyenne Top 5"] - df_final["Moyenne Bottom 15"])/abs(df_final["Moyenne Bottom 15"])).round(2)
 
      df_final["Ecart type Top 5"] = top5_df.std(axis = 0)
      df_final["Ecart type Bottom 15"] = top15_df.std(axis = 0)
@@ -77,8 +59,8 @@ for i in range(3) :
      df_final["Max Top 5"] = top5_df.max(axis = 0)
      df_final["Max Bottom 15"] = top15_df.max(axis = 0)
 
-     df_final.sort_values(by = "Diff Moyennes\n(données normalisées)", inplace = True, ascending = False)
+     df_final = df_final.reindex(abs(df_final).sort_values(by = "Diff. Top 5 avec Bottom 15 en %", ascending = False).index)
 
-     df_final.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\moyenne_metriques.xlsx")
+     df_final.to_excel(f"Métriques discriminantes/Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\moyenne_metriques.xlsx")
 
-     team_stat.to_excel(f"Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\metriques.xlsx")
+     data.to_excel(f"Métriques discriminantes/Tableau métriques\\moyenne\\{dico["annee"]}\\Stats Bomb\\metriques.xlsx")
