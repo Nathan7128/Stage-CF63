@@ -12,7 +12,6 @@ créer le data set avec ces lots
 
 
 A FAIRE :
-Ajouter saison 2020/2021 pour métriques discriminantes SB
 Heatmap zone de centre : Définir un nombre différent de bins pour les 2 heatmaps
 
 
