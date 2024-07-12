@@ -25,7 +25,7 @@ with col2 :
         file_evo = "evo_SB.xlsx"
 
 
-evo = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/{file_evo}", index_col = [0, 1])
+evo = pd.read_excel(f"../Métriques discriminantes/Tableau métriques/Evolutions métriques/{file_evo}", index_col = [0, 1])
 
 def couleur_text_df(col) :
     color = []
