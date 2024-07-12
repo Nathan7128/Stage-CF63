@@ -13,10 +13,11 @@ créer le data set avec ces lots
 
 A FAIRE :
 
-Demander a Clément pour déployer mes programmes sur Docker
+Heatmap zone de centre : Définir un nombre différent de bins pour les 2 heatmaps
 
 
 QUESTIONS :
 Ne compter que les opens plays pour les débuts d'actions ou compter penalty, corner… ?
 Compter les corners dans les zones de centre, coup-franc ?
 Conditions des évènements pour but après un centre
+
