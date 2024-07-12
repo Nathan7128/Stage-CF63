@@ -37,7 +37,7 @@ with col2 :
         file_moyenne = dico_type[cat_met][0]
         file_metrique = dico_type[cat_met][1]
 
-        moyenne = pd.read_excel(f"../Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}", index_col = 0)
+        moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}", index_col = 0)
 
         col_keep = [False]*len(moyenne)
         if cat_met == "Physiques" :
@@ -53,7 +53,7 @@ with col2 :
         file_moyenne = "moyenne_metriques.xlsx"
         file_metrique = "metriques.xlsx"
 
-        moyenne = pd.read_excel(f"../Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}", index_col = 0)
+        moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}", index_col = 0)
 
 
 @st.cache_data
@@ -78,7 +78,7 @@ if len(moyenne) > 0 :
 
     moyenne_sort_df = st.data_editor(moyenne_sort, num_rows = "dynamic", disabled = ["Diff. Top 5 avec Bottom 15 en %"])
 
-    metrique_moyenne = pd.read_excel(f"../Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_metrique}", index_col=0)
+    metrique_moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_metrique}", index_col=0)
 
     metrique_moyenne_sort = metrique_moyenne[moyenne_sort_df.index]
     st.markdown(f"<p style='text-align: center;'>Tableau des métriques retenues, par équipes, en moyenne par match</p>", unsafe_allow_html=True)
