@@ -4,6 +4,10 @@ import numpy as np
 
 st.set_page_config(layout="wide")
 
+st.title("Évolutions des métriques au cours des saisons")
+
+
+
 col1, col2 = st.columns(2)
 
 with col1 :
@@ -43,7 +47,7 @@ evo_style = evo.style.apply(couleur_text_df, axis = 0)
 
 st.divider()
 
-st.markdown("<p style='text-align: center;'>Tableau de l'évolutions de chaque métriques entre la saison 2021/2022 et 2023/2024</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison 2021/2022 et 2023/2024</p>", unsafe_allow_html=True)
 met_sel = st.dataframe(evo_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
 
 col1, col2, col3, col4 = st.columns(4)

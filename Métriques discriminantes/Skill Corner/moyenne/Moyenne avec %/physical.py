@@ -23,7 +23,7 @@ for i in range(3) :
 
      dico = liste_dico[i]
 
-     data_import = pd.read_excel(f"Métriques discriminantes/data/{dico["annee"]}/Skill Corner/data_physical.xlsx", index_col = 0)     
+     data_import = pd.read_excel(f"Data_file/Métriques Team sur une Saison Ligue 2 SB + SK/{dico["annee"]}/Skill Corner/data_physical.xlsx", index_col = 0)     
      data = data_import.set_index("team_name").fillna(0)
 
      nb_matchs = pd.Series(index = data.index.unique())
@@ -32,13 +32,13 @@ for i in range(3) :
      nb_matchs = nb_matchs.reindex(dico["ranking"])
 
      drop = ["player_name", "player_short_name", "player_id", "player_birthdate", "team_id", "match_name", "match_date", "competition_name", "competition_id", "season_name",
-             "season_id", "competition_edition_id", "position", "position_group", "minutes_full_tip", "minutes_full_otip", "physical_check_passed"]
+          "season_id", "competition_edition_id", "position", "position_group", "minutes_full_tip", "minutes_full_otip", "physical_check_passed"]
 
      data.drop(drop, inplace = True, axis = 1)
 
      data = data.groupby(["team_name", "match_id"]).sum()
 
-     nb_minute_match = pd.read_excel(f"Métriques discriminantes/Skill Corner/nb_minute_match_physical/{dico["annee"]}/nb_minute_match_physical.xlsx", index_col = [0, 1]).squeeze()
+     nb_minute_match = data.pop("minutes_full_all")
      data = data.multiply(900/nb_minute_match, axis = 0)
 
      data = data.reset_index().drop("match_id", axis = 1).groupby("team_name", as_index = True).sum().reindex(dico["ranking"])

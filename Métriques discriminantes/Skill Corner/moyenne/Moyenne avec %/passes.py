@@ -23,7 +23,7 @@ for i in range(3) :
 
      dico = liste_dico[i]
 
-     data_import = pd.read_excel(f"Métriques discriminantes/data/{dico["annee"]}/Skill Corner/data_passes.xlsx", index_col = 0)
+     data_import = pd.read_excel(f"Data_file/Métriques Team sur une Saison Ligue 2 SB + SK/{dico["annee"]}/Skill Corner/data_passes.xlsx", index_col = 0)
      
      data = data_import.set_index("team_name")
      data = data[data.quality_check == True]

@@ -12,7 +12,7 @@ créer le data set avec ces lots
 
 
 A FAIRE :
-
+Ajouter saison 2020/2021 pour métriques discriminantes SB
 Heatmap zone de centre : Définir un nombre différent de bins pour les 2 heatmaps
 
 
@@ -20,4 +20,4 @@ QUESTIONS :
 Ne compter que les opens plays pour les débuts d'actions ou compter penalty, corner… ?
 Compter les corners dans les zones de centre, coup-franc ?
 Conditions des évènements pour but après un centre
-
+Metrique discriminantes : faire la moyenne avant ou après avoir choisir le type de la catégorie de métriques (type de courses, de pression…)
