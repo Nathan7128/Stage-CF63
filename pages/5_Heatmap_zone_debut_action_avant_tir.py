@@ -47,9 +47,10 @@ st.markdown(f"<p style='text-align: center;'>Heatmap pour le {top} de Ligue 2 su
 
 
 @st.cache_data
-def heatmap_percen(data, bins_h, bins_v, choix_percent) :
+def heatmap_percen(data, bins_h, bins_v, choix_percent, choix_line) :
     path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
-    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#C2BFBF")
+    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0",
+                          linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line))
     fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
     fig1.set_facecolor("none")
     ax1.set_facecolor("none")
@@ -61,9 +62,10 @@ def heatmap_percen(data, bins_h, bins_v, choix_percent) :
     st.pyplot(fig1)
 
 @st.cache_data
-def heatmap_smooth(data) :
+def heatmap_smooth(data, choix_line) :
     path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
-    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#C2BFBF")
+    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0",
+                          linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line))
     fig2, ax2 = pitch.draw(constrained_layout=True, tight_layout=False)
     fig2.set_facecolor("none")
     ax2.set_facecolor("none")
@@ -71,11 +73,15 @@ def heatmap_smooth(data) :
     kde = pitch.kdeplot(data.x, data.y, ax = ax2, fill = True, levels = 100, thresh = 0, cmap = cmr.nuclear)
     st.pyplot(fig2)
 
-choix_percent = st.checkbox("Cacher les '%' des zones")
+col1, col2 = st.columns(2, vertical_alignment = "bottom")
+with col1 :
+    choix_percent = st.checkbox("Cacher les '%' des zones")
+with col2 :
+    choix_line = st.checkbox("Cacher les lignes du terrain")
 
 
 col1, col2 = st.columns(2, vertical_alignment = "bottom")
 with col1 :
-    heatmap_percen(df_sort, bins_h, bins_v, choix_percent)
+    heatmap_percen(df_sort, bins_h, bins_v, choix_percent, choix_line)
 with col2 :
-    heatmap_smooth(df_sort)
+    heatmap_smooth(df_sort, choix_line)

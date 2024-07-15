@@ -50,6 +50,9 @@ st.divider()
 st.markdown("<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison 2021/2022 et 2023/2024</p>", unsafe_allow_html=True)
 met_sel = st.dataframe(evo_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
 
+with st.columns([1.5, 4, 1])[1] :
+    st.markdown("<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison 2021/2022 et 2023/2024 :</p>", unsafe_allow_html=True)
+
 col1, col2, col3, col4 = st.columns(4)
 with col1 :
     "Vert : Strictement croissant"

@@ -18,7 +18,7 @@ import matplotlib.patches as patches
 
 st.set_page_config(layout="wide")
 
-st.title("Heatmap des zones de tir")
+st.title("Heatmap des zones de départ/récepetion de centre")
 
 st.divider()
 
@@ -112,8 +112,8 @@ if (choix_bins_h != 0) & (choix_bins_v != 0) :
 @st.cache_data
 def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, choix_percent, choix_line, choix_goal) :
     path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
-    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0',
-                          line_color = "#E31919", half = True, axis = True, label = True, tick = True, linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line))
+    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", half = True,
+                axis = True, label = True, tick = True, linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line))
     fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
 
 
@@ -153,11 +153,11 @@ def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, choix_percen
 
     if choix_goal :
         bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_gv*2, bins_gh))
-        pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#f9f9f9', alpha = 1)
+        pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000', alpha = 1)
         bin_statistic1["statistic"] = bin_statistic1["statistic"].astype(int)
 
         bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh))
-        pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#f9f9f9')
+        pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#FF0000')
         bin_statistic2["statistic"] = bin_statistic2["statistic"].astype(int)
 
         labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0',
@@ -166,7 +166,7 @@ def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, choix_percen
                                     ax = ax2, ha='center', va='center', path_effects=path_eff)
     else :
         bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_gv*2, bins_gh), normalize=True)
-        pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#f9f9f9', alpha = 1)
+        pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000', alpha = 1)
         if not(choix_percent) :
             labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0',
                                         ax = ax1, ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)        
@@ -174,13 +174,13 @@ def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, choix_percen
         if len(data2) == 0 :
             bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh))
             bin_statistic2["statistic"] = bin_statistic2["statistic"].astype(int)
-            pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#f9f9f9')
+            pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#FF0000')
             labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0',
                                         ax = ax2, ha='center', va='center', path_effects=path_eff)            
         else :
             bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh),
                                                  normalize=True)
-            pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#f9f9f9')
+            pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#FF0000')
             if not(choix_percent) :
                 labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0',
                                         ax = ax2, ha='center', va='center', path_effects=path_eff, str_format='{:.0%}')
