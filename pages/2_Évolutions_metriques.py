@@ -32,13 +32,13 @@ def couleur_text_df(col) :
     for met in evo.index :
         if col.name == "Évolution en %" :
             if evo.loc[met, "2023_2024"] >= evo.loc[met, "2022_2023"] and evo.loc[met, "2022_2023"] >= evo.loc[met, "2021_2022"] :
-                color.append("background-color: green")
+                color.append("background-color: rgba(0, 255, 0, 0.3)")
             elif evo.loc[met, "2023_2024"] >= evo.loc[met, "2022_2023"] and evo.loc[met, "2022_2023"] < evo.loc[met, "2021_2022"] :
-                color.append("background-color: blue")
+                color.append("background-color: rgba(0, 0, 255, 0.3)")
             elif evo.loc[met, "2023_2024"] < evo.loc[met, "2022_2023"] and evo.loc[met, "2022_2023"] >= evo.loc[met, "2021_2022"] :
-                color.append("background-color: yellow")
+                color.append("background-color: rgba(255, 255, 0, 0.3)")
             else :
-                color.append("background-color: red")
+                color.append("background-color: rgba(255, 0, 0, 0.3)")
         else :
             color.append('')
     return color

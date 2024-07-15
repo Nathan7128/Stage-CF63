@@ -58,8 +58,8 @@ with col2 :
 
 @st.cache_data
 def couleur_df(val) :
-    color = 'green' if val >= 0 else 'red'
-    return f'background-color : {color}'
+    color = 'background-color : rgba(0, 255, 0, 0.3)' if val >= 0 else 'background-color : rgba(255, 0, 0, 0.3)'
+    return color
 
 st.divider()
 

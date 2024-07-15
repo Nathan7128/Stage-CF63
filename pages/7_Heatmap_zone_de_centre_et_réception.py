@@ -71,42 +71,56 @@ st.write("")
 
 columns = st.columns([1, 2, 2], vertical_alignment = "center", gap = "large")
 with columns[0] :
-    choix_percent = st.checkbox("Cacher les '%' des zones")
+    if not(choix_goal) :
+        choix_percent = st.checkbox("Cacher les '%' des zones")
+    else :
+        choix_percent = True
     choix_line = st.checkbox("Cacher les lignes du terrain")
 
 with columns[1] :
-    bins_v = st.number_input("Nombre de zone verticale pour les Heatmaps du haut",
-                             min_value = 1, step = 1, value = 5)
+    columns2 = st.columns(2)
+    with columns2[0] :
+        bins_gv = st.number_input("Nombre de zone verticale pour la Heatmap de gauche",
+                                min_value = 1, step = 1, value = 5)
+    with columns2[1] :
+        bins_gh = st.number_input("Nombre de zone horizontale pour la Heatmap de gauche",
+                             min_value = 1, step = 1, value = 6)
     choix_bins_v = st.number_input("Choisir la ligne de la zone (0 pour tout afficher)",
-                                   min_value = 0, step = 1, max_value = bins_v)
+                                    min_value = 0, step = 1, max_value = bins_gv)
 
 with columns[2] :
-    bins_h = st.number_input("Nombre de zone horizontale pour les Heatmaps du haut",
+    columns2 = st.columns(2)
+    with columns2[0] :
+        bins_dv = st.number_input("Nombre de zone verticale pour la Heatmap de droite",
+                                min_value = 1, step = 1, value = 5)
+    with columns2[1] :
+        bins_dh = st.number_input("Nombre de zone horizontale pour la Heatmap de droite",
                              min_value = 1, step = 1, value = 6)
     choix_bins_h = st.number_input("Choisir la colonne de la zone (0 pour tout afficher)",
-                                   min_value = 0, step = 1, max_value = bins_h)
+                                   min_value = 0, step = 1, max_value = bins_gh)
 
 df_sort2 = df_sort
 if (choix_bins_h != 0) & (choix_bins_v != 0) :
-    df_sort2 = df_sort[(df_sort.x >= (60 + (60/bins_v)*(choix_bins_v - 1))) &
-                       (df_sort.x < (60 + (60/bins_v)*(choix_bins_v))) &
-                       (df_sort.y >= (80/bins_h)*(choix_bins_h - 1)) &
-                       (df_sort.y < (80/bins_h)*(choix_bins_h))]
+    df_sort2 = df_sort[(df_sort.x >= (60 + (60/bins_gv)*(choix_bins_v - 1))) &
+                       (df_sort.x < (60 + (60/bins_gv)*(choix_bins_v))) &
+                       (df_sort.y >= (80/bins_gh)*(choix_bins_h - 1)) &
+                       (df_sort.y < (80/bins_gh)*(choix_bins_h))]
 
 # ------------------------------------------------- AFFICHAGE DE LA HEATMAP --------------------------------------------------------
 
 
 @st.cache_data
-def heatmap_percen(data, data2, bins_h, bins_v, choix_percent, choix_line, choix_goal) :
+def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, choix_percent, choix_line, choix_goal) :
     path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
     pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0',
-                          line_color = "#C2BFBF", half = True, axis = True, label = True, tick = True, linewidth = 1 - choix_line)
+                          line_color = "#E31919", half = True, axis = True, label = True, tick = True, linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line))
     fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
 
 
 
-    ax1.set_xticks(np.arange(80/(2*bins_h), 80 - 80/(2*bins_h) + 1, 80/bins_h), labels = np.arange(1, bins_h + 1, dtype = int))
-    ax1.set_yticks(np.arange(60 + 60/(2*bins_v), 120 - 60/(2*bins_v) + 1, 60/bins_v), labels = np.arange(1, bins_v + 1, dtype = int))
+    ax1.set_xticks(np.arange(80/(2*bins_gh), 80 - 80/(2*bins_gh) + 1, 80/bins_gh), labels = np.arange(1, bins_gh + 1, dtype = int))
+    ax1.set_yticks(np.arange(60 + 60/(2*bins_gv), 120 - 60/(2*bins_gv) + 1, 60/bins_gv),
+                   labels = np.arange(1, bins_gv + 1, dtype = int))
     ax1.tick_params(axis = "y", right = False, labelright = False)
     ax1.spines["right"].set_visible(False)
     ax1.tick_params(axis = "x", bottom = False, labelbottom = False)
@@ -122,69 +136,67 @@ def heatmap_percen(data, data2, bins_h, bins_v, choix_percent, choix_line, choix
 
 
     fig2, ax2 = pitch.draw(constrained_layout=True, tight_layout=False)
-    ax2.set_xticks(np.arange(80/(2*bins_h), 80 - 80/(2*bins_h) + 1, 80/bins_h), labels = np.arange(1, bins_h + 1, dtype = int))
-    ax2.set_yticks(np.arange(60 + 60/(2*bins_v), 120 - 60/(2*bins_v) + 1, 60/bins_v), labels = np.arange(1, bins_v + 1, dtype = int))
-    ax2.tick_params(axis = "y", right = False, labelright = False)
-    ax2.spines["right"].set_visible(False)
-    ax2.tick_params(axis = "x", bottom = False, labelbottom = False)
-    ax2.spines["bottom"].set_visible(False)
-    ax2.spines["top"].set_position(("data", 120))
-    ax2.spines["left"].set_position(("data", 0))
+    ax2.set_xticks(np.arange(80/(2*bins_dh), 80 - 80/(2*bins_dh) + 1, 80/bins_dh),
+                   labels = np.arange(1, bins_dh + 1, dtype = int))
+    ax2.set_yticks(np.arange(60 + 60/(2*bins_dv), 120 - 60/(2*bins_dv) + 1, 60/bins_dv),
+                   labels = np.arange(1, bins_dv + 1, dtype = int))
+    ax2.tick_params(axis = "y", right = False, labelright = False, left = False, labelleft = False)
+    ax2.tick_params(axis = "x", bottom = False, labelbottom = False, top = False, labeltop = False)
+    ax2.spines[:].set_visible(False)
     ax2.set_xlim(0, 80)
     ax2.set_ylim(60, 120)
     fig2.set_facecolor("none")
     ax2.set_facecolor("none")
     fig2.set_edgecolor("none")
-    ax2.set_ylim(60, 120)
-
 
         
 
     if choix_goal :
-        bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_v*2, bins_h))
+        bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_gv*2, bins_gh))
         pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#f9f9f9', alpha = 1)
         bin_statistic1["statistic"] = bin_statistic1["statistic"].astype(int)
 
-        bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_v*2, bins_h))
+        bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh))
         pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#f9f9f9')
         bin_statistic2["statistic"] = bin_statistic2["statistic"].astype(int)
 
-        labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_v + bins_h)) + 2, color='#f4edf0',
+        labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0',
                                     ax = ax1, ha='center', va='center', path_effects=path_eff)
-        labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_v + bins_h)) + 2, color='#f4edf0',
+        labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0',
                                     ax = ax2, ha='center', va='center', path_effects=path_eff)
     else :
-        bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_v*2, bins_h), normalize=True)
+        bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_gv*2, bins_gh), normalize=True)
         pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#f9f9f9', alpha = 1)
         if not(choix_percent) :
-            labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_v + bins_h)) + 2, color='#f4edf0',
+            labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0',
                                         ax = ax1, ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)        
     
         if len(data2) == 0 :
-            bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_v*2, bins_h))
+            bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh))
             bin_statistic2["statistic"] = bin_statistic2["statistic"].astype(int)
             pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#f9f9f9')
-            labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_v + bins_h)) + 2, color='#f4edf0',
+            labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0',
                                         ax = ax2, ha='center', va='center', path_effects=path_eff)            
         else :
-            bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_v*2, bins_h), normalize=True)
+            bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh),
+                                                 normalize=True)
             pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#f9f9f9')
             if not(choix_percent) :
-                labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_v + bins_h)) + 2, color='#f4edf0',
+                labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0',
                                         ax = ax2, ha='center', va='center', path_effects=path_eff, str_format='{:.0%}')
     
     return(fig1, fig2, ax1, ax2)
 
 st.divider()
 
-fig1, fig2, ax1, ax2 = heatmap_percen(df_sort, df_sort2, bins_h, bins_v, choix_percent, choix_line, choix_goal)
+fig1, fig2, ax1, ax2 = heatmap_percen(df_sort, df_sort2, bins_gh, bins_gv, bins_dh, bins_dv, choix_percent, choix_line, choix_goal)
 
 if (choix_bins_h != 0) & (choix_bins_v != 0) :
-    rect = patches.Rectangle(((80/bins_h)*(choix_bins_h - 1), 60 + (60/bins_v)*(choix_bins_v - 1)),
-                                80/bins_h, 60/bins_v, linewidth=5, edgecolor='r', facecolor='r', alpha=0.6)
+    rect = patches.Rectangle(((80/bins_gh)*(choix_bins_h - 1), 60 + (60/bins_gv)*(choix_bins_v - 1)),
+                                80/bins_gh, 60/bins_gv, linewidth=5, edgecolor='r', facecolor='r', alpha=0.6)
     ax1.add_patch(rect)
 
-col5, col6 = st.columns(2, vertical_alignment = "center")
+col5, col6 = st.columns(2, vertical_alignment = "bottom")
 with col5 :
     st.pyplot(fig1)
 with col6 :
