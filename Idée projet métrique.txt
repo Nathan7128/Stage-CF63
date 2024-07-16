@@ -12,7 +12,8 @@ créer le data set avec ces lots
 
 
 A FAIRE :
-Heatmap zone de centre : Définir un nombre différent de bins pour les 2 heatmaps
+Prendre les données physiques par 30 minutes
+Créé appli évolution métrique par journée
 
 
 QUESTIONS :
@@ -20,3 +21,5 @@ Ne compter que les opens plays pour les débuts d'actions ou compter penalty, co
 Compter les corners dans les zones de centre, coup-franc ?
 Conditions des évènements pour but après un centre
 Metrique discriminantes : faire la moyenne avant ou après avoir choisir le type de la catégorie de métriques (type de courses, de pression…)
+Données physiques par 30 tip, 30 min otip ou les deux ?
+Quand sélection de métriques sur l'appli, mettre 0 métriques par défaut ou toutes les métriques ?

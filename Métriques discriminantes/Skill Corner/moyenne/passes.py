@@ -19,9 +19,7 @@ liste_dico = [{"comp_id" : 549,
            "annee" : "2021_2022"}
            ]
 
-for i in range(3) :
-
-     dico = liste_dico[i]
+for dico in liste_dico :
 
      data_import = pd.read_excel(f"Data_file/Métriques Team sur une Saison Ligue 2 SB + SK/{dico["annee"]}/Skill Corner/data_passes.xlsx", index_col = 0)
      
