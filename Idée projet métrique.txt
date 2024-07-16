@@ -12,8 +12,11 @@ créer le data set avec ces lots
 
 
 A FAIRE :
-Prendre les données physiques par 30 minutes
+Prendre les données physiques par 30 minutes tip
+Modifier type cage
 Créé appli évolution métrique par journée
+Choisir type de début d'action
+évènements récurents suite a un centre
 
 
 QUESTIONS :
