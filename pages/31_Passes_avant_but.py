@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 
@@ -33,10 +34,20 @@ for i in dico_annee.keys() :
 
 st.divider()
 
-col3, col1, col2, col4 = st.columns([1, 3, 3, 1], gap = "large")
+col3, col1, col2= st.columns([1, 4, 15], gap = "small")
 with col2 :
-    annee_select = st.dataframe(df_moy, on_select = "rerun", selection_mode = "single-row")
-    st.line_chart(df_moy)
+    with st.columns([1, 1, 3, 2])[2] :
+        annee_select = st.dataframe(df_moy, on_select = "rerun", selection_mode = "single-row")
+    fig = plt.figure()
+    plt.plot(df_moy, linewidth = 1)
+    plt.grid()
+    plt.legend(df_moy.columns, fontsize = "small", ncol = 2)
+    plt.xlabel("Saison", fontsize = "small", fontstyle = "italic", labelpad = 10)
+    plt.ylabel("Passes", fontsize = "small", fontstyle = "italic", labelpad = 10)
+    plt.tick_params(labelsize = 8)
+    ax = plt.gca()
+    ax.spines[:].set_visible(False)
+    st.pyplot(fig)
 
 if len(annee_select.selection.rows) == 1 :
     annee = df_moy.index[annee_select.selection.rows][0]

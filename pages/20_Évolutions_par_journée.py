@@ -90,7 +90,7 @@ if len(liste_cat_type) > 0 :
         evo_journée = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{annee}/Skill Corner/{file_evo}{dico_groupe[choix_groupe]}.xlsx", index_col = 0)
         evo_journée = evo_journée[met_graphe]
         liste_graphe.append(evo_journée)
-        legend_graphe = ""
+        legend_graphe = 0
         title_graphe = f"Graphe du {choix_groupe} de Ligue 2 pour la métrique {met_graphe}\nau cours des journées de la saison {annee}"
 
     fig = plt.figure(figsize = (6, 3))
@@ -98,7 +98,8 @@ if len(liste_cat_type) > 0 :
         plt.plot(graphe, linewidth = 0.7)
     plt.title(title_graphe, fontweight = "heavy", y = 1.05, fontsize = 9)
     plt.grid()
-    plt.legend(legend_graphe, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
+    if legend_graphe :
+        plt.legend(legend_graphe, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
     plt.xlabel("Journée", fontsize = "small", fontstyle = "italic", labelpad = 10)
     plt.ylabel("Métrique", fontsize = "small", fontstyle = "italic", labelpad = 10)
     plt.tick_params(labelsize = 8)

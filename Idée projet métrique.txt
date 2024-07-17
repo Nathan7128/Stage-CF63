@@ -17,6 +17,8 @@ Modifier type cage
 Créé appli évolution métrique par journée
 Choisir type de début d'action
 évènements récurents suite a un centre
+Différencier ligue 1 ligue 2
+enlever data_editor appli métriques discriminantes
 
 
 QUESTIONS :

@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 
@@ -63,18 +64,29 @@ with col3 :
 with col4 :
     "Rouge : Strictement décroissant"
 
-st.divider()
 
+if len(met_sel.selection.rows) > 0 :
 
-evo_graphe = evo_style.data.iloc[met_sel.selection.rows].drop("Évolution en %", axis = 1)
-new_index = []
-for i in evo_style.index[met_sel.selection.rows] :
-    new_index.append(i[1] + " - " + i[0])
-evo_graphe = evo_graphe.reset_index()
-evo_graphe.index = new_index
-# couleur = (evo_graphe.Top == "Top 5").replace({True : "#FF0000", False : '#0000FF'})
-evo_graphe = evo_graphe.drop(["Métriques", "Top"], axis = 1)
-contain1 = st.container(border = True)
-with contain1 :
-    st.markdown("<p style='text-align: center;'>Graphique de l'évolution des métriques sélectionnées</p>", unsafe_allow_html=True)
-    st.line_chart(evo_graphe.T)
+    st.divider()
+
+    evo_graphe = evo_style.data.iloc[met_sel.selection.rows].drop("Évolution en %", axis = 1)
+    new_index = []
+    for i in evo_style.index[met_sel.selection.rows] :
+        new_index.append(i[1] + " - " + i[0])
+    evo_graphe = evo_graphe.reset_index()
+    evo_graphe.index = new_index
+    # couleur = (evo_graphe.Top == "Top 5").replace({True : "#FF0000", False : '#0000FF'})
+    evo_graphe = evo_graphe.drop(["Métriques", "Top"], axis = 1).T
+    st.write(int((len(evo_graphe.columns) + 1)/2))
+    fig = plt.figure(figsize = (6, 3))
+    plt.plot(evo_graphe, linewidth = 0.7)
+    plt.title("Graphique de l'évolution des métriques sélectionnées", fontweight = "heavy", y = 1.05, fontsize = 9)
+    plt.grid()
+    plt.legend(evo_graphe.columns, loc = "lower center", bbox_to_anchor=(0.5, -0.35 - 0.08*(int((len(evo_graphe.columns) + 1)/2) - 1)),
+               fontsize = "small", ncol = 2)
+    plt.xlabel("Saison", fontsize = "small", fontstyle = "italic", labelpad = 10)
+    plt.ylabel("Métrique", fontsize = "small", fontstyle = "italic", labelpad = 10)
+    plt.tick_params(labelsize = 8)
+    ax = plt.gca()
+    ax.spines[:].set_visible(False)
+    st.pyplot(fig)
