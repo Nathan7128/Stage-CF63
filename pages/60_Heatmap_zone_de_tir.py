@@ -28,7 +28,7 @@ with col3 :
     bins_v = st.number_input("Nombre de zone verticale pour la Heatmap de gauche", min_value = 1, step = 1, value = 5)
 
 with col4 :
-    top = st.radio("Groupe à afficher", options = ["Top 5", "Bottom 15", "Top 20"], horizontal = True)
+    top = st.radio("Groupe à afficher", options = ["Top 5", "Bottom 15", "Global"], horizontal = True)
 
 st.divider()
 

@@ -27,7 +27,7 @@ col1, col2, col3 = st.columns(3, gap = "large")
 with col1 :
     annee = st.radio("Choisir année", options = ["2020_2021", "2021_2022", "2022_2023", "2023_2024"], horizontal = True)
 with col2 :
-    top = st.radio("Groupe à afficher", options = ["Top 5", "Bottom 15", "Top 20"], horizontal = True)
+    top = st.radio("Groupe à afficher", options = ["Top 5", "Bottom 15", "Global"], horizontal = True)
 
 with col3 :
     choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 4 évènements suivants le centre)")

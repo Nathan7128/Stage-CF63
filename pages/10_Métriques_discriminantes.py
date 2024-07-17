@@ -21,7 +21,7 @@ with col1 :
 with col2 :    
     if choix_data == "Skill Corner" :
         dico_type = {
-            "Physiques" : ["moyenne_physical.xlsx", "metrique_physical.xlsx", ["tip", "otip", "all"]],
+            "Physiques" : ["moyenne_physical.xlsx", "metrique_physical.xlsx", ["Moy. 30 min. tip", "Moy. 30 min. otip", "Moy. match all"]],
             "Courses sans ballon avec la possession" : ["moyenne_running.xlsx", "metrique_running.xlsx", ["runs_in_behind",
                 "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
                 "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"]],
@@ -41,8 +41,10 @@ with col2 :
 
         col_keep = [False]*len(moyenne)
         if cat_met == "Physiques" :
+            dico_type_physical = {"Moy. 30 min. tip" : "per30tip", "Moy. 30 min. otip" : "per30otip", "Moy. match all" : "per_Match"}
             for cat_type in liste_cat_type :
-                col_keep = np.logical_or(col_keep, ["_" + cat_type in i for i in moyenne.index])
+                cat_type = dico_type_physical[cat_type]
+                col_keep = np.logical_or(col_keep, [cat_type in i for i in moyenne.index])
 
         else :
             for cat_type in liste_cat_type :

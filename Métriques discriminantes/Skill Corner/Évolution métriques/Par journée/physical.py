@@ -11,17 +11,29 @@ liste_dico = [{"match_drop" : [1550555, 1546206],
            "annee" : "2021_2022"}
            ]
 
+def rename_col(col) :
+    if "full_all" in col :
+        return col.replace("full_all", "per_Match")
+    elif "full_otip_p30otip" in col :
+        return col.replace("full_otip_p30otip", "per30otip")
+    elif "full_tip_p30tip" in col :
+        return col.replace("full_tip_p30tip", "per30tip")
+    else :
+        return col
+
 for dico in liste_dico :
      data_import = pd.read_excel(f"Data_file/Métriques Team sur une Saison Ligue 2 SB + SK/{dico["annee"]}/Skill Corner/data_physical.xlsx", index_col = 0)
      data = data_import[~(data_import.match_id.isin(dico["match_drop"]))]
      data.fillna(0, inplace = True)
 
-     drop = ["player_name", "player_short_name", "player_id", "player_birthdate", "team_id", "match_name", "match_date", "competition_name", "competition_id", "season_name",
+     drop = ["player_name", "player_short_name", "psv99", "player_id", "player_birthdate", "team_id", "match_name", "match_date", "competition_name", "competition_id", "season_name",
                "season_id", "competition_edition_id", "position", "position_group", "minutes_full_tip", "minutes_full_otip", "physical_check_passed"]
 
      data.drop(drop, inplace = True, axis = 1)
      sample = data.columns[["sample" in i for i in data.columns]]
      data.drop(sample, inplace = True, axis = 1)
+
+     data.rename(columns = rename_col, inplace = True)
 
      # AJOUT NUMÉRO DE JOURNÉE AU DATAFRAME
      match_round = pd.read_excel(f"Data_file/Métriques Team sur une Saison Ligue 2 SB + SK/{dico["annee"]}/Skill Corner/match_round.xlsx",
@@ -33,7 +45,7 @@ for dico in liste_dico :
      data = data.sum()
      data = data.divide(nb_joueur_match, axis = 0)
 
-     nb_minute_match = data.pop("minutes_full_all")
+     nb_minute_match = data.pop("minutes_per_Match")
      data = data.multiply(900/nb_minute_match, axis = 0)
 
      moyenne_top20 = data.groupby("Journée").mean()

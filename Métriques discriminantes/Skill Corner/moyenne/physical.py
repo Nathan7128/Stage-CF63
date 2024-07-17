@@ -19,6 +19,16 @@ liste_dico = [{"comp_id" : 549,
            "annee" : "2021_2022"}
            ]
 
+def rename_col(col) :
+    if "full_all" in col :
+        return col.replace("full_all", "per_Match")
+    elif "full_otip_p30otip" in col :
+        return col.replace("full_otip_p30otip", "per30otip")
+    elif "full_tip_p30tip" in col :
+        return col.replace("full_tip_p30tip", "per30tip")
+    else :
+        return col
+
 for i in range(3) :
 
      dico = liste_dico[i]
@@ -31,14 +41,16 @@ for i in range(3) :
           nb_matchs[team] = len(data.loc[team].match_id.unique())
      nb_matchs = nb_matchs.reindex(dico["ranking"])
 
-     drop = ["player_name", "player_short_name", "player_id", "player_birthdate", "team_id", "match_name", "match_date", "competition_name", "competition_id", "season_name",
+     drop = ["player_name", "player_short_name", "psv99", "player_id", "player_birthdate", "team_id", "match_name", "match_date", "competition_name", "competition_id", "season_name",
           "season_id", "competition_edition_id", "position", "position_group", "minutes_full_tip", "minutes_full_otip", "physical_check_passed"]
 
      data.drop(drop, inplace = True, axis = 1)
 
+     data.rename(columns = rename_col, inplace = True)
+
      data = data.groupby(["team_name", "match_id"]).sum()
 
-     nb_minute_match = data.pop("minutes_full_all")
+     nb_minute_match = data.pop("minutes_per_Match")
      data = data.multiply(900/nb_minute_match, axis = 0)
 
      data = data.reset_index().drop("match_id", axis = 1).groupby("team_name", as_index = True).sum().reindex(dico["ranking"])

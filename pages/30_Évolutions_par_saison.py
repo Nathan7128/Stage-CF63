@@ -77,7 +77,6 @@ if len(met_sel.selection.rows) > 0 :
     evo_graphe.index = new_index
     # couleur = (evo_graphe.Top == "Top 5").replace({True : "#FF0000", False : '#0000FF'})
     evo_graphe = evo_graphe.drop(["Métriques", "Top"], axis = 1).T
-    st.write(int((len(evo_graphe.columns) + 1)/2))
     fig = plt.figure(figsize = (6, 3))
     plt.plot(evo_graphe, linewidth = 0.7)
     plt.title("Graphique de l'évolution des métriques sélectionnées", fontweight = "heavy", y = 1.05, fontsize = 9)

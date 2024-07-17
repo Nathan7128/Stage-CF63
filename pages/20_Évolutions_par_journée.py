@@ -9,7 +9,7 @@ st.title("Évolutions des métriques au cours des saisons")
 
 idx = pd.IndexSlice
 
-col1, col2 = st.columns(2, gap = "Large")
+col1, col2, col3 = st.columns([1, 3, 3])
 
 with col1 :
     choix_data = st.radio("Fournisseur data", options = ["Skill Corner"], horizontal = True)
@@ -17,17 +17,19 @@ with col1 :
 with col2 :
     annee = st.radio("Choisir saison", options = ["2021_2022", "2022_2023", "2023_2024"], horizontal = True)
 
-st.divider()
-
 path_evo = ["physical_", "running_", "pressure_", "passes_"]
 liste_cat_met = ["Physiques", "Courses sans ballon avec la possession",
             "Action sous pression", "Passes à un coéquipier effectuant une course"]
-cat_met = st.radio("Catégorie de métrique", liste_cat_met, horizontal = True)
+with col3 :
+    cat_met = st.radio("Catégorie de métrique", liste_cat_met, horizontal = True)
+
 index_cat = liste_cat_met.index(cat_met)
 file_evo = path_evo[index_cat]
 
+st.divider()
+
 dico_type = {
-    "Physiques" : ["tip", "otip", "all"],
+    "Physiques" : ["Moy. 30 min. tip", "Moy. 30 min. otip", "Moy. match all"],
     "Courses sans ballon avec la possession" : ["runs_in_behind",
         "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
         "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"],
@@ -40,15 +42,14 @@ liste_cat_type = st.multiselect("Type de la catégorie", dico_type[cat_met], def
 
 if len(liste_cat_type) > 0 :
 
-    st.divider()
-
-
     evo_équipe = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{annee}/Skill Corner/{file_evo}équipe.xlsx", index_col = [0, 1])
 
     col_keep = [False]*evo_équipe.shape[1]
     if cat_met == "Physiques" :
+        dico_type_physical = {"Moy. 30 min. tip" : "per30tip", "Moy. 30 min. otip" : "per30otip", "Moy. match all" : "per_Match"}
         for cat_type in liste_cat_type :
-            col_keep = np.logical_or(col_keep, ["_" + cat_type in i for i in evo_équipe.columns])
+            cat_type = dico_type_physical[cat_type]
+            col_keep = np.logical_or(col_keep, [cat_type in i for i in evo_équipe.columns])
 
     else :
         for cat_type in liste_cat_type :
