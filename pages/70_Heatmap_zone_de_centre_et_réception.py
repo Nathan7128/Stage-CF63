@@ -30,7 +30,7 @@ with col2 :
     top = st.radio("Groupe à afficher", options = ["Top 5", "Bottom 15", "Global"], horizontal = True)
 
 with col3 :
-    choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 4 évènements suivants le centre)")
+    choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 5 évènements suivants le centre)")
 
 st.divider()
 

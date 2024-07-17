@@ -21,7 +21,7 @@ for annee in dico_annee.keys() :
 
     centre = event[(event.pass_cross == 1) & (event.pass_type != "Corner")]
 
-    n_event = 4
+    n_event = 5
     for i in centre.index :
         team_i = centre.team
         event_i = event.loc[i + 1 : i + n_event]
