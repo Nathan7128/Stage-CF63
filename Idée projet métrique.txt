@@ -13,18 +13,15 @@ créer le data set avec ces lots
 
 A FAIRE :
 Prendre les données physiques par 30 minutes tip
-Modifier type cage
-Créé appli évolution métrique par journée
-Choisir type de début d'action
 évènements récurents suite a un centre
 Différencier ligue 1 ligue 2
 enlever data_editor appli métriques discriminantes
 
+FAIT :
+Créé appli évolution métrique par journée
+Choisir type de début d'action et regrouper avant tir/but
+Modifier accès priver à l'application
+Modifier type cage
+
 
 QUESTIONS :
-Ne compter que les opens plays pour les débuts d'actions ou compter penalty, corner… ?
-Compter les corners dans les zones de centre, coup-franc ?
-Conditions des évènements pour but après un centre
-Metrique discriminantes : faire la moyenne avant ou après avoir choisir le type de la catégorie de métriques (type de courses, de pression…)
-Données physiques par 30 tip, 30 min otip ou les deux ?
-Quand sélection de métriques sur l'appli, mettre 0 métriques par défaut ou toutes les métriques ?

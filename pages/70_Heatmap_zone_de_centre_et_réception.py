@@ -113,7 +113,8 @@ if (choix_bins_h != 0) & (choix_bins_v != 0) :
 def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, choix_percent, choix_line, choix_goal) :
     path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
     pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", half = True,
-                axis = True, label = True, tick = True, linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line))
+                axis = True, label = True, tick = True, linewidth = 1.5*(1 - choix_line), spot_scale = 0.002*(1 - choix_line),
+                goal_type = "box")
     fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
 
 
@@ -123,14 +124,14 @@ def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, choix_percen
                    labels = np.arange(1, bins_gv + 1, dtype = int))
     ax1.tick_params(axis = "y", right = False, labelright = False)
     ax1.spines["right"].set_visible(False)
-    ax1.tick_params(axis = "x", bottom = False, labelbottom = False)
-    ax1.spines["bottom"].set_visible(False)
-    ax1.spines["top"].set_position(("data", 120))
+    ax1.tick_params(axis = "x", top = False, labeltop = False)
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["bottom"].set_position(("data", 60))
     ax1.spines["left"].set_position(("data", 0))
     ax1.set_xlim(0, 80)
-    ax1.set_ylim(60, 120)
+    ax1.set_ylim(60, 125)
     fig1.set_facecolor("none")
-    ax1.set_facecolor("none")
+    ax1.set_facecolor((98/255, 98/255, 98/255))
     fig1.set_edgecolor("none")
 
 
@@ -144,9 +145,9 @@ def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, choix_percen
     ax2.tick_params(axis = "x", bottom = False, labelbottom = False, top = False, labeltop = False)
     ax2.spines[:].set_visible(False)
     ax2.set_xlim(0, 80)
-    ax2.set_ylim(60, 120)
+    ax2.set_ylim(60, 125)
     fig2.set_facecolor("none")
-    ax2.set_facecolor("none")
+    ax2.set_facecolor((98/255, 98/255, 98/255))
     fig2.set_edgecolor("none")
 
         
@@ -196,40 +197,8 @@ if (choix_bins_h != 0) & (choix_bins_v != 0) :
                                 80/bins_gh, 60/bins_gv, linewidth=5, edgecolor='r', facecolor='r', alpha=0.6)
     ax1.add_patch(rect)
 
-col5, col6 = st.columns(2, vertical_alignment = "bottom")
+col5, col6 = st.columns(2, vertical_alignment = "top", gap = "large")
 with col5 :
     st.pyplot(fig1)
 with col6 :
     st.pyplot(fig2)
-
-
-
-
-# # ------------------------------------------------- AFFICHAGE DU KDEPLOT --------------------------------------------------------
-
-# st.divider()
-
-# @st.cache_data
-# def heatmap_smooth(data, choix_line) :
-#     path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
-#     pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, line_color = "#C2BFBF", half = True, linewidth = 1 - choix_line)
-
-#     fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
-#     fig1.set_facecolor("none")
-#     ax1.set_facecolor("none")
-#     fig1.set_edgecolor("none")
-#     kde = pitch.kdeplot(data.x, data.y, ax = ax1, fill = True, levels = 100, thresh = 0, cmap = cmr.nuclear)
-
-#     fig2, ax2 = pitch.draw(constrained_layout=True, tight_layout=False)
-#     fig2.set_facecolor("none")
-#     ax2.set_facecolor("none")
-#     fig2.set_edgecolor("none")
-#     kde = pitch.kdeplot(data.x_end, data.y_end, ax = ax2, fill = True, thresh = 0, levels = 100, cmap = cmr.nuclear)
-    
-#     col1, col2 = st.columns(2)
-#     with col1 :
-#         st.pyplot(fig1)
-#     with col2 :
-#         st.pyplot(fig2)
-
-# heatmap_smooth(df_sort, choix_line)

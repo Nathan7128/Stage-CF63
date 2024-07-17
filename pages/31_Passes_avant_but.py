@@ -22,14 +22,14 @@ dico_annee = {
 
 dico_df = {}
 
-df_moy = pd.DataFrame(index = dico_annee.keys(), columns = ["Top 5", "Bottom 15", "Top 20"])
+df_moy = pd.DataFrame(index = dico_annee.keys(), columns = ["Top 5", "Bottom 15", "Global"])
 
 for i in dico_annee.keys() :
     df = pd.read_excel(f"Passes avant un but/{i}.xlsx", index_col = 0)
     df = df.reindex(dico_annee[i])
     df_moy.loc[i, "Top 5"] = df.loc[df["Top 5"] == 1, "Passe"].mean()
     df_moy.loc[i, "Bottom 15"] = df.loc[df["Top 5"] == 0, "Passe"].mean()
-    df_moy.loc[i, "Top 20"] = df["Passe"].mean()
+    df_moy.loc[i, "Global"] = df["Passe"].mean()
     dico_df[i] = df
 
 st.divider()

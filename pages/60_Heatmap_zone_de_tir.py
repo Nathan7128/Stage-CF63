@@ -49,26 +49,29 @@ st.markdown(f"<p style='text-align: center;'>Heatmap pour le {top} de Ligue 2 su
 @st.cache_data
 def heatmap_percen(data, bins_h, bins_v, choix_percent, choix_line) :
     path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
-    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", half = True, linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line))
+    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", half = True,
+                          linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line), goal_type = "box")
     fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
-    ax1.set_ylim([80, 120])
+    ax1.set_ylim([80, 125])
     fig1.set_facecolor("none")
-    ax1.set_facecolor("none")
+    ax1.set_facecolor((98/255, 98/255, 98/255))
     fig1.set_edgecolor("none")
     bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_v*3, int(4*bins_h/3) + 1), normalize=True)
     pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000')
     if not(choix_percent) :
-        labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_v + bins_h)) + 2, color='#f4edf0', ax = ax1, ha='center', va='center', str_format='{:.0%}', path_effects=path_eff  )
+        labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_v + bins_h)) + 2, color='#f4edf0', ax = ax1, ha='center',
+                                     va='center', str_format='{:.0%}', path_effects=path_eff  )
     st.pyplot(fig1)
 
 @st.cache_data
 def heatmap_smooth(data, choix_line) :
     path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
-    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", half = True, linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line))
+    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", half = True,
+                          linewidth = 2*(1 - choix_line), spot_scale = 0.002*(1 - choix_line), goal_type = "box")
     fig2, ax2 = pitch.draw(constrained_layout=True, tight_layout=False)
-    ax2.set_ylim([80, 120])
+    ax2.set_ylim([80, 125])
     fig2.set_facecolor("none")
-    ax2.set_facecolor("none")
+    ax2.set_facecolor((98/255, 98/255, 98/255))
     fig2.set_edgecolor("none")
     kde = pitch.kdeplot(data.x, data.y, ax = ax2, fill = True, levels = 100, thresh = 0, cmap = cmr.nuclear)
     st.pyplot(fig2)

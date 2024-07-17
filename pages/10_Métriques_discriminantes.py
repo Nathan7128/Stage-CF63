@@ -68,18 +68,27 @@ if len(moyenne) > 0 :
     nb_metrique = st.slider("Nombre de métriques gardées", min_value=0, max_value = moyenne.shape[0], value = moyenne.shape[0])
     moyenne_sort = moyenne.loc[moyenne.index[:nb_metrique]]
 
-    moyenne_sort = moyenne_sort.style.applymap(couleur_df, subset = ["Diff. Top 5 avec Bottom 15 en %"])
     col_df = st.multiselect("Données des métriques à afficher", moyenne.columns, moyenne.columns.tolist())
 
-    st.divider()
+    moyenne_sort = moyenne_sort[col_df]
 
-    st.markdown("<p style='text-align: center;'>Tableau des métriques trier par rapport à la différence entre la moyenne du Top 5 et du Bottom 15</p>", unsafe_allow_html=True)
+    if len(col_df) > 0 :
+
+        if "Diff. Top 5 avec Bottom 15 en %" in col_df :
+
+            moyenne_sort = moyenne_sort.style.applymap(couleur_df, subset = ["Diff. Top 5 avec Bottom 15 en %"])
 
 
-    moyenne_sort_df = st.data_editor(moyenne_sort, num_rows = "dynamic", disabled = ["Diff. Top 5 avec Bottom 15 en %"])
+        st.divider()
 
-    metrique_moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_metrique}", index_col=0)
+        st.markdown("<p style='text-align: center;'>Tableau des métriques trier par rapport à la différence entre la moyenne du Top 5 et du Bottom 15</p>", unsafe_allow_html=True)
 
-    metrique_moyenne_sort = metrique_moyenne[moyenne_sort_df.index]
-    st.markdown(f"<p style='text-align: center;'>Tableau des métriques retenues, par équipes, en moyenne par match</p>", unsafe_allow_html=True)
-    st.dataframe(metrique_moyenne_sort)
+
+        moyenne_sort_df = st.dataframe(moyenne_sort, on_select = "rerun", selection_mode = "multi-row")
+
+
+        metrique_moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_metrique}", index_col=0)
+
+        metrique_moyenne_sort = metrique_moyenne[moyenne.index[moyenne_sort_df.selection.rows]]
+        st.markdown(f"<p style='text-align: center;'>Tableau des métriques retenues, par équipes, en moyenne par match</p>", unsafe_allow_html=True)
+        st.dataframe(metrique_moyenne_sort)
