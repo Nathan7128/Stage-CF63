@@ -43,11 +43,7 @@ for i in range(3) :
      data.drop(sample, inplace = True, axis = 1)
 
      # modif métriques ratios
-     met_ratio = data.columns[["ratio" in i for i in data.columns]]
-     data = data.groupby(["team_name", "match_id"])
-     nb_joueur_match = data.apply(len)
-     data = data.sum()
-     data[met_ratio] = data[met_ratio].divide(nb_joueur_match, axis = 0)
+     data = data.groupby(["team_name", "match_id"]).sum()
 
      nb_minute_match = data.pop("minutes_played_per_match")
      data = data.multiply(900/nb_minute_match, axis = 0)

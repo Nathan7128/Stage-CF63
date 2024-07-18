@@ -31,6 +31,10 @@ for dico in liste_dico :
      data = data.merge(match_round, right_on = "id", left_on = "match_id").drop("match_id", axis = 1)
 
      # modif métriques ratios
+     
+     col_ratio_rep = data.columns[[("ratio" in i) and ("per_100_pass_opportunities" in i or "per_match" in i) for i in data.columns]]
+     data.drop(col_ratio_rep, inplace = True, axis = 1)
+     
      met_ratio = data.columns[["ratio" in i for i in data.columns]]
      data = data.groupby(["Journée", "team_name"], as_index = True)
      nb_joueur_match = data.apply(len)

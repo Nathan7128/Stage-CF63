@@ -20,37 +20,45 @@ with col1 :
 
 with col2 :    
     if choix_data == "Skill Corner" :
+
         dico_type = {
-            "Physiques" : ["moyenne_physical.xlsx", "metrique_physical.xlsx", ["Moy. 30 min. tip", "Moy. 30 min. otip", "Moy. match all"]],
-            "Courses sans ballon avec la possession" : ["moyenne_running.xlsx", "metrique_running.xlsx", ["runs_in_behind",
-                "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
-                "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"]],
-            "Action sous pression" : ["moyenne_pressure.xlsx", "metrique_pressure.xlsx", ["low", "medium", "high"]],
-            "Passes à un coéquipier effectuant une course" : ["moyenne_passes.xlsx", "metrique_passes.xlsx", ["runs_in_behind",
+            "Physiques" : ["moyenne_physical.xlsx", "metrique_physical.xlsx", {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip",
+                "Match all possession" : "_per_Match"}],
+            "Courses sans ballon avec la possession" : ["moyenne_running.xlsx", "metrique_running.xlsx", {"Match" : "per_match",
+                "100 runs" : "per_100_runs", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind", "runs_ahead_of_the_ball",
+                "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs", "dropping_off_runs",
+                "pulling_half_space_runs", "cross_receiver_runs"]],
+            "Action sous pression" : ["moyenne_pressure.xlsx", "metrique_pressure.xlsx", {"Match" : "per_match",
+                "100 pressures" : "per_100_pressures", "30 min. tip" : "per_30_min_tip"}, ["low", "medium", "high"]],
+            "Passes à un coéquipier effectuant une course" : ["moyenne_passes.xlsx", "metrique_passes.xlsx", {"Match" : "per_match",
+                "100 passes opportunities" : "_per_100_pass_opportunities", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind",
                 "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
                 "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"]]
         }
-        liste_cat_met = ["Physiques", "Courses sans ballon avec la possession",
-                    "Action sous pression", "Passes à un coéquipier effectuant une course"]
-        cat_met = st.radio("Catégorie de métrique", liste_cat_met, horizontal = True)
-        liste_cat_type = st.multiselect("Type de la catégorie", dico_type[cat_met][2], default = dico_type[cat_met][2])
+
+        cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True)
+
         file_moyenne = dico_type[cat_met][0]
         file_metrique = dico_type[cat_met][1]
 
         moyenne = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{annee}/{choix_data}/{file_moyenne}", index_col = 0)
 
+        liste_cat_moy = st.multiselect("Moyenne de la métrique", dico_type[cat_met][2].keys(), default = dico_type[cat_met][2])
+
         col_keep = [False]*len(moyenne)
-        if cat_met == "Physiques" :
-            dico_type_physical = {"Moy. 30 min. tip" : "per30tip", "Moy. 30 min. otip" : "per30otip", "Moy. match all" : "per_Match"}
-            for cat_type in liste_cat_type :
-                cat_type = dico_type_physical[cat_type]
-                col_keep = np.logical_or(col_keep, [cat_type in i for i in moyenne.index])
-
-        else :
-            for cat_type in liste_cat_type :
-                col_keep = np.logical_or(col_keep, [cat_type in i for i in moyenne.index])
-
+        for cat_type in liste_cat_moy :
+                cat_type = dico_type[cat_met][2][cat_type]
+                col_keep = np.logical_or(col_keep, [(cat_type in i) or ("ratio" in i) for i in moyenne.index])
         moyenne = moyenne.iloc[col_keep]
+
+
+        if cat_met != "Physiques" :
+            col_keep = [False]*len(moyenne)
+            liste_cat_type = st.multiselect("Type de la métrique", dico_type[cat_met][3], default = dico_type[cat_met][3])
+            for cat_type in liste_cat_type :
+                col_keep = np.logical_or(col_keep, [(cat_type in i) or ("ratio" in i and cat_type in i) for i in moyenne.index])
+            moyenne = moyenne.iloc[col_keep]
+
     else :
         file_moyenne = "moyenne_metriques.xlsx"
         file_metrique = "metriques.xlsx"

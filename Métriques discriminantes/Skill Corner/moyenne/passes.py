@@ -40,6 +40,10 @@ for dico in liste_dico :
      data.drop(sample, inplace = True, axis = 1)
 
      # modif métriques ratios
+
+     col_ratio_rep = data.columns[[("ratio" in i) and ("per_100_pass_opportunities" in i or "per_match" in i) for i in data.columns]]
+     data.drop(col_ratio_rep, inplace = True, axis = 1)
+
      met_ratio = data.columns[["ratio" in i for i in data.columns]]
      data = data.groupby(["team_name", "match_id"])
      nb_joueur_match = data.apply(len)

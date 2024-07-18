@@ -7,103 +7,98 @@ st.set_page_config(layout="wide")
 
 st.title("Évolutions des métriques au cours des saisons")
 
-idx = pd.IndexSlice
+dico_met = {
+    "Physiques" : ["physical", {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip",
+        "Match all possession" : "_per_Match"}],
+    "Courses sans ballon avec la possession" : ["running", {"Match" : "per_match",
+        "100 runs" : "per_100_runs", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind", "runs_ahead_of_the_ball",
+        "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs", "dropping_off_runs",
+        "pulling_half_space_runs", "cross_receiver_runs"]],
+    "Action sous pression" : ["pressure", {"Match" : "per_match",
+        "100 pressures" : "per_100_pressures", "30 min. tip" : "per_30_min_tip"}, ["low", "medium", "high"]],
+    "Passes à un coéquipier effectuant une course" : ["passes", {"Match" : "per_match",
+        "100 passes opportunities" : "_per_100_pass_opportunities", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind",
+        "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
+        "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"]]
+    }
 
-col1, col2, col3 = st.columns([1, 3, 3])
 
-with col1 :
-    choix_data = st.radio("Fournisseur data", options = ["Skill Corner"], horizontal = True)
+dico_top = {
+    "Moyenne Top 5" : [["top5"], 0],
+    "Moyenne Bottom 15" : [["bottom15"], 0],
+    "Moyenne Top 5 & Bottom 15" : [["top5", "bottom15"], 0],
+    "Moyenne globale" : [["top20"], 0],
+    "Choisir équipe" : [["équipe"], [0, 1]]
+}
 
-with col2 :
-    annee = st.radio("Choisir saison", options = ["2021_2022", "2022_2023", "2023_2024"], horizontal = True)
 
-path_evo = ["physical_", "running_", "pressure_", "passes_"]
-liste_cat_met = ["Physiques", "Courses sans ballon avec la possession",
-            "Action sous pression", "Passes à un coéquipier effectuant une course"]
-with col3 :
-    cat_met = st.radio("Catégorie de métrique", liste_cat_met, horizontal = True)
+columns = st.columns([1, 2, 1, 1], gap = "large")
 
-index_cat = liste_cat_met.index(cat_met)
-file_evo = path_evo[index_cat]
+with columns[0] :
+    annee = st.radio("Choisir saison", options = ["2021_2022", "2022_2023", "2023_2024"])
+
+with columns[1] :
+    cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True)
+
+with columns[2] :
+    moy_met = st.radio("Moyenne de la métrique", dico_met[cat_met][1].keys())
+
+with columns[3] :
+    choix_top = st.radio("Groupe à afficher sur le graphe", dico_top.keys())
 
 st.divider()
 
-dico_type = {
-    "Physiques" : ["Moy. 30 min. tip", "Moy. 30 min. otip", "Moy. match all"],
-    "Courses sans ballon avec la possession" : ["runs_in_behind",
-        "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
-        "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"],
-    "Action sous pression" : ["low", "medium", "high"],
-    "Passes à un coéquipier effectuant une course" : ["runs_in_behind",
-        "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
-        "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"]
-}
-liste_cat_type = st.multiselect("Type de la catégorie", dico_type[cat_met], default = dico_type[cat_met])
 
-if len(liste_cat_type) > 0 :
+liste_df = []
+for groupe_df in dico_top[choix_top][0] :
+    df_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{annee}/Skill Corner/{dico_met[cat_met][0]}_{groupe_df}.xlsx", index_col = dico_top[choix_top][1])
+    liste_df.append(df_import)
 
-    evo_équipe = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{annee}/Skill Corner/{file_evo}équipe.xlsx", index_col = [0, 1])
+for i in range (len(liste_df)) :
+    liste_df[i] = liste_df[i][liste_df[i].columns[[(dico_met[cat_met][1][moy_met] in i) or ("ratio" in i) for i in liste_df[i].columns]]]
 
-    col_keep = [False]*evo_équipe.shape[1]
-    if cat_met == "Physiques" :
-        dico_type_physical = {"Moy. 30 min. tip" : "per30tip", "Moy. 30 min. otip" : "per30otip", "Moy. match all" : "per_Match"}
-        for cat_type in liste_cat_type :
-            cat_type = dico_type_physical[cat_type]
-            col_keep = np.logical_or(col_keep, [cat_type in i for i in evo_équipe.columns])
-
-    else :
-        for cat_type in liste_cat_type :
-            col_keep = np.logical_or(col_keep, [cat_type in i for i in evo_équipe.columns])
-
-    evo_équipe = evo_équipe[evo_équipe.columns[col_keep]]
-
-    columns = st.columns(2)
-    with columns[0] :
-        met_graphe = st.selectbox("Métrique à afficher sur le graphe", evo_équipe.columns)
-
-    with columns[1] :
-        choix_groupe = st.selectbox("Groupe à afficher sur le graphe", options = ["Moyenne Top 5", "Moyenne Bottom 15", "Moyenne Top 5 & Bottom 15", "Moyenne globale", "Choisir équipe"])
+if cat_met != "Physiques" :
+    type_met = st.radio("Type de la métrique", dico_met[cat_met][2], horizontal = True)
+    for i in range (len(liste_df)) :
+        liste_df[i] = liste_df[i][liste_df[i].columns[[(type_met in i) or ("ratio" in i and type_met in i) for i in liste_df[i].columns]]]
 
     st.divider()
 
-    liste_graphe = []
+choix_metrique = st.selectbox("Choisir la métrique", liste_df[0].columns)
 
-    if choix_groupe == "Choisir équipe" :
-        équipe_graphe = st.multiselect("Équipe à afficher sur le graphe", evo_équipe.index.levels[1])
-        evo_équipe = evo_équipe.loc[idx[:, équipe_graphe], met_graphe]
-        for team in équipe_graphe :
-            liste_graphe.append(evo_équipe.loc[:, team, :])
-        title_graphe = f"Graphe des équipes sélectionnées pour la métrique {met_graphe}\nau cours des journées de la saison {annee}"
-        legend_graphe = équipe_graphe
+équipe_graphe = []
 
-    elif choix_groupe == "Moyenne Top 5 & Bottom 15" :
-        top5_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{annee}/Skill Corner/{file_evo}top5.xlsx", index_col = 0)
-        bottom15_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{annee}/Skill Corner/{file_evo}bottom15.xlsx", index_col = 0)
+if choix_top == "Choisir équipe" :
+    df = liste_df[0]
+    équipe_graphe = st.multiselect("Équipe à afficher sur le graphe", df.index.levels[1])
+    liste_df = []
+    for team in équipe_graphe :
+        liste_df.append(df.loc[:, team, :])
 
-        top5 = top5_import[met_graphe]
-        bottom15 = bottom15_import[met_graphe]
-        liste_graphe = [top5, bottom15]
-        legend_graphe = ["top5", "bottom15"]
-        title_graphe = f"Graphe du Top 5 et Bottom 15 pour la métrique {met_graphe}\nau cours des journées de la saison {annee}"
+dico_graphe = {
+    "Moyenne Top 5" : [f"Graphe du Top 5 de Ligue 2 pour la métrique {choix_metrique}\nau cours des journées de la saison {annee}", 0],
+    "Moyenne Bottom 15" : [f"Graphe du Bottom 15 de Ligue 2 pour la métrique {choix_metrique}\nau cours des journées de la saison {annee}", 0],
+    "Moyenne Top 5 & Bottom 15" : [f"Graphe du Top 5 et Bottom 15 pour la métrique {choix_metrique}\nau cours des journées de la saison {annee}",
+                                   ["Top 5", "Bottom 15"]],
+    "Moyenne globale" : [f"Graphe des 20 équipes de Ligue 2 pour la métrique {choix_metrique}\nau cours des journées de la saison {annee}", 0],
+    "Choisir équipe" : [f"Graphe des équipes sélectionnées pour la métrique {choix_metrique}\nau cours des journées de la saison {annee}", équipe_graphe]
+}
 
-    else :
-        dico_groupe = {"Moyenne Top 5" : "top5", "Moyenne Bottom 15" : "bottom15", "Moyenne globale" : "top20"}
-        evo_journée = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{annee}/Skill Corner/{file_evo}{dico_groupe[choix_groupe]}.xlsx", index_col = 0)
-        evo_journée = evo_journée[met_graphe]
-        liste_graphe.append(evo_journée)
-        legend_graphe = 0
-        title_graphe = f"Graphe du {choix_groupe} de Ligue 2 pour la métrique {met_graphe}\nau cours des journées de la saison {annee}"
+title_graphe = dico_graphe[choix_top][0]
+legend_graphe = dico_graphe[choix_top][1]
 
-    fig = plt.figure(figsize = (6, 3))
-    for graphe in liste_graphe :
-        plt.plot(graphe, linewidth = 0.7)
-    plt.title(title_graphe, fontweight = "heavy", y = 1.05, fontsize = 9)
-    plt.grid()
-    if legend_graphe :
-        plt.legend(legend_graphe, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
-    plt.xlabel("Journée", fontsize = "small", fontstyle = "italic", labelpad = 10)
-    plt.ylabel("Métrique", fontsize = "small", fontstyle = "italic", labelpad = 10)
-    plt.tick_params(labelsize = 8)
-    ax = plt.gca()
-    ax.spines[:].set_visible(False)
-    st.pyplot(fig)
+st.divider()
+
+fig = plt.figure()
+for df in liste_df :
+    plt.plot(df[choix_metrique], linewidth = 0.7)
+plt.title(title_graphe, fontweight = "heavy", y = 1.05, fontsize = 9)
+plt.grid()
+if legend_graphe :
+    plt.legend(legend_graphe, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
+plt.xlabel("Journée", fontsize = "small", fontstyle = "italic", labelpad = 10)
+plt.ylabel("Métrique", fontsize = "small", fontstyle = "italic", labelpad = 10)
+plt.tick_params(labelsize = 8)
+ax = plt.gca()
+ax.spines[:].set_visible(False)
+st.pyplot(fig)

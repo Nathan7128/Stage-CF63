@@ -30,12 +30,7 @@ for dico in liste_dico :
      match_round.drop(index = dico["match_drop"], inplace = True)
      data = data.merge(match_round, right_on = "id", left_on = "match_id").drop("match_id", axis = 1)
 
-     # modif métriques ratios
-     met_ratio = data.columns[["ratio" in i for i in data.columns]]
-     data = data.groupby(["Journée", "team_name"], as_index = True)
-     nb_joueur_match = data.apply(len)
-     data = data.sum()
-     data[met_ratio] = data[met_ratio].divide(nb_joueur_match, axis = 0)
+     data = data.groupby(["Journée", "team_name"], as_index = True).sum()
 
      nb_minute_match = data.pop("minutes_played_per_match")
      data = data.multiply(900/nb_minute_match, axis = 0)

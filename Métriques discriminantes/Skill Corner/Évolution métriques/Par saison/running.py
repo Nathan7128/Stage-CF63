@@ -25,4 +25,4 @@ df["Évolution en %"] = 100*(df["2023_2024"] - df["2021_2022"])/abs(df["2021_202
 
 df["Évolution en %"] = df["Évolution en %"].round(2)
 
-df.to_excel("Métriques discriminantes/Tableau métriques/Evolutions métriques/evo_running.xlsx", index = True, header = True)
+df.to_excel("Métriques discriminantes/Tableau métriques/Evolutions métriques/Par saison/evo_running.xlsx", index = True, header = True)

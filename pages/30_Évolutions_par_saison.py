@@ -7,36 +7,63 @@ st.set_page_config(layout="wide")
 
 st.title("Évolutions des métriques au cours des saisons")
 
+dico_met = {
+    "Physiques" : ["physical", {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip",
+        "Match all possession" : "_per_Match"}],
+    "Courses sans ballon avec la possession" : ["running", {"Match" : "per_match",
+        "100 runs" : "per_100_runs", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind", "runs_ahead_of_the_ball",
+        "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs", "dropping_off_runs",
+        "pulling_half_space_runs", "cross_receiver_runs"]],
+    "Action sous pression" : ["pressure", {"Match" : "per_match",
+        "100 pressures" : "per_100_pressures", "30 min. tip" : "per_30_min_tip"}, ["low", "medium", "high"]],
+    "Passes à un coéquipier effectuant une course" : ["passes", {"Match" : "per_match",
+        "100 passes opportunities" : "_per_100_pass_opportunities", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind",
+        "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
+        "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"]]
+    }
 
+columns = st.columns([1, 2, 1, 2], gap = "large")
 
-col1, col2 = st.columns(2)
-
-with col1 :
+with columns[0] :
     choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"])
 
-with col2 :
-    if choix_data == "Skill Corner" :
-        path_evo = ["evo_physical.xlsx", "evo_running.xlsx", "evo_pressure.xlsx", "evo_passes.xlsx"]
-        liste_cat_met = ["Physiques", "Courses sans ballon avec la possession",
-                    "Action sous pression", "Passes à un coéquipier effectuant une course"]
-        cat_met = st.radio("Catégorie de métrique", liste_cat_met)
-        index_cat = liste_cat_met.index(cat_met)
-        file_evo = path_evo[index_cat]
-    else :
-        file_evo = "evo_SB.xlsx"
+if choix_data == "Skill Corner" :
+    with columns[1] :
+        cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True)
 
+    df = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par saison/evo_{dico_met[cat_met][0]}.xlsx", index_col = [0, 1])
 
-evo = pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par saison/{file_evo}", index_col = [0, 1])
+    with columns[2] :
+        moy_met = st.multiselect("Moyenne de la métrique", list(dico_met[cat_met][1].keys()), default = list(dico_met[cat_met][1].keys()))
+
+    col_keep = [False]*len(df)
+    for cat_type in moy_met :
+            cat_type = dico_met[cat_met][1][cat_type]
+            col_keep = np.logical_or(col_keep, [(cat_type in i) or ("ratio" in i) for i in df.index.get_level_values(0)])
+    df = df.iloc[col_keep, :]
+
+    if cat_met != "Physiques" :
+        with columns[3] :
+            type_met = st.multiselect("Type de la métrique", dico_met[cat_met][2], default = dico_met[cat_met][2])
+            col_keep = [False]*len(df)
+            for cat_type in type_met :
+                col_keep = np.logical_or(col_keep, [(cat_type in i) or ("ratio" in i and cat_type in i) for i in df.index.get_level_values(0)])
+            df = df.iloc[col_keep]
+
+else :
+    df = pd.read_excel("Métriques discriminantes/Tableau métriques/Evolutions métriques/Par saison/evo_SB.xlsx", index_col = [0, 1])
+
+st.divider()
 
 def couleur_text_df(col) :
     color = []
-    for met in evo.index :
+    for met in df.index :
         if col.name == "Évolution en %" :
-            if evo.loc[met, "2023_2024"] >= evo.loc[met, "2022_2023"] and evo.loc[met, "2022_2023"] >= evo.loc[met, "2021_2022"] :
+            if df.loc[met, "2023_2024"] >= df.loc[met, "2022_2023"] and df.loc[met, "2022_2023"] >= df.loc[met, "2021_2022"] :
                 color.append("background-color: rgba(0, 255, 0, 0.3)")
-            elif evo.loc[met, "2023_2024"] >= evo.loc[met, "2022_2023"] and evo.loc[met, "2022_2023"] < evo.loc[met, "2021_2022"] :
+            elif df.loc[met, "2023_2024"] >= df.loc[met, "2022_2023"] and df.loc[met, "2022_2023"] < df.loc[met, "2021_2022"] :
                 color.append("background-color: rgba(0, 0, 255, 0.3)")
-            elif evo.loc[met, "2023_2024"] < evo.loc[met, "2022_2023"] and evo.loc[met, "2022_2023"] >= evo.loc[met, "2021_2022"] :
+            elif df.loc[met, "2023_2024"] < df.loc[met, "2022_2023"] and df.loc[met, "2022_2023"] >= df.loc[met, "2021_2022"] :
                 color.append("background-color: rgba(255, 255, 0, 0.3)")
             else :
                 color.append("background-color: rgba(255, 0, 0, 0.3)")
@@ -44,16 +71,13 @@ def couleur_text_df(col) :
             color.append('')
     return color
 
-evo_style = evo.style.apply(couleur_text_df, axis = 0)
-
-st.divider()
+df_style = df.style.apply(couleur_text_df, axis = 0)
 
 st.markdown("<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison 2021/2022 et 2023/2024</p>", unsafe_allow_html=True)
-met_sel = st.dataframe(evo_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
+met_sel = st.dataframe(df_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
 
 with st.columns([1.5, 4, 1])[1] :
     st.markdown("<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison 2021/2022 et 2023/2024 :</p>", unsafe_allow_html=True)
-
 col1, col2, col3, col4 = st.columns(4)
 with col1 :
     "Vert : Strictement croissant"
@@ -64,20 +88,19 @@ with col3 :
 with col4 :
     "Rouge : Strictement décroissant"
 
-
 if len(met_sel.selection.rows) > 0 :
 
     st.divider()
 
-    evo_graphe = evo_style.data.iloc[met_sel.selection.rows].drop("Évolution en %", axis = 1)
+    evo_graphe = df_style.data.iloc[met_sel.selection.rows].drop("Évolution en %", axis = 1)
     new_index = []
-    for i in evo_style.index[met_sel.selection.rows] :
+    for i in df_style.index[met_sel.selection.rows] :
         new_index.append(i[1] + " - " + i[0])
     evo_graphe = evo_graphe.reset_index()
     evo_graphe.index = new_index
     # couleur = (evo_graphe.Top == "Top 5").replace({True : "#FF0000", False : '#0000FF'})
     evo_graphe = evo_graphe.drop(["Métriques", "Top"], axis = 1).T
-    fig = plt.figure(figsize = (6, 3))
+    fig = plt.figure()
     plt.plot(evo_graphe, linewidth = 0.7)
     plt.title("Graphique de l'évolution des métriques sélectionnées", fontweight = "heavy", y = 1.05, fontsize = 9)
     plt.grid()
