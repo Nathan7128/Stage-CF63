@@ -12,15 +12,9 @@ créer le data set avec ces lots
 
 
 A FAIRE :
-Différencier ligue 1 ligue 2
 
 FAIT :
-Créé appli évolution métrique par journée
-Choisir type de début d'action et regrouper avant tir/but
-Modifier accès priver à l'application
-Modifier type cage
-enlever data_editor appli métriques discriminantes
-Prendre les données physiques par 30 minutes tip
-évènements récurents suite a un centre
+
 
 QUESTIONS :
+Garder la sélection du nombre de métrique pour métrique discriminante ?

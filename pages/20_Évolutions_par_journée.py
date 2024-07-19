@@ -35,7 +35,8 @@ dico_top = {
 columns = st.columns([1, 2, 1, 1], gap = "large")
 
 with columns[0] :
-    annee = st.radio("Choisir saison", options = ["2021_2022", "2022_2023", "2023_2024"])
+    annee = st.radio("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"], horizontal = True)
+    annee = annee.replace("/", "_")
 
 with columns[1] :
     cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True)

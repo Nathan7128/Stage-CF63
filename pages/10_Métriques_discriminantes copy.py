@@ -78,9 +78,6 @@ if choix_data == "Skill Corner" :
             col_keep = np.logical_or(col_keep, [(cat_type in i) or ("ratio" in i and cat_type in i) for i in moyenne.index])
         moyenne = moyenne.iloc[col_keep]
 
-        # if cat_met == "Courses sans ballon avec la possession" :
-            
-
         # columns = st.columns([3, 1, 1], vertical_alignment = "bottom")
 
         # moyenne_index = moyenne.index

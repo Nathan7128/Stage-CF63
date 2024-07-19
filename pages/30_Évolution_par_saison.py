@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 
-st.title("Évolutions des métriques au cours des saisons")
+st.title("Évolution des métriques au cours des saisons")
 
 dico_met = {
     "Physiques" : ["physical", {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip",
@@ -55,38 +55,42 @@ else :
 
 st.divider()
 
-def couleur_text_df(col) :
+def couleur_bg_df(col) :
     color = []
     for met in df.index :
         if col.name == "Évolution en %" :
-            if df.loc[met, "2023_2024"] >= df.loc[met, "2022_2023"] and df.loc[met, "2022_2023"] >= df.loc[met, "2021_2022"] :
+            if df.loc[met, "2023/2024"] >= df.loc[met, "2022/2023"] and df.loc[met, "2022/2023"] >= df.loc[met, "2021/2022"] :
                 color.append("background-color: rgba(0, 255, 0, 0.3)")
-            elif df.loc[met, "2023_2024"] >= df.loc[met, "2022_2023"] and df.loc[met, "2022_2023"] < df.loc[met, "2021_2022"] :
-                color.append("background-color: rgba(0, 0, 255, 0.3)")
-            elif df.loc[met, "2023_2024"] < df.loc[met, "2022_2023"] and df.loc[met, "2022_2023"] >= df.loc[met, "2021_2022"] :
+            elif df.loc[met, "2023/2024"] >= df.loc[met, "2022/2023"] and df.loc[met, "2022/2023"] < df.loc[met, "2021/2022"] :
                 color.append("background-color: rgba(255, 255, 0, 0.3)")
+            elif df.loc[met, "2023/2024"] < df.loc[met, "2022/2023"] and df.loc[met, "2022/2023"] >= df.loc[met, "2021/2022"] :
+                color.append("background-color: rgba(255, 130, 0, 0.5)")
             else :
                 color.append("background-color: rgba(255, 0, 0, 0.3)")
+                
         else :
             color.append('')
     return color
 
-df_style = df.style.apply(couleur_text_df, axis = 0)
+def couleur_text_df(row) :
+    if row["2023/2024"] > row["2022/2023"] :
+        return ["color : green"]*len(row)
+    else :
+        return ["color : red"]*len(row)
+
+df.rename({"2023_2024" : "2023/2024", "2022_2023" : "2022/2023", "2021_2022" : "2021/2022", "2020_2021" : "2020/2021"}, axis = 1,
+          inplace = True)
+
+df_style = df.style.apply(couleur_bg_df, axis = 0)
+df_style = df_style.apply(couleur_text_df, axis = 1)
+
 
 st.markdown("<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison 2021/2022 et 2023/2024</p>", unsafe_allow_html=True)
+
 met_sel = st.dataframe(df_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
 
-with st.columns([1.5, 4, 1])[1] :
-    st.markdown("<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison 2021/2022 et 2023/2024 :</p>", unsafe_allow_html=True)
-col1, col2, col3, col4 = st.columns(4)
-with col1 :
-    "Vert : Strictement croissant"
-with col2 :
-    "Bleu : Décroissant puis croissant"
-with col3 :
-    "Jaune : Croissant puis décroissant"
-with col4 :
-    "Rouge : Strictement décroissant"
+st.markdown("<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison 2021/2022 et 2023/2024 :</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Ordre des couleurs : Vert (augmentation constante) > Jaune (tendance haussière) > Orange (tendance baissière) > Rouge (diminutionconstante) :</p>", unsafe_allow_html=True)
 
 if len(met_sel.selection.rows) > 0 :
 

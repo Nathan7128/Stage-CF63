@@ -4,21 +4,25 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 
-st.title("Moyennes du nombre de passes avant un but en ligue 2")
+st.title("Moyenne du nombre de passes avant un but en ligue 2")
 
 dico_annee = {
-    "2020_2021" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC", "Auxerre", "Sochaux", "Nancy",
-                             "Guingamp", "Amiens", "Valenciennes", "Le Havre", "AC Ajaccio", "Pau", "Rodez", "Dunkerque", "Caen", 
-                             "Chamois Niortais", "Chambly", "Châteauroux"],
-    "2021_2022" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux", "Guingamp", "Caen", "Le Havre", "Nîmes",
-                             "Pau", "Dijon", "Bastia", "Chamois Niortais", "Amiens", "Grenoble Foot", "Valenciennes", "Rodez", 
-                             "Quevilly Rouen", "Dunkerque", "Nancy"],
+    "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval",
+           "Amiens", "Guingamp", "Pau", "Grenoble Foot", "Bordeaux", "Bastia",
+           "FC Annecy", "AC Ajaccio", "Dunkerque", "Troyes", "Quevilly Rouen", "Concarneau", "Valenciennes"],
     "2022_2023" :["Le Havre", "Metz", "Bordeaux", "Bastia", "Caen", "Guingamp", "Paris FC",
            "Saint-Étienne", "Sochaux", "Grenoble Foot", "Quevilly Rouen", "Amiens", "Pau",
            "Rodez", "Laval", "Valenciennes", "FC Annecy", "Dijon", "Nîmes", "Chamois Niortais"],
-    "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval",
-           "Amiens", "Guingamp", "Pau", "Grenoble Foot", "Bordeaux", "Bastia",
-           "FC Annecy", "AC Ajaccio", "Dunkerque", "Troyes", "Quevilly Rouen", "Concarneau", "Valenciennes"]}
+    "2021_2022" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux", "Guingamp", "Caen", "Le Havre", "Nîmes",
+                             "Pau", "Dijon", "Bastia", "Chamois Niortais", "Amiens", "Grenoble Foot", "Valenciennes", "Rodez", 
+                             "Quevilly Rouen", "Dunkerque", "Nancy"],
+    "2020_2021" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC", "Auxerre", "Sochaux", "Nancy",
+                             "Guingamp", "Amiens", "Valenciennes", "Le Havre", "AC Ajaccio", "Pau", "Rodez", "Dunkerque", "Caen", 
+                             "Chamois Niortais", "Chambly", "Châteauroux"]
+                             }
+
+
+
 
 dico_df = {}
 
@@ -37,7 +41,26 @@ st.divider()
 col3, col1, col2= st.columns([1, 4, 15], gap = "small")
 with col2 :
     with st.columns([1, 1, 3, 2])[2] :
+        df_moy.index = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"]
         annee_select = st.dataframe(df_moy, on_select = "rerun", selection_mode = "single-row")
+
+if len(annee_select.selection.rows) == 1 :
+    annee = df_moy.index[annee_select.selection.rows][0]
+    with col1 :
+        st.dataframe(dico_df[annee.replace("/", "_")].drop("Top 5", axis = 1), height = 733)
+
+else :
+    with col1 :
+        st.write("")
+        st.write("")
+        st.write("")
+        st.write("")
+        st.write("")
+        st.markdown("<p style='text-align: center;'>Choisir une saison</p>", unsafe_allow_html=True)
+
+
+with col2 :
+    df_moy = df_moy.reindex(df_moy.index[::-1])
     fig = plt.figure()
     plt.plot(df_moy, linewidth = 1)
     plt.grid()
@@ -49,15 +72,5 @@ with col2 :
     ax.spines[:].set_visible(False)
     st.pyplot(fig)
 
-if len(annee_select.selection.rows) == 1 :
-    annee = df_moy.index[annee_select.selection.rows][0]
-    with col1 :
-        st.dataframe(dico_df[annee].drop("Top 5", axis = 1), height = 733)
-else :
-    with col1 :
-        st.write("")
-        st.write("")
-        st.write("")
-        st.write("")
-        st.write("")
-        st.markdown("<p style='text-align: center;'>Choisir une saison</p>", unsafe_allow_html=True)
+
+
