@@ -56,9 +56,9 @@ else :
 st.divider()
 
 def couleur_bg_df(col) :
-    color = []
-    for met in df.index :
-        if col.name == "Évolution en %" :
+    if col.name == "Évolution en %" :
+        color = []
+        for met in df.index :
             if df.loc[met, "2023/2024"] >= df.loc[met, "2022/2023"] and df.loc[met, "2022/2023"] >= df.loc[met, "2021/2022"] :
                 color.append("background-color: rgba(0, 255, 0, 0.3)")
             elif df.loc[met, "2023/2024"] >= df.loc[met, "2022/2023"] and df.loc[met, "2022/2023"] < df.loc[met, "2021/2022"] :
@@ -67,16 +67,28 @@ def couleur_bg_df(col) :
                 color.append("background-color: rgba(255, 130, 0, 0.5)")
             else :
                 color.append("background-color: rgba(255, 0, 0, 0.3)")
-                
-        else :
-            color.append('')
-    return color
+        return color
+                    
+    else :
+        return ['']*len(df)
 
 def couleur_text_df(row) :
-    if row["2023/2024"] > row["2022/2023"] :
-        return ["color : green"]*len(row)
+    color = ['']
+    if choix_data == "Stats Bomb" :
+        if row["2021/2022"] > row["2020/2021"] :
+            color.append("color : green")
+        else :
+            color.append("color : red")
+    if row["2022/2023"] > row["2021/2022"] :
+        color.append("color : green")
     else :
-        return ["color : red"]*len(row)
+        color.append("color : red")
+    if row["2023/2024"] > row["2022/2023"] :
+        color.append("color : green")
+    else :
+        color.append("color : red")
+    color.append('')
+    return color
 
 df.rename({"2023_2024" : "2023/2024", "2022_2023" : "2022/2023", "2021_2022" : "2021/2022", "2020_2021" : "2020/2021"}, axis = 1,
           inplace = True)
@@ -90,7 +102,76 @@ st.markdown("<p style='text-align: center;'>Tableau de l'évolution de chaque m�
 met_sel = st.dataframe(df_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
 
 st.markdown("<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison 2021/2022 et 2023/2024 :</p>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>Ordre des couleurs : Vert (augmentation constante) > Jaune (tendance haussière) > Orange (tendance baissière) > Rouge (diminutionconstante) :</p>", unsafe_allow_html=True)
+
+st.dataframe(pd.DataFrame(columns = ["salut", "ok", "daccord"]))
+st.dataframe()
+# st.markdown(
+#     """
+#     <style>
+#     .highlight1 {
+#         background-color: green; /* Couleur de l'arrière-plan */
+#         padding: 10px;
+#         border-radius: 5px;
+#         font-size: 20px;
+#     }
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
+
+# st.markdown(
+#     """
+#     <style>
+#     .highlight2 {
+#         background-color: yellow; /* Couleur de l'arrière-plan */
+#         padding: 10px;
+#         border-radius: 5px;
+#         font-size: 20px;
+#     }
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
+
+# st.markdown(
+#     """
+#     <style>
+#     .highlight3 {
+#         background-color: orange; /* Couleur de l'arrière-plan */
+#         padding: 10px;
+#         border-radius: 5px;
+#         font-size: 20px;
+#     }
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
+
+# st.markdown(
+#     """
+#     <style>
+#     .highlight4 {
+#         background-color: red; /* Couleur de l'arrière-plan */
+#         padding: 10px;
+#         border-radius: 5px;
+#         font-size: 20px;
+#     }
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
+
+# # Afficher le texte avec le style défini
+
+# columns = st.columns(4)
+# with columns[0] :
+#     st.markdown('<div class="highlight1">augmentation constante</div>', unsafe_allow_html=True)
+# with columns[1] :
+#     st.markdown('<div class="highlight2">tendance haussière</div>', unsafe_allow_html=True)
+# with columns[2] :
+#     st.markdown('<div class="highlight3">tendance baissière</div>', unsafe_allow_html=True)
+# with columns[3] :
+#     st.markdown('<div class="highlight4">diminution constante</div>', unsafe_allow_html=True)
 
 if len(met_sel.selection.rows) > 0 :
 

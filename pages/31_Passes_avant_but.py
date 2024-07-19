@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 
-st.title("Moyenne du nombre de passes avant un but en ligue 2")
+st.title("Moyenne du nombre de passes avant un but d'une compétition")
 
 dico_annee = {
     "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval",

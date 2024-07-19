@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 
-st.title("Évolutions des métriques au cours des saisons")
+st.title("Évolutions des métriques au cours des journées")
 
 dico_met = {
     "Physiques" : ["physical", {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip",

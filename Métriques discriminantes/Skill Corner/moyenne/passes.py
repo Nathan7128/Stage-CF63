@@ -57,29 +57,4 @@ for dico in liste_dico :
 
      data = data.divide(nb_matchs, axis = 0)
 
-     top5 = dico["ranking"][:5]
-     top15 = dico["ranking"][5:]
-     top5_df = data.loc[top5]
-     top15_df = data.loc[top15]
-
-     df_final = pd.DataFrame(index = top5_df.columns)
-
-     df_final["Moyenne Top 5"] = top5_df.mean(axis = 0)
-     df_final["Moyenne Bottom 15"] = top15_df.mean(axis = 0)
-
-     df_final["Diff. Top 5 avec Bottom 15 en %"] = (100*(df_final["Moyenne Top 5"] - df_final["Moyenne Bottom 15"])/abs(df_final["Moyenne Bottom 15"])).round(2)
-
-     df_final["Ecart type Top 5"] = top5_df.std(axis = 0)
-     df_final["Ecart type Bottom 15"] = top15_df.std(axis = 0)
-
-     df_final["Min Top 5"] = top5_df.min(axis = 0)
-     df_final["Min Bottom 15"] = top15_df.min(axis = 0)
-
-     df_final["Max Top 5"] = top5_df.max(axis = 0)
-     df_final["Max Bottom 15"] = top15_df.max(axis = 0)
-
-     df_final = df_final.reindex(abs(df_final).sort_values(by = "Diff. Top 5 avec Bottom 15 en %", ascending = False).index)
-
-     df_final.to_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{dico["annee"]}/Skill Corner/moyenne_passes.xlsx")
-
      data.to_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{dico["annee"]}/Skill Corner/metrique_passes.xlsx")
