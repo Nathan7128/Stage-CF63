@@ -56,6 +56,7 @@ with col1 :
 
 #----------------------------------------------- CHOIX TAILLE GROUPES ------------------------------------------------------------------------------------
 
+st.divider()
 
 columns = st.columns(3, gap = "large", vertical_alignment = "center")
 with columns[0] :
@@ -70,7 +71,7 @@ with columns[2] :
     nb_middle = 20 - nb_top - nb_bottom
     st.write(f"Nombre d'équipe dans le Middle : {nb_middle}")
 
-
+st.divider()
 
 #----------------------------------------------- IMPORTATION DATAFRAME ------------------------------------------------------------------------------------
 
@@ -157,8 +158,9 @@ if choix_data == "Skill Corner" :
             col_keep = np.logical_or(col_keep, [(cat_type in i) or ("ratio" in i and cat_type in i) for i in moyenne.index])
         moyenne = moyenne.iloc[col_keep]
 
-        col_keep = [True]*len(moyenne)
+
         if cat_met == "Courses sans ballon avec la possession" :
+            col_keep = [True]*len(moyenne)
             columns = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
             with columns[0] :
                 dico_cat_run = {"Dangerous" : "dangerous",
@@ -186,15 +188,82 @@ if choix_data == "Skill Corner" :
                 if "Received" not in type_passe_run :
                     col_keep = np.logical_and(col_keep, ["received" not in i for i in moyenne.index])
 
-        elif cat_met == "Action sous pression" : 
-            columns = st.columns(3)
+
+        elif cat_met == "Action sous pression" :
+            col_keep = [False]*len(moyenne)
+            columns = st.columns(3, vertical_alignment = "center", gap = "large")
             with columns[0] :
-                dico_cat_met_pressure = {"Passes" : "pass", "Ball retention" : "ball_retention", "Forced losses" : "forced_losses",
-                                         "Pression reçue" : "received_per_match"}
+                dico_cat_met_pressure = {"Passes" : "pass", "Conservation du ballon" : "ball_retention", "Perte de balle" : "forced_losses",
+                                         "Pression reçue" : "received_per"}
                 cat_met_pressure = st.multiselect("Catégorie de métrique liée au pressing", dico_cat_met_pressure.keys(),
                                                   default = dico_cat_met_pressure.keys())
+                for cat_met in cat_met_pressure :
+                    col_keep = np.logical_or(col_keep, [dico_cat_met_pressure[cat_met] in i for i in moyenne.index])
 
-        # moyenne = moyenne.iloc[col_keep]
+            if "Passes" in cat_met_pressure :
+                with columns[1] :
+                    dico_type_passe_pressure = {"All" : [(("pass_completion" not in i) or ("dangerous" in i) or ("difficult" in i)) and 
+                        ("count_completed_pass" not in i) and ("count_pass_attempts" not in i) for i in moyenne.index],
+                        "Dangerous" : ["dangerous" not in i for i in moyenne.index], 
+                        "Difficult" : ["difficult" not in i for i in moyenne.index]}
+                    type_passe_pressure = st.multiselect("Type de passe", dico_type_passe_pressure.keys(), default = dico_type_passe_pressure.keys())
+                    for type_passe in dico_type_passe_pressure.keys() :
+                        if type_passe not in type_passe_pressure :
+                            col_keep = np.logical_and(col_keep, dico_type_passe_pressure[type_passe])
+                    result_pass_pressure = st.multiselect("Résultat de la passe sous pression", ["Attempts", "Completed"],
+                                                          default = ["Attempts", "Completed"])
+                    if "Attempts" not in result_pass_pressure :
+                        col_keep = np.logical_and(col_keep, ["attempts" not in i for i in moyenne.index])
+                    if "Completed" not in result_pass_pressure :
+                        col_keep = np.logical_and(col_keep, ["completed" not in i for i in moyenne.index])
+
+            with columns[-1] :
+                if "Passes" in cat_met_pressure :
+                    if not(st.checkbox("Ratio lié aux passes", value = True)) :
+                        col_keep = np.logical_and(col_keep, [("pass" not in i) or ("ratio" not in i) for i in moyenne.index])                   
+                if "Conservation du ballon" in cat_met_pressure :
+                    if not(st.checkbox("Ratio lié à la conservation du ballon", value = True)) :
+                        col_keep = np.logical_and(col_keep, ["ball_retention_ratio" not in i for i in moyenne.index])
+
+
+        else :
+            col_keep = [True]*len(moyenne)
+            columns = st.columns([2, 1, 1, 2], vertical_alignment = "center", gap = "large")
+
+            with columns[0] :
+                dico_cat_run = {"Dangerous" : "dangerous",
+                                "Leading to shot" : "leading_to_shot",
+                                "Leading to goal" : "leading_to_goal"}
+                liste_cat_run = ["All"] + list(dico_cat_run.keys())
+                cat_run_choice = st.multiselect("Catégorie du run", options = liste_cat_run, default = liste_cat_run)
+                if "All" not in cat_run_choice :
+                    col_keep = [False]*len(moyenne)
+                    for cat_run in dico_cat_run.values() :
+                        col_keep = np.logical_or(col_keep, [cat_run in i for i in moyenne.index])
+                for cat_run in dico_cat_run.keys() :
+                    if cat_run not in cat_run_choice :
+                        col_keep = np.logical_and(col_keep, [dico_cat_run[cat_run] not in i for i in moyenne.index])
+
+            with columns[3] :
+                dico_type_passe = {"Attempts" : "attempt", "Completed" : "completed", "Opportunities" : "opportunities"}
+                choix_type_passe = st.multiselect("Type de passe", dico_type_passe.keys(), default = dico_type_passe.keys())
+                col_keep_passe = [False]*len(moyenne)
+                for type_passe in choix_type_passe :
+                    col_keep_passe = np.logical_or(col_keep_passe, [dico_type_passe[type_passe] in i for i in moyenne.index])
+                col_keep = np.logical_and(col_keep, col_keep_passe)
+                if "All" in cat_run_choice :
+                    col_keep = np.logical_or(col_keep, ["teammate" in i for i in moyenne.index])
+
+            with columns[1] :
+                if not(st.checkbox('Métrique "threat"', value = True)) :
+                    col_keep = np.logical_and(col_keep, ["threat" not in i for i in moyenne.index])
+
+            with columns[2] :
+                if st.checkbox("Ratio", True) :
+                    col_keep = np.logical_or(col_keep, ["ratio" in i for i in moyenne.index])
+
+
+        moyenne = moyenne.iloc[col_keep]
 
 
 st.divider()
