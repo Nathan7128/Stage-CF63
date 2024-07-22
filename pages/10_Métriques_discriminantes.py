@@ -157,16 +157,56 @@ if choix_data == "Skill Corner" :
             col_keep = np.logical_or(col_keep, [(cat_type in i) or ("ratio" in i and cat_type in i) for i in moyenne.index])
         moyenne = moyenne.iloc[col_keep]
 
+        col_keep = [True]*len(moyenne)
+        if cat_met == "Courses sans ballon avec la possession" :
+            columns = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
+            with columns[0] :
+                dico_cat_run = {"Dangerous" : "dangerous",
+                                "Leading to shot" : "leading_to_shot",
+                                "Leading to goal" : "leading_to_goal"}
+                liste_cat_run = ["All"] + list(dico_cat_run.keys())
+                cat_run_choice = st.multiselect("Catégorie du run", options = liste_cat_run, default = liste_cat_run)
+                if "All" not in cat_run_choice :
+                    col_keep = [False]*len(moyenne)
+                    for cat_run in dico_cat_run.values() :
+                        col_keep = np.logical_or(col_keep, [cat_run in i for i in moyenne.index])
+                for cat_run in dico_cat_run.keys() :
+                    if cat_run not in cat_run_choice :
+                        col_keep = np.logical_and(col_keep, [dico_cat_run[cat_run] not in i for i in moyenne.index])
+
+            with columns[1] :
+                if not(st.checkbox('Métrique "threat"', value = True)) :
+                    col_keep = np.logical_and(col_keep, ["threat" not in i for i in moyenne.index])
+
+            with columns[2] :
+                liste_type_passe_run = ["Targeted", "Received"]
+                type_passe_run = st.multiselect("Type de passe liée au run", liste_type_passe_run, default = liste_type_passe_run)
+                if "Targeted" not in type_passe_run :
+                    col_keep = np.logical_and(col_keep, ["targeted" not in i for i in moyenne.index])
+                if "Received" not in type_passe_run :
+                    col_keep = np.logical_and(col_keep, ["received" not in i for i in moyenne.index])
+
+        elif cat_met == "Action sous pression" : 
+            columns = st.columns(3)
+            with columns[0] :
+                dico_cat_met_pressure = {"Passes" : "pass", "Ball retention" : "ball_retention", "Forced losses" : "forced_losses",
+                                         "Pression reçue" : "received_per_match"}
+                cat_met_pressure = st.multiselect("Catégorie de métrique liée au pressing", dico_cat_met_pressure.keys(),
+                                                  default = dico_cat_met_pressure.keys())
+
+        # moyenne = moyenne.iloc[col_keep]
+
+
 st.divider()
 
 
 if len(moyenne) > 0 :
     nb_metrique = st.slider("Nombre de métriques gardées", min_value=0, max_value = moyenne.shape[0], value = moyenne.shape[0])
-    moyenne_sort = moyenne.loc[moyenne.index[:nb_metrique]]
+    moyenne = moyenne.loc[moyenne.index[:nb_metrique]]
 
     col_df = st.multiselect("Données des métriques à afficher", moyenne.columns, moyenne.columns.tolist())
 
-    moyenne_sort = moyenne_sort[col_df]
+    moyenne_sort = moyenne[col_df]
 
     if len(col_df) > 0 :
 
