@@ -72,21 +72,24 @@ def import_df(annee_df, cat_met_df) :
     return pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{annee_df}/Skill Corner/{dico_met[cat_met_df][0]}_équipe.xlsx", index_col = [0, 1])
 
 df = import_df(annee, cat_met)
+df = df[df.columns[[(dico_met[cat_met][1][moy_met] in i) or ("ratio" in i) for i in df.columns]]]
 
 #----------------------------------------------- CHOIX MÉTRIQUE ------------------------------------------------------------------------------------
 
 
-if cat_met != "Physiques" :
-    st.divider()
+st.divider()
 
+if cat_met != "Physiques" :
     columns = st.columns([1, 2])
 
     with columns[0] :
         type_met = st.selectbox(dico_met[cat_met][3], dico_met[cat_met][2])
-        df = df[df.columns[[((dico_met[cat_met][1][moy_met] in i) or ("ratio" in i)) and (type_met in i) for i in df.columns]]]
+        df = df[df.columns[[type_met in i for i in df.columns]]]
     with columns[1] :
         choix_metrique = st.selectbox("Choisir la métrique", df.columns)
 
+else :
+    choix_metrique = st.selectbox("Choisir la métrique", df.columns)
 
 
 #----------------------------------------------- CHOIX GROUPES ------------------------------------------------------------------------------------

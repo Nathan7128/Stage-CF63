@@ -38,39 +38,28 @@ for i in dico_annee.keys() :
 
 st.divider()
 
-col3, col1, col2= st.columns([1, 4, 15], gap = "small")
-with col2 :
-    with st.columns([1, 1, 3, 2])[2] :
-        df_moy.index = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"]
-        annee_select = st.dataframe(df_moy, on_select = "rerun", selection_mode = "single-row")
-
-if len(annee_select.selection.rows) == 1 :
-    annee = df_moy.index[annee_select.selection.rows][0]
-    with col1 :
-        st.dataframe(dico_df[annee.replace("/", "_")].drop("Top 5", axis = 1), height = 733)
-
-else :
-    with col1 :
-        st.write("")
-        st.write("")
-        st.write("")
-        st.write("")
-        st.write("")
-        st.markdown("<p style='text-align: center;'>Choisir une saison</p>", unsafe_allow_html=True)
+with st.columns([1, 1, 3, 2])[2] :
+    df_moy.index = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"]
+    annee_select = st.dataframe(df_moy, on_select = "rerun", selection_mode = "single-row")
 
 
-with col2 :
-    df_moy = df_moy.reindex(df_moy.index[::-1])
-    fig = plt.figure()
-    plt.plot(df_moy, linewidth = 1)
-    plt.grid()
-    plt.legend(df_moy.columns, fontsize = "small", ncol = 2)
-    plt.xlabel("Saison", fontsize = "small", fontstyle = "italic", labelpad = 10)
-    plt.ylabel("Passes", fontsize = "small", fontstyle = "italic", labelpad = 10)
-    plt.tick_params(labelsize = 8)
-    ax = plt.gca()
-    ax.spines[:].set_visible(False)
-    st.pyplot(fig)
+df_moy = df_moy.reindex(df_moy.index[::-1])
+fig = plt.figure()
+plt.plot(df_moy, linewidth = 1)
+plt.grid()
+plt.legend(df_moy.columns, fontsize = "small", ncol = 2)
+plt.xlabel("Saison", fontsize = "small", fontstyle = "italic", labelpad = 10)
+plt.ylabel("Passes", fontsize = "small", fontstyle = "italic", labelpad = 10)
+plt.tick_params(labelsize = 8)
+ax = plt.gca()
+ax.spines[:].set_visible(False)
+
+st.pyplot(fig)
 
 
+st.markdown("<p style='text-align: center;'>Choisir une saison</p>", unsafe_allow_html=True)
 
+# if len(annee_select.selection.rows) == 1 :
+#     annee = df_moy.index[annee_select.selection.rows][0]
+#     with col1 :
+#         st.dataframe(dico_df[annee.replace("/", "_")].drop("Top 5", axis = 1), height = 733)
