@@ -1,13 +1,20 @@
 import pandas as pd
 
 liste_dico = [{"match_drop" : [1550555, 1546206],
-                "ranking" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Rodez Aveyron", "Paris FC"],
+                "ranking" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Rodez Aveyron", "Paris FC", "SM Caen", "Stade Lavallois Mayenne FC",
+           "Amiens Sporting Club", "En Avant de Guingamp", "Pau FC", "Grenoble Foot 38", "Girondins de Bordeaux", "SC Bastia",
+           "FC Annecy", "AC Ajaccio", "Dunkerque", "ES Troyes AC", "US Quevilly-Rouen", "US Concarneau", "Valenciennes FC"],
            "annee" : "2023_2024"},
            {"match_drop" : [],
-                "ranking" : ["Le Havre AC", "FC Metz", "Girondins de Bordeaux", "SC Bastia", "SM Caen"],
+                "ranking" : ["Le Havre AC", "FC Metz", "Girondins de Bordeaux", "SC Bastia", "SM Caen", "En Avant de Guingamp", "Paris FC",
+           "AS Saint-Étienne", "FC Sochaux-Montbéliard", "Grenoble Foot 38", "US Quevilly-Rouen", "Amiens Sporting Club", "Pau FC",
+           "Rodez Aveyron", "Stade Lavallois Mayenne FC", "Valenciennes FC", "FC Annecy", "Dijon FCO", "Nîmes Olympique", "Chamois Niortais FC"],
            "annee" : "2022_2023"},
            {"match_drop" : [129364, 128946],
-                "ranking" : ["Toulouse FC", "AC Ajaccio", "AJ Auxerre", "Paris FC", "FC Sochaux-Montbéliard"],
+                "ranking" : ["Toulouse FC", "AC Ajaccio", "AJ Auxerre", "Paris FC", "FC Sochaux-Montbéliard", "En Avant de Guingamp",
+                             "SM Caen", "Le Havre AC", "Nîmes Olympique", "Pau FC", "Dijon FCO", "SC Bastia", "Chamois Niortais FC", 
+                             "Amiens Sporting Club", "Grenoble Foot 38", "Valenciennes FC", "Rodez Aveyron", "US Quevilly-Rouen",
+                             "Dunkerque", "AS Nancy-Lorraine"],
            "annee" : "2021_2022"}
            ]
 
@@ -46,13 +53,6 @@ for dico in liste_dico :
      data = data.divide(nb_joueur_match, axis = 0)
 
      nb_minute_match = data.pop("minutes_per_Match")
-     data = data.multiply(900/nb_minute_match, axis = 0)
-
-     moyenne_top20 = data.groupby("Journée").mean()
-     moyenne_top5 = data[data.index.get_level_values("team_name").isin(dico["ranking"])].groupby("Journée").mean()
-     moyenne_bottom15 = data[~data.index.get_level_values("team_name").isin(dico["ranking"])].groupby("Journée").mean()
+     data = data.multiply(900/nb_minute_match, axis = 0).reindex(dico["ranking"], axis = 0, level = 1)
 
      data.to_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{dico["annee"]}/Skill Corner/physical_équipe.xlsx")
-     moyenne_top20.to_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{dico["annee"]}/Skill Corner/physical_top20.xlsx")
-     moyenne_top5.to_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{dico["annee"]}/Skill Corner/physical_top5.xlsx")
-     moyenne_bottom15.to_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{dico["annee"]}/Skill Corner/physical_bottom15.xlsx")
