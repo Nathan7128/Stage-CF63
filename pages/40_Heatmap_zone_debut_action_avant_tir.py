@@ -15,42 +15,121 @@ st.set_page_config(layout="wide")
 if "type_action" not in st.session_state :
     st.session_state.type_action = []
 
+st.title("Heatmap des zones de début d'actions menant à un tir")
+
+
+#----------------------------------------------- DÉFINITION FONCTIONS ------------------------------------------------------------------------------------
+
+@st.cache_data
+def import_df(saison_df) :
+    return pd.read_excel(f"Heatmap SB/deb_action/Tableaux/{saison_df}.xlsx", index_col = 0)
+
+#----------------------------------------------- CRÉATION DATAFRAME ------------------------------------------------------------------------------------
+
+
+dico_rank = {
+     "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval", "Amiens", "Guingamp", "Pau",
+          "Grenoble Foot", "Bordeaux", "Bastia", "FC Annecy", "AC Ajaccio", "Dunkerque", "Troyes", "Quevilly Rouen", "Concarneau",
+          "Valenciennes"],
+     "2022_2023" : ["Le Havre", "Metz", "Bordeaux", "Bastia", "Caen", "Guingamp", "Paris FC", "Saint-Étienne", "Sochaux", "Grenoble Foot",
+          "Quevilly Rouen", "Amiens", "Pau", "Rodez", "Laval", "Valenciennes", "FC Annecy", "Dijon", "Nîmes", "Chamois Niortais"],
+     "2021_2022" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux", "Guingamp", "Caen", "Le Havre", "Nîmes", "Pau", "Dijon",
+          "Bastia", "Chamois Niortais", "Amiens", "Grenoble Foot", "Valenciennes", "Rodez",  "Quevilly Rouen", "Dunkerque", "Nancy"],
+     "2020_2021" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC", "Auxerre", "Sochaux", "Nancy", "Guingamp",
+          "Amiens", "Valenciennes", "Le Havre", "AC Ajaccio", "Pau", "Rodez", "Dunkerque", "Caen",  "Chamois Niortais", "Chambly",
+          "Châteauroux"]
+}
+
+dico_df_saison = {}
+
+liste_équipe = []
 
 
 #----------------------------------------------- FILTRAGE DES DATAS ------------------------------------------------------------------------------------
 
-st.title("Heatmap des zones de début d'actions menant à un tir")
-
-st.divider()
 
 columns = st.columns(2, gap = "large")
 
 with columns[0] :
-    annee_choice = st.radio("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"], horizontal = True)
-    annee = annee_choice.replace("/", "_")
+    saison_choice = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"])
+    saison_choice.sort()
+    liste_saison = [i.replace("/", "_") for i in saison_choice]
 
 with columns[1] :
-    st.radio("Groupe à afficher", options = ["Top 5", "Bottom 15", "Global", "Équipe"], horizontal = True, key = "groupe")
-    groupe = st.session_state.groupe
+    choix_groupe = st.radio("Choix groupe", ["Choisir Top/Middle/Bottom", "Choisir équipe"], label_visibility = "hidden")
 
-df = pd.read_excel(f"Heatmap SB/deb_action/Tableaux/{annee}.xlsx", index_col = 0)
+for saison in liste_saison :
+    df_import = import_df(saison)
+    dico_df_saison[saison] = df_import
+    liste_équipe += df_import.Équipe.unique().tolist()
+
+liste_équipe = list(set(liste_équipe))
+
+
+#----------------------------------------------- CHOIX GROUPE ------------------------------------------------------------------------------------
 
 st.divider()
 
-liste_team = [0]
+if choix_groupe == "Choisir Top/Middle/Bottom" :
 
-if groupe == "Top 5" :
-    df_sort = df[df["Top 5"]]
+    df_groupe = pd.DataFrame(0, index = ["Top", "Middle", "Bottom"], columns = ["Taille", "Slider"])
+    df_groupe["Slider"] = "Nombre d'équipe dans le " + df_groupe.index
 
-elif groupe == "Bottom 15" :
-    df_sort = df[~df["Top 5"]]
+    columns = st.columns(4, gap = "large", vertical_alignment = "center")
+    with columns[0] :
+        df_groupe.loc["Top", "Taille"] = st.slider(df_groupe.loc["Top", "Slider"], min_value = 1, max_value = 20, value = 5)
+    with columns[1] :
+        if df_groupe.loc["Top", "Taille"] == 20 :
+            df_groupe.loc["Bottom", "Taille"] = 20 - df_groupe.loc["Top", "Taille"]
+            st.write(f"Nombre d'équipe dans le Bottom : {df_groupe.loc["Bottom", "Taille"]}")
+        else :
+            df_groupe.loc["Bottom", "Taille"] = st.slider(df_groupe.loc["Bottom", "Slider"], min_value = 0,
+                                                          max_value = 20 - df_groupe.loc["Top", "Taille"])
+    with columns[2] :
+        df_groupe.loc["Middle", "Taille"] = 20 - df_groupe.loc["Top", "Taille"] - df_groupe.loc["Bottom", "Taille"]
+        st.write(f"Nombre d'équipe dans le Middle : {df_groupe.loc["Middle", "Taille"]}")
 
-elif groupe == "Équipe" :
-    liste_team = st.multiselect("Choisir équipe", df.Équipe.unique())
-    df_sort = df[df.Équipe.isin(liste_team)]
+    with columns[3] :
+        groupe_non_vide = df_groupe[df_groupe.Taille > 0].index
+        groupe_plot = st.radio("Groupe à afficher", groupe_non_vide.tolist()*(df_groupe.loc["Top", "Taille"] != 20) + ["Global"],
+                               horizontal = True)
 
 else :
-    df_sort = df.copy()
+    choix_équipe = st.multiselect("Choisir équipe", liste_équipe)
+
+st.divider()
+
+
+#----------------------------------------------- FILTRAGE DF ------------------------------------------------------------------------------------
+
+df = pd.DataFrame()
+
+if choix_groupe == "Choisir Top/Middle/Bottom" :
+    
+    for saison in dico_df_saison.keys() :
+        df_saison = dico_df_saison[saison]
+    
+        if groupe_plot == "Top" :
+            df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][:df_groupe.loc["Top", "Taille"]])]
+
+        elif groupe_plot == "Middle" :
+            df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]])]
+
+        elif groupe_plot == "Bottom" :  
+            df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
+
+        df = pd.concat([df, df_saison[['x', 'y', 'type_action', 'But']]], axis = 0)
+
+    
+else :
+    for saison in dico_df_saison.keys() :
+        df_saison = dico_df_saison[saison]
+        df_saison = df_saison[df_saison.Équipe.isin(choix_équipe)]
+        df = pd.concat([df, df_saison[['x', 'y', 'type_action', 'But']]], axis = 0)
+
+
+
+#----------------------------------------------- FILTRAGE HEATMAPS ------------------------------------------------------------------------------------
 
 
 
@@ -65,11 +144,11 @@ with columns[1] :
     choix_goal = st.checkbox("Sélectionner uniquement les débuts d'actions menant à un but")
 
     if choix_goal :
-        df_sort = df_sort[df.But]
+        df = df[df.But]
 
     st.multiselect("Choisir le type de début d'action", options = df.type_action.unique(),
                    default = st.session_state.type_action, key = "type_action")
-    df_sort = df_sort[df_sort.type_action.isin(st.session_state.type_action)]
+    df = df[df.type_action.isin(st.session_state.type_action)]
 
 st.divider()
 
@@ -83,15 +162,15 @@ with col2 :
 
 #----------------------------------------------- AFFICHAGE HEATMAPS ------------------------------------------------------------------------------------
 
-if len(liste_team) > 0 and len(st.session_state.type_action) > 0 :
+if len(st.session_state.type_action) > 0 :
     
     st.divider()
 
-    if groupe != "Équipe" :
-        st.markdown(f"<p style='text-align: center;'>Heatmap pour le {groupe} de Ligue 2 sur la saison {annee_choice}</p>", unsafe_allow_html=True)
+    # if groupe != "Équipe" :
+    #     st.markdown(f"<p style='text-align: center;'>Heatmap pour le {groupe} de Ligue 2 sur la saison {annee_choice}</p>", unsafe_allow_html=True)
 
-    else :
-        st.markdown(f"<p style='text-align: center;'>Heatmap pour les équipes sélectionnées de Ligue 2 sur la saison {annee_choice}</p>", unsafe_allow_html=True)
+    # else :
+    #     st.markdown(f"<p style='text-align: center;'>Heatmap pour les équipes sélectionnées de Ligue 2 sur la saison {annee_choice}</p>", unsafe_allow_html=True)
 
 
 
@@ -128,6 +207,6 @@ if len(liste_team) > 0 and len(st.session_state.type_action) > 0 :
 
     col1, col2 = st.columns(2, vertical_alignment = "bottom")
     with col1 :
-        heatmap_percen(df_sort, bins_h, bins_v, choix_percent, choix_line)
+        heatmap_percen(df, bins_h, bins_v, choix_percent, choix_line)
     with col2 :
-        heatmap_smooth(df_sort, choix_line)
+        heatmap_smooth(df, choix_line)

@@ -54,7 +54,8 @@ with col1 :
     if choix_data == "Skill Corner" :
         choix_saison = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022"], default = "2023/2024")
     else :
-        choix_saison = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"], default = "2023/2024")
+        choix_saison = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"],
+                                      default = "2023/2024")
     liste_saison = [i.replace("/", "_") for i in choix_saison]
 
 if len(liste_saison) > 0 :
@@ -113,32 +114,43 @@ if len(liste_saison) > 0 :
             df_bottom = df_metrique.iloc[nb_top + nb_middle:]
 
             moyenne["Moyenne Top"] = df_top.mean(axis = 0)
-            if nb_top > 1 :
-                moyenne["Ecart type Top"] = df_top.std(axis = 0)
-                moyenne["Min Top"] = df_top.min(axis = 0)
-                moyenne["Max Top"] = df_top.max(axis = 0)
 
-            if nb_middle > 0 :
-                moyenne["Moyenne Middle"] = df_middle.mean(axis = 0)
-                if nb_middle > 1 :
-                    moyenne["Ecart type Middle"] = df_middle.std(axis = 0)
-                    moyenne["Min Middle"] = df_middle.std(axis = 0)
-                    moyenne["Max Middle"] = df_middle.std(axis = 0)
-                moyenne["Diff. Top avec Middle en %"] = (100*(moyenne["Moyenne Top"] - moyenne["Moyenne Middle"])/abs(moyenne["Moyenne Middle"])).round(2)
-            if nb_bottom > 0 :
-                moyenne["Moyenne Bottom"] = df_bottom.mean(axis = 0)
-                if nb_bottom > 1 :
-                    moyenne["Ecart type Bottom"] = df_bottom.std(axis = 0)
-                    moyenne["Min Bottom"] = df_bottom.min(axis = 0)
-                    moyenne["Max Bottom"] = df_bottom.max(axis = 0)
-                moyenne["Diff. Top avec Bottom en %"] = (100*(moyenne["Moyenne Top"] - moyenne["Moyenne Bottom"])/abs(moyenne["Moyenne Bottom"])).round(2)
+            moyenne["Moyenne Bottom"] = df_bottom.mean(axis = 0)
 
-            if nb_bottom > 0 and nb_middle > 0 :
-                moyenne["Diff. Middle avec Bottom en %"] = (100*(moyenne["Moyenne Middle"] - moyenne["Moyenne Bottom"])/abs(moyenne["Moyenne Bottom"])).round(2)
-
+            moyenne["Moyenne Middle"] = df_middle.mean(axis = 0)
+                
             liste_df_moyenne.append(moyenne)
 
+
         moyenne = sum(liste_df_moyenne)/len(liste_df_moyenne)
+
+        moyenne["Diff. Top avec Bottom en %"] = (100*(moyenne["Moyenne Top"] - moyenne["Moyenne Bottom"])/abs(moyenne["Moyenne Bottom"])).round(2)
+        moyenne["Diff. Top avec Middle en %"] = (100*(moyenne["Moyenne Top"] - moyenne["Moyenne Middle"])/abs(moyenne["Moyenne Middle"])).round(2)
+        moyenne["Diff. Middle avec Bottom en %"] = (100*(moyenne["Moyenne Middle"] - moyenne["Moyenne Bottom"])/abs(moyenne["Moyenne Bottom"])).round(2)
+
+        if nb_top > 1 :
+            moyenne["Ecart type Top"] = df_top.std(axis = 0)
+            moyenne["Min Top"] = df_top.min(axis = 0)
+            moyenne["Max Top"] = df_top.max(axis = 0)
+
+        if nb_middle > 1 :
+            moyenne["Ecart type Middle"] = df_middle.std(axis = 0)
+            moyenne["Min Middle"] = df_middle.std(axis = 0)
+            moyenne["Max Middle"] = df_middle.std(axis = 0)
+
+        if nb_bottom > 1 :
+            moyenne["Ecart type Bottom"] = df_bottom.std(axis = 0)
+            moyenne["Min Bottom"] = df_bottom.min(axis = 0)
+            moyenne["Max Bottom"] = df_bottom.max(axis = 0)
+
+        if nb_bottom > 0 :
+            moyenne = moyenne.reindex(abs(moyenne).sort_values(by = "Diff. Top avec Bottom en %", ascending = False).index)
+
+        elif nb_middle > 0 :
+            moyenne = moyenne.reindex(abs(moyenne).sort_values(by = "Diff. Top avec Middle en %", ascending = False).index)
+
+        moyenne.dropna(axis = 1, how = "all", inplace = True)
+
 
 
     #----------------------------------------------- FILTRAGE MÉTRIQUES SKILLCORNER ------------------------------------------------------------------------------------

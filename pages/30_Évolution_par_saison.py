@@ -7,7 +7,7 @@ st.set_page_config(layout="wide")
 
 st.title("Évolution des métriques au cours des saisons")
 
-
+idx = pd.IndexSlice
 
 #----------------------------------------------- DÉFINITIONS DES FONCTIONS ------------------------------------------------------------------------------------
 
@@ -94,8 +94,8 @@ dico_met = {
     }
 
 
-dico_saison = {"2023_2024" : "2023/2024", "2022_2023" : "2022/2023", "2021_2022" : "2021/2022", "2020_2021" : "2020/2021"}
-liste_df_saison = []
+dico_saison = {"2020_2021" : "2020/2021", "2021_2022" : "2021/2022", "2022_2023" : "2022/2023", "2023_2024" : "2023/2024"}
+dico_df_saison = {}
 
 
 #----------------------------------------------- CHOIX SAISON ET MÉTRIQUE ------------------------------------------------------------------------------------
@@ -116,14 +116,14 @@ if choix_data == "Skill Corner" :
 
 #----------------------------------------------- IMPORTATION DATAFRAME SKILL CORNER ------------------------------------------------------------------------------------
     
-    for saison in list(dico_saison.keys())[:-1] :
+    for saison in list(dico_saison.keys())[1:] :
         df_import = import_df(saison, "Skill Corner", dico_met[cat_met][0])
         col_keep = [False]*df_import.shape[1]
         for cat_type in moy_met :
             cat_type = dico_met[cat_met][1][cat_type]
             col_keep = np.logical_or(col_keep, [(cat_type in i) or ("ratio" in i) for i in df_import.columns])
         df_import = df_import[df_import.columns[col_keep]]
-        liste_df_saison.append(df_import)
+        dico_df_saison[saison] = df_import
 
 #----------------------------------------------- FILTRAGE MÉTRIQUE ------------------------------------------------------------------------------------
 
@@ -135,10 +135,10 @@ if choix_data == "Skill Corner" :
         for cat_type in type_met :
             col_keep_type_met = np.logical_or(col_keep_type_met, [(cat_type in i) or ("ratio" in i and cat_type in i) for i in df_import.columns])
         
-        for i in range(len(liste_df_saison)) :
-            liste_df_saison[i] = liste_df_saison[i][liste_df_saison[i].columns[col_keep_type_met]]
+        for saison in dico_df_saison.keys() :
+            dico_df_saison[saison] = dico_df_saison[saison][dico_df_saison[saison].columns[col_keep_type_met]]
 
-        df = liste_df_saison[i]
+        df = dico_df_saison[saison]
         if cat_met == "Courses sans ballon avec la possession" :
             col_keep = [True]*df.shape[1]
             columns = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
@@ -243,16 +243,18 @@ if choix_data == "Skill Corner" :
                     col_keep = np.logical_or(col_keep, ["ratio" in i for i in df.columns])
 
 
-        for i in range(len(liste_df_saison)) :
-            liste_df_saison[i] = liste_df_saison[i][liste_df_saison[i].columns[col_keep]]
+        for saison in dico_df_saison.keys() :
+            dico_df_saison[saison] = dico_df_saison[saison][dico_df_saison[saison].columns[col_keep]]
+
+
 
 #----------------------------------------------- IMPORTATION DATAFRAME STATS BOMB ------------------------------------------------------------------------------------
 
 
 else :
     for saison in dico_saison.keys() :
-        df_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{saison}/Stats Bomb/metriques.xlsx")
-        liste_df_saison.append(df_import)
+        df_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{saison}/Stats Bomb/metriques.xlsx", index_col = 0)
+        dico_df_saison[saison] = df_import
 
 
 #----------------------------------------------- CHOIX GROUPES ------------------------------------------------------------------------------------
@@ -278,70 +280,89 @@ with columns[2] :
     st.write(f"Nombre d'équipe dans le Middle : {df_groupe.loc["Middle", "Taille"]}")
 
 
-df_final = pd.DataFrame(index = liste_df_saison[0].columns)
+#----------------------------------------------- CRÉATION DF FINAL ------------------------------------------------------------------------------------
 
-for i in range (len(liste_df_saison)) :
-    df = liste_df_saison[i]
-    dico_df_groupe = {}
-    dico_df_groupe["Top"] = df.iloc[:df_groupe.loc["Top", "Taille"]]
-    if df_groupe.loc["Middle", "Taille"] > 0 :
-        dico_df_groupe["Middle"] = df.iloc[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]]
-    if df_groupe.loc["Bottom", "Taille"] > 0 :
-        dico_df_groupe["Bottom"] = df.iloc[df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:].mean(axis = 0)
-    dico_df_groupe_saison[list(dico_saison.keys())[i]] = dico_df_groupe
-    dico_df_groupe
 
+multi_index_liste = [dico_df_saison[saison].columns, df_groupe.index]
+multi_index = pd.MultiIndex.from_product(multi_index_liste, names=["Métrique", "Groupe"])
+
+df_final = pd.DataFrame(index = multi_index, columns = [dico_saison[i] for i in dico_df_saison.keys()])
+
+
+for saison in dico_df_saison.keys() :
+    df = dico_df_saison[saison]
+    saison = dico_saison[saison]
+
+    df_final.loc[idx[:, "Top"], saison] = df.iloc[:df_groupe.loc["Top", "Taille"]].mean(axis = 0).values
+    df_final.loc[idx[:, "Middle"], saison] = df.iloc[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]].mean(axis = 0).values
+    df_final.loc[idx[:, "Bottom"], saison] = df.iloc[df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:].mean(axis = 0).values
+
+df_final.dropna(axis = 0, how = "all", inplace = True)
+first_year = dico_saison[list(dico_df_saison.keys())[0]]
+last_year = dico_saison[list(dico_df_saison.keys())[-1]]
+df_final[f"Évolution en %"] = 100*(df_final[last_year] - df_final[first_year])/abs(df_final[first_year])
 
 
 st.divider()
 
+
+
+#----------------------------------------------- APPLICATION STYLE DATAFRAME ------------------------------------------------------------------------------------
+
+
 def couleur_bg_df(col) :
     if col.name == "Évolution en %" :
         color = []
-        for met in df.index :
-            if df.loc[met, "2023/2024"] >= df.loc[met, "2022/2023"] and df.loc[met, "2022/2023"] >= df.loc[met, "2021/2022"] :
+        for met in df_final.index :
+            col_debut = df_final[df_final.columns[0]]
+            col_inter = df_final[df_final.columns[1:-2]].mean(axis = 1)
+            col_fin = df_final[df_final.columns[-2]]
+            if col_fin[met] >= col_inter[met] and col_inter[met] >= col_debut[met] :
                 color.append("background-color: rgba(0, 255, 0, 0.3)")
-            elif df.loc[met, "2023/2024"] >= df.loc[met, "2022/2023"] and df.loc[met, "2022/2023"] < df.loc[met, "2021/2022"] :
+            elif col_fin[met] >= col_inter[met] and col_inter[met] < col_debut[met] :
                 color.append("background-color: rgba(255, 255, 0, 0.3)")
-            elif df.loc[met, "2023/2024"] < df.loc[met, "2022/2023"] and df.loc[met, "2022/2023"] >= df.loc[met, "2021/2022"] :
+            elif col_fin[met] < col_inter[met] and col_inter[met] >= col_debut[met] :
                 color.append("background-color: rgba(255, 130, 0, 0.5)")
             else :
                 color.append("background-color: rgba(255, 0, 0, 0.3)")
         return color
                     
     else :
-        return ['']*len(df)
+        return ['']*len(df_final)
 
 def couleur_text_df(row) :
     color = ['']
     if choix_data == "Stats Bomb" :
         if row["2021/2022"] > row["2020/2021"] :
-            color.append("color : green")
+            color.append("color : rgba(0, 200, 0)")
         else :
-            color.append("color : red")
+            color.append("color : rgba(255, 0, 0)")
     if row["2022/2023"] > row["2021/2022"] :
-        color.append("color : green")
+        color.append("color : rgba(0, 200, 0)")
     else :
-        color.append("color : red")
+        color.append("color : rgba(255, 0, 0)")
     if row["2023/2024"] > row["2022/2023"] :
-        color.append("color : green")
+        color.append("color : rgba(0, 200, 0)")
     else :
-        color.append("color : red")
+        color.append("color : rgba(255, 0, 0)")
     color.append('')
     return color
 
-df.rename({"2023_2024" : "2023/2024", "2022_2023" : "2022/2023", "2021_2022" : "2021/2022", "2020_2021" : "2020/2021"}, axis = 1,
-          inplace = True)
 
-df_style = df.style.apply(couleur_bg_df, axis = 0)
+df_style = df_final.style.apply(couleur_bg_df, axis = 0)
 df_style = df_style.apply(couleur_text_df, axis = 1)
 
 
-st.markdown("<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison 2021/2022 et 2023/2024</p>", unsafe_allow_html=True)
+
+#----------------------------------------------- AFFICHAGE DATAFRAME ------------------------------------------------------------------------------------
+
+
+
+st.markdown(f"<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison {first_year} et {last_year}</p>", unsafe_allow_html=True)
 
 met_sel = st.dataframe(df_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
 
-st.markdown("<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison 2021/2022 et 2023/2024 :</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison {first_year} et {last_year} :</p>", unsafe_allow_html=True)
 
 
 # Afficher le texte avec le style défini
@@ -356,6 +377,12 @@ with columns[2] :
 with columns[3] :
     st.markdown('<div class="highlight4">Diminution constante</div>', unsafe_allow_html=True)
 
+
+
+#----------------------------------------------- AFFICHAGE GRAPHIQUE ------------------------------------------------------------------------------------
+
+
+
 if len(met_sel.selection.rows) > 0 :
 
     st.divider()
@@ -366,8 +393,7 @@ if len(met_sel.selection.rows) > 0 :
         new_index.append(i[1] + " - " + i[0])
     evo_graphe = evo_graphe.reset_index()
     evo_graphe.index = new_index
-    # couleur = (evo_graphe.Top == "Top 5").replace({True : "#FF0000", False : '#0000FF'})
-    evo_graphe = evo_graphe.drop(["Métriques", "Top"], axis = 1).T
+    evo_graphe = evo_graphe.drop(["Métrique", "Groupe"], axis = 1).T
     fig = plt.figure()
     plt.plot(evo_graphe, linewidth = 0.7)
     plt.title("Graphique de l'évolution des métriques sélectionnées", fontweight = "heavy", y = 1.05, fontsize = 9)
