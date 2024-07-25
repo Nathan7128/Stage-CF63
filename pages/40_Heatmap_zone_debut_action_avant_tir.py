@@ -81,13 +81,13 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
     with columns[1] :
         if df_groupe.loc["Top", "Taille"] == 20 :
             df_groupe.loc["Bottom", "Taille"] = 20 - df_groupe.loc["Top", "Taille"]
-            st.write(f"Nombre d'équipe dans le Bottom : {df_groupe.loc["Bottom", "Taille"]}")
+            st.write(f"Nombre d'équipe dans le Bottom : {df_groupe.loc['Bottom', 'Taille']}")
         else :
             df_groupe.loc["Bottom", "Taille"] = st.slider(df_groupe.loc["Bottom", "Slider"], min_value = 0,
                                                           max_value = 20 - df_groupe.loc["Top", "Taille"])
     with columns[2] :
         df_groupe.loc["Middle", "Taille"] = 20 - df_groupe.loc["Top", "Taille"] - df_groupe.loc["Bottom", "Taille"]
-        st.write(f"Nombre d'équipe dans le Middle : {df_groupe.loc["Middle", "Taille"]}")
+        st.write(f"Nombre d'équipe dans le Middle : {df_groupe.loc['Middle', 'Taille']}")
 
     with columns[3] :
         groupe_non_vide = df_groupe[df_groupe.Taille > 0].index
