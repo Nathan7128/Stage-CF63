@@ -12,10 +12,9 @@ import cmasher as cmr
 
 st.set_page_config(layout="wide")
 
-if "Type_action" not in st.session_state :
-    st.write("pas dedans")
-    st.session_state["Type_action"] = ["Open play"]
 
+if 'Type_action' not in st.session_state :
+    st.session_state['Type_action'] = ["Open play"]
 
 st.title("Heatmap des zones de début d'actions menant à un tir")
 
@@ -25,6 +24,11 @@ st.title("Heatmap des zones de début d'actions menant à un tir")
 @st.cache_data
 def import_df(saison_df) :
     return pd.read_excel(f"Heatmap SB/deb_action/Tableaux/{saison_df}.xlsx", index_col = 0)
+
+
+def select_type_action():
+    st.session_state['Type_action'] = st.session_state.multiselect
+
 
 #----------------------------------------------- CRÉATION DATAFRAME ------------------------------------------------------------------------------------
 
@@ -97,7 +101,7 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
                                horizontal = True)
 
 else :
-    choix_équipe = st.multiselect("Choisir équipe", liste_équipe)
+    choix_équipe = st.multiselect("Choisir équipe", sorted(liste_équipe))
 
 st.divider()
 
@@ -119,7 +123,6 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
 
         elif groupe_plot == "Bottom" :  
             df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
-
         df = pd.concat([df, df_saison[['x', 'y', 'type_action', 'But']]], axis = 0)
 
     
@@ -147,11 +150,11 @@ if len(df) > 0 :
 
         if choix_goal :
             df = df[df.But]
+        
+        st.multiselect("Choisir le type de début d'action", options = df.type_action.unique(), on_change = select_type_action,
+                                            default = st.session_state["Type_action"], key = "multiselect")
+        df = df[df.type_action.isin(st.session_state["Type_action"])]
 
-        type_action_choice = st.multiselect("Choisir le type de début d'action", options = df.type_action.unique(),
-                                            default = st.session_state["Type_action"], key = "Type_action")
-        # df = df[df.type_action.isin(st.session_state["Type action"])]
-    st.write(st.session_state["Type_action"])
     st.divider()
 
     col1, col2 = st.columns(2, vertical_alignment = "bottom")
@@ -160,11 +163,10 @@ if len(df) > 0 :
     with col2 :
         choix_line = st.checkbox("Cacher les lignes du terrain")
 
-    df
 
     #----------------------------------------------- AFFICHAGE HEATMAPS ------------------------------------------------------------------------------------
 
-    if len(st.session_state["Type action"]) > 0 :
+    if len(st.session_state["Type_action"]) > 0 :
         
         st.divider()
 
