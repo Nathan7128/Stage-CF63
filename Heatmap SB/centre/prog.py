@@ -3,15 +3,12 @@ import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 
-dico_annee = {"2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC"],
-              "2022_2023" : ["Le Havre", "Metz", "Bordeaux", "Bastia", "Caen"],
-              "2021_2022" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux"],
-              "2020_2021" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC"]}
+liste_saison = ["2023_2024", "2022_2023", "2021_2022", "2020_2021"]
 
 
-for annee in dico_annee.keys() :
+for saison in liste_saison :
 
-    event = pd.read_json(f"Data_file/Heatmap SB/{annee}.json")
+    event = pd.read_json(f"Data_file/Heatmap SB/{saison}.json")
 
     event = event[~event.location.isna()]
 
@@ -29,8 +26,6 @@ for annee in dico_annee.keys() :
             centre.loc[i, "goal"] = 1
     
     df = pd.concat([centre.match_id, centre.team, centre.goal, pd.DataFrame(centre.location.tolist(), index = centre.index), pd.DataFrame(centre.pass_end_location.tolist(), index = centre.index)], axis = 1, ignore_index = True)
-    df.columns = ["match_id", "Équipe", "goal", "x", "y", "x_end", "y_end"]
+    df.columns = ["match_id", "Équipe", "But", "x", "y", "x_end", "y_end"]
 
-    df["Top 5"] = df["Équipe"].isin(dico_annee[annee])
-
-    df.to_excel(f"Heatmap SB/centre/Tableaux/{annee}.xlsx")
+    df.to_excel(f"Heatmap SB/centre/Tableaux/{saison}.xlsx")

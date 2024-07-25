@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(layout="wide")
 
 st.title("Évolution des métriques au cours des saisons")
+st.divider()
 
 idx = pd.IndexSlice
 

@@ -6,10 +6,12 @@ import matplotlib.pyplot as plt
 st.set_page_config(layout="wide")
 
 st.title("Évolutions des métriques au cours des journées")
-
+st.divider()
 
 #----------------------------------------------- DÉFINITIONS DES DICTIONNAIRES ------------------------------------------------------------------------------------
 
+
+groupe_plot = [1]
 
 dico_met = {
     "Physiques" : ["physical",
@@ -136,37 +138,45 @@ else :
 
 #----------------------------------------------- AFFICHAGE GRAPHIQUE ------------------------------------------------------------------------------------
 
+if len(df) > 0 and len(groupe_plot) > 0 :
 
-st.divider()
+    st.divider()
 
-fig = plt.figure(figsize = (8, 4))
+    fig = plt.figure(figsize = (8, 4))
 
+    if choix_groupe == "Choisir équipe" :
+        bool_len_éq = len(choix_équipe) > 1
+        éq_title = []
+        éq_title.append(f'{choix_équipe[0]}')
+        éq_title.append(f'{", ".join(choix_équipe[:-1])} et {choix_équipe[-1]}')
 
+        plt.plot(df, marker = "o", markersize = 3, linewidth = 0.7)
 
-if choix_groupe == "Choisir équipe" :
-
-    plt.plot(df, marker = "o", markersize = 3, linewidth = 0.7)
-
-    plt.title(f"Graphe des équipes sélectionnées pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace('_', '/')}",
-            fontweight = "heavy", y = 1.05, fontsize = 9)
-    plt.legend(choix_équipe, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
-
-
-else :
-    for groupe in groupe_plot :
-        plt.plot(dico_df_groupe[groupe][choix_metrique], marker = "o", markersize = 3, linewidth = 0.7)
-    plt.title(f"Graphe des groupes sélectionnés pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace('_', '/')}",
-            fontweight = "heavy", y = 1.05, fontsize = 9)
-    plt.legend(groupe_plot, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
+        plt.title(f"Graphe de {éq_title[bool_len_éq]} pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace('_', '/')}",
+                fontweight = "heavy", y = 1.05, fontsize = 9)
+        plt.legend(choix_équipe, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
 
 
-plt.grid()
+    else :
+        bool_len_grp = len(groupe_plot) > 1
+        grp_title = []
+        grp_title.append(f'{groupe_plot[0]}')
+        grp_title.append(f'{", ".join(groupe_plot[:-1])} et {groupe_plot[-1]}')
+    
+        for groupe in groupe_plot :
+            plt.plot(dico_df_groupe[groupe][choix_metrique], marker = "o", markersize = 3, linewidth = 0.7)
+        plt.title(f"Graphe du {grp_title[bool_len_grp]} pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace('_', '/')}",
+                fontweight = "heavy", y = 1.05, fontsize = 9)
+        plt.legend(groupe_plot, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
 
-plt.xlabel("Journée", fontsize = "small", fontstyle = "italic", labelpad = 10)
-plt.ylabel("Métrique", fontsize = "small", fontstyle = "italic", labelpad = 10)
 
-plt.tick_params(labelsize = 8)
-ax = plt.gca()
-ax.spines[:].set_visible(False)
+    plt.grid()
 
-st.pyplot(fig)
+    plt.xlabel("Journée", fontsize = "small", fontstyle = "italic", labelpad = 10)
+    plt.ylabel("Métrique", fontsize = "small", fontstyle = "italic", labelpad = 10)
+
+    plt.tick_params(labelsize = 8)
+    ax = plt.gca()
+    ax.spines[:].set_visible(False)
+
+    st.pyplot(fig)

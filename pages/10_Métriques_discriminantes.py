@@ -6,7 +6,7 @@ import signal
 st.set_page_config(layout="wide")
 
 st.title("Métriques discriminantes d'une compétition")
-
+st.divider()
 
 @st.cache_data
 def import_df(saison_df, choix_data_df, file_metrique_df) :
