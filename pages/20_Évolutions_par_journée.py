@@ -147,7 +147,7 @@ if choix_groupe == "Choisir équipe" :
 
     plt.plot(df, marker = "o", markersize = 3, linewidth = 0.7)
 
-    plt.title(f"Graphe des équipes sélectionnées pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace("_", "/")}",
+    plt.title(f"Graphe des équipes sélectionnées pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace('_', '/')}",
             fontweight = "heavy", y = 1.05, fontsize = 9)
     plt.legend(choix_équipe, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
 
@@ -155,7 +155,7 @@ if choix_groupe == "Choisir équipe" :
 else :
     for groupe in groupe_plot :
         plt.plot(dico_df_groupe[groupe][choix_metrique], marker = "o", markersize = 3, linewidth = 0.7)
-    plt.title(f"Graphe des groupes sélectionnés pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace("_", "/")}",
+    plt.title(f"Graphe des groupes sélectionnés pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace('_', '/')}",
             fontweight = "heavy", y = 1.05, fontsize = 9)
     plt.legend(groupe_plot, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
 
