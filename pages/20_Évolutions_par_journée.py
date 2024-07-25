@@ -108,7 +108,7 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
     with columns[1] :
         if df_groupe.loc["Top", "Taille"] == 20 :
             df_groupe.loc["Bottom", "Taille"] = 20 - df_groupe.loc["Top", "Taille"]
-            st.write(f"Nombre d'équipe dans le Bottom : {df_groupe.loc["Bottom", "Taille"]}")
+            st.write(f"Nombre d'équipe dans le Bottom : {df_groupe.loc['Bottom', 'Taille']}")
         else :
             df_groupe.loc["Bottom", "Taille"] = st.slider(df_groupe.loc["Bottom", "Slider"], min_value = 0,
                                                           max_value = 20 - df_groupe.loc["Top", "Taille"])
