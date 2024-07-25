@@ -9,6 +9,9 @@ st.title("Évolution des métriques au cours des saisons")
 
 idx = pd.IndexSlice
 
+pd.set_option('future.no_silent_downcasting', True)
+
+
 #----------------------------------------------- DÉFINITIONS DES FONCTIONS ------------------------------------------------------------------------------------
 
 
@@ -298,10 +301,11 @@ for saison in dico_df_saison.keys() :
     df_final.loc[idx[:, "Bottom"], saison] = df.iloc[df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:].mean(axis = 0).values
 
 df_final.dropna(axis = 0, how = "all", inplace = True)
+df_final.replace({0 : np.nan}, inplace = True)
 first_year = dico_saison[list(dico_df_saison.keys())[0]]
 last_year = dico_saison[list(dico_df_saison.keys())[-1]]
-df_final[f"Évolution en %"] = 100*(df_final[last_year] - df_final[first_year])/abs(df_final[first_year])
-
+df_final["Évolution en %"] = 100*(df_final[last_year] - df_final[first_year])/abs(df_final[first_year])
+df_final.replace({np.nan : 0}, inplace = True)
 
 st.divider()
 
@@ -358,11 +362,13 @@ df_style = df_style.apply(couleur_text_df, axis = 1)
 
 
 
-st.markdown(f"<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison {first_year} et {last_year}</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison {first_year} et {last_year}</p>",
+            unsafe_allow_html=True)
 
 met_sel = st.dataframe(df_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
 
-st.markdown(f"<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison {first_year} et {last_year} :</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison {first_year} et {last_year} :</p>",
+            unsafe_allow_html=True)
 
 
 # Afficher le texte avec le style défini
