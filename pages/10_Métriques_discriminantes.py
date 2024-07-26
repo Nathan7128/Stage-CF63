@@ -8,10 +8,27 @@ st.set_page_config(layout="wide")
 st.title("Métriques discriminantes d'une compétition")
 st.divider()
 
+
+
+#----------------------------------------------- DÉFINITIONS DES FONCTIONS ------------------------------------------------------------------------------------
+
+
 @st.cache_data
 def import_df(saison_df, choix_data_df, file_metrique_df) :
     return pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{saison_df}/{choix_data_df}/{file_metrique_df}",
                                     index_col=0)
+
+def couleur_diff(col) :
+    if col.name in ["Diff. Top avec Bottom en %", "Diff. Top avec Middle en %", "Diff. Middle avec Bottom en %"] :
+        color = []
+        for met in col.index :
+            if col.loc[met] >= 0 :
+                color.append("background-color : rgba(0, 255, 0, 0.3)")
+            else : 
+                color.append("background-color : rgba(255, 0, 0, 0.3)")
+        return color
+    else :
+        return ['']*len(col)
 
 #----------------------------------------------- DÉFINITIONS DES DICTIONNAIRES ------------------------------------------------------------------------------------
 
@@ -298,9 +315,10 @@ if len(liste_saison) > 0 :
             st.divider()
 
             st.markdown("<p style='text-align: center;'>Tableau des métriques discriminantes</p>", unsafe_allow_html=True)
+            
+            moyenne_sort_style = moyenne_sort.style.apply(couleur_diff, axis = 0)
 
-
-            moyenne_sort_df = st.dataframe(moyenne_sort, on_select = "rerun", selection_mode = "multi-row")
+            moyenne_sort_df = st.dataframe(moyenne_sort_style, on_select = "rerun", selection_mode = "multi-row")
 
             if len(moyenne_sort_df.selection.rows) > 0 :
 

@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+idx = pd.IndexSlice
+
 st.set_page_config(layout="wide")
 
 st.title("Évolutions des métriques au cours des journées")
@@ -11,7 +13,11 @@ st.divider()
 #----------------------------------------------- DÉFINITIONS DES DICTIONNAIRES ------------------------------------------------------------------------------------
 
 
-groupe_plot = [1]
+groupe_plot = []
+
+groupe_non_vide = []
+
+choix_équipe = []
 
 dico_met = {
     "Physiques" : ["physical",
@@ -53,9 +59,9 @@ dico_rank = {"2023_2024" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Ro
 columns = st.columns([2, 4, 2, 3])
 
 with columns[0] :
-    annee = st.radio("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022"], horizontal = True)
-    annee = annee.replace("/", "_")
-    liste_équipe = dico_rank[annee]
+    saison = st.radio("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022"], horizontal = True)
+    saison = saison.replace("/", "_")
+    liste_équipe = dico_rank[saison]
 
 with columns[1] :
     cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True)
@@ -64,16 +70,18 @@ with columns[2] :
     moy_met = st.radio("Moyenne de la métrique", dico_met[cat_met][1].keys())
 
 with columns[3] :
-    choix_groupe = st.radio("Choix groupe", ["Choisir Top/Middle/Bottom", "Choisir équipe"], label_visibility = "hidden")
+    ""
+    choix_groupe_équipe = st.checkbox("Sélectionner équipe", value = False)
+    choix_groupe_top = st.checkbox("Sélectionner Top/Middle/Bottom", value = False)
 
 
 #----------------------------------------------- IMPORTATION DATAFRAME ------------------------------------------------------------------------------------
 
 @st.cache_data
-def import_df(annee_df, cat_met_df) :
-    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{annee_df}/Skill Corner/{dico_met[cat_met_df][0]}_équipe.xlsx", index_col = [0, 1])
+def import_df(saison_df, cat_met_df) :
+    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{saison_df}/Skill Corner/{dico_met[cat_met_df][0]}_équipe.xlsx", index_col = [0, 1])
 
-df = import_df(annee, cat_met)
+df = import_df(saison, cat_met)
 df = df[df.columns[[(dico_met[cat_met][1][moy_met] in i) or ("ratio" in i) for i in df.columns]]]
 
 #----------------------------------------------- CHOIX MÉTRIQUE ------------------------------------------------------------------------------------
@@ -93,14 +101,13 @@ if cat_met != "Physiques" :
 else :
     choix_metrique = st.selectbox("Choisir la métrique", df.columns)
 
+df = df[choix_metrique]
+
 
 #----------------------------------------------- CHOIX GROUPES ------------------------------------------------------------------------------------
 
-
-st.divider()
-
-if choix_groupe == "Choisir Top/Middle/Bottom" :
-
+if choix_groupe_top :
+    st.divider()
     df_groupe = pd.DataFrame(0, index = ["Top", "Middle", "Bottom"], columns = ["Taille", "Slider"])
     df_groupe["Slider"] = "Nombre d'équipe dans le " + df_groupe.index
 
@@ -121,59 +128,50 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
     with columns[3] :
         groupe_non_vide = df_groupe[df_groupe.Taille > 0].index
         groupe_plot = st.multiselect("Groupe à afficher", groupe_non_vide)
- 
-    dico_df_groupe = {}
-    dico_df_groupe["Top"] = df.loc[:, liste_équipe[:df_groupe.loc["Top", "Taille"]], :].groupby("Journée").mean()
-    if df_groupe.loc["Middle", "Taille"] > 0 :
-        dico_df_groupe["Middle"] = df.loc[:, liste_équipe[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]], :].groupby("Journée").mean()
-    if df_groupe.loc["Bottom", "Taille"] > 0 :
-        dico_df_groupe["Bottom"] = df.loc[:, liste_équipe[df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:], :].groupby("Journée").mean()
 
-else :
+if choix_groupe_équipe :
+    st.divider()
     choix_équipe = st.multiselect("Choisir équipe", liste_équipe)
-    df = df.loc[:, choix_équipe, :]
-    df = df.reset_index().pivot(index = "Journée", columns = "team_name", values = choix_metrique)
 
+
+#----------------------------------------------- FILTRAGE DATAFRAME GROUPE ------------------------------------------------------------------------------------
+
+
+df_final = pd.DataFrame(index = df.index.levels[0])
+
+if "Top" in groupe_plot :
+    df_final["Top"] = df.loc[:, liste_équipe[:df_groupe.loc["Top", "Taille"]], :].groupby("Journée").mean()
+if "Middle" in groupe_plot :
+    df_final["Middle"] = df.loc[:, liste_équipe[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]], :].groupby("Journée").mean()
+if "Bottom" in groupe_plot :
+    df_final["Bottom"] = df.loc[:, liste_équipe[df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:], :].groupby("Journée").mean()
+
+for équipe in choix_équipe :
+    df_final[équipe] = df.loc[:, équipe, :]
 
 
 #----------------------------------------------- AFFICHAGE GRAPHIQUE ------------------------------------------------------------------------------------
 
-if len(df) > 0 and len(groupe_plot) > 0 :
+if len(groupe_plot) + len(choix_équipe) > 0 :
 
     st.divider()
 
     fig = plt.figure(figsize = (8, 4))
 
-    if choix_groupe == "Choisir équipe" :
-        bool_len_éq = len(choix_équipe) > 1
-        éq_title = []
-        éq_title.append(f'{choix_équipe[0]}')
-        éq_title.append(f'{", ".join(choix_équipe[:-1])} et {choix_équipe[-1]}')
+    plt.plot(df_final, marker = "o", markersize = 3, linewidth = 0.7)
 
-        plt.plot(df, marker = "o", markersize = 3, linewidth = 0.7)
-
-        plt.title(f"Graphe de {éq_title[bool_len_éq]} pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace('_', '/')}",
+    bool_len_grp = len(df_final.columns) > 1
+    grp_title = []
+    grp_title.append(f'{df_final.columns[0]}')
+    grp_title.append(f'{", ".join(df_final.columns[:-1])} et {df_final.columns[-1]}')
+    plt.title(f"Graphe de la métrique {choix_metrique}\npour{" le"*(len(groupe_plot) > 0)} {grp_title[bool_len_grp]} \nau cours des journées de la saison {saison.replace('_', '/')}",
                 fontweight = "heavy", y = 1.05, fontsize = 9)
-        plt.legend(choix_équipe, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
-
-
-    else :
-        bool_len_grp = len(groupe_plot) > 1
-        grp_title = []
-        grp_title.append(f'{groupe_plot[0]}')
-        grp_title.append(f'{", ".join(groupe_plot[:-1])} et {groupe_plot[-1]}')
-    
-        for groupe in groupe_plot :
-            plt.plot(dico_df_groupe[groupe][choix_metrique], marker = "o", markersize = 3, linewidth = 0.7)
-        plt.title(f"Graphe du {grp_title[bool_len_grp]} pour la métrique {choix_metrique}\nau cours des journées de la saison {annee.replace('_', '/')}",
-                fontweight = "heavy", y = 1.05, fontsize = 9)
-        plt.legend(groupe_plot, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
-
+    plt.legend(df_final.columns, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
 
     plt.grid()
 
     plt.xlabel("Journée", fontsize = "small", fontstyle = "italic", labelpad = 10)
-    plt.ylabel("Métrique", fontsize = "small", fontstyle = "italic", labelpad = 10)
+    plt.ylabel(choix_metrique, fontsize = "small", fontstyle = "italic", labelpad = 10)
 
     plt.tick_params(labelsize = 8)
     ax = plt.gca()

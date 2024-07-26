@@ -10,7 +10,7 @@ st.title("Moyenne du nombre de passes avant un but d'une compétition")
 #----------------------------------------------- DEFINITION DICTIONNAIRE ------------------------------------------------------------------------------------
 
 
-dico_annee = {
+dico_saison = {
     "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval",
            "Amiens", "Guingamp", "Pau", "Grenoble Foot", "Bordeaux", "Bastia",
            "FC Annecy", "AC Ajaccio", "Dunkerque", "Troyes", "Quevilly Rouen", "Concarneau", "Valenciennes"],
@@ -35,79 +35,87 @@ dico_df = {}
 
 
 st.divider()
+df_groupe = pd.DataFrame(0, index = ["Top", "Middle", "Bottom"], columns = ["Taille", "Slider"])
+df_groupe["Slider"] = "Nombre d'équipe dans le " + df_groupe.index
 
 columns = st.columns(3, gap = "large", vertical_alignment = "center")
 with columns[0] :
-    nb_top = st.slider("Nombre d'équipe dans le Top", min_value = 1, max_value = 20, value = 5)
+    df_groupe.loc["Top", "Taille"] = st.slider(df_groupe.loc["Top", "Slider"], min_value = 1, max_value = 20, value = 5)
 with columns[1] :
-    if nb_top == 20 :
-        nb_bottom = 20 - nb_top
-        st.write(f"Nombre d'équipe dans le Bottom : {nb_bottom}")
+    if df_groupe.loc["Top", "Taille"] == 20 :
+        df_groupe.loc["Bottom", "Taille"] = 20 - df_groupe.loc["Top", "Taille"]
+        st.write(f"Nombre d'équipe dans le Bottom : {df_groupe.loc['Bottom', 'Taille']}")
     else :
-        nb_bottom = st.slider("Nombre d'équipe dans le Bottom", min_value = 0,
-                                                        max_value = 20 - nb_top)
+        df_groupe.loc["Bottom", "Taille"] = st.slider(df_groupe.loc["Bottom", "Slider"], min_value = 0,
+                                                        max_value = 20 - df_groupe.loc["Top", "Taille"])
 with columns[2] :
-    nb_middle = 20 - nb_top - nb_bottom
-    st.write(f"Nombre d'équipe dans le Middle : {nb_middle}")
+    df_groupe.loc["Middle", "Taille"] = 20 - df_groupe.loc["Top", "Taille"] - df_groupe.loc["Bottom", "Taille"]
+    st.write(f"Nombre d'équipe dans le Middle : {df_groupe.loc['Middle', 'Taille']}")
+
+groupe_non_vide = df_groupe[df_groupe.Taille > 0].index
 
 
 #----------------------------------------------- IMPORTATION ET AFFICHAGE DATAFRAME ------------------------------------------------------------------------------------
 
 
-df_moy = pd.DataFrame(index = dico_annee.keys(), columns = ["Top", "Middle", "Bottom", "Global"])
-
-for i in dico_annee.keys() :
-    df = pd.read_excel(f"Passes avant un but/{i}.xlsx", index_col = 0)
-    df = df.reindex(dico_annee[i])
-    df_moy.loc[i, "Top"] = df.iloc[:nb_top].mean(axis = 0).iloc[0].round(2)
-    df_moy.loc[i, "Middle"] = df.iloc[nb_top:nb_top + nb_middle].mean(axis = 0).iloc[0].round(2)
-    df_moy.loc[i, "Bottom"] = df.iloc[nb_top + nb_middle:].mean(axis = 0).iloc[0].round(2)
-    df_moy.loc[i, "Global"] = df.mean(axis = 0).iloc[0].round(2)
-    dico_df[i] = df
+for saison in dico_saison.keys() :
+    df = pd.read_excel(f"Passes avant un but/{saison}.xlsx", index_col = 0)
+    df = df.reindex(dico_saison[saison])
+    dico_df[saison] = df
     liste_équipe += df.index.tolist()
 
 liste_équipe = list(set(liste_équipe))
 
-df_moy = df_moy.dropna(axis = 1, how = "all")
-
 st.divider()
 
-columns = st.columns([1, 4, 1, 4, 1], vertical_alignment = "center")
-
+columns = st.columns([2, 1, 3], vertical_alignment = "center", gap = "large")
 with columns[1] :
-    df_moy.index = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"]
-    select_df = st.dataframe(df_moy, on_select = "rerun", selection_mode = ["multi-row"])
+   choix_groupe = st.multiselect("Groupe à afficher", groupe_non_vide, default = groupe_non_vide.tolist())
 
-with columns[3] :
-    type_groupe = st.radio("Groupe à afficher", ["Top", "Équipe"], horizontal = True)
+with columns[2] :
+    choix_équipe = st.multiselect("Équipe à afficher", sorted(liste_équipe))
 
-    if type_groupe == "Top" :
-        choix_groupe = st.multiselect("Choix groupe", df_moy.columns, default = df_moy.columns.tolist())
 
-    else :
-        choix_groupe = st.multiselect("Choix équipes", sorted(liste_équipe))
+df_final = pd.DataFrame(index = dico_saison.keys())
+
+for saison in dico_saison.keys() :
+    df = dico_df[saison]
+    df_final.loc[saison, "Top"] = df.iloc[:df_groupe.loc["Top", "Taille"]].mean(axis = 0).iloc[0].round(2)
+    df_final.loc[saison, "Middle"] = df.iloc[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]].mean(axis = 0).iloc[0].round(2)
+    df_final.loc[saison, "Bottom"] = df.iloc[df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:].mean(axis = 0).iloc[0].round(2)
+    df_final.loc[saison, "Global"] = df.mean(axis = 0).iloc[0].round(2)
+    for équipe in choix_équipe :
+        if équipe in df.index :
+            df_final.loc[saison, équipe] = df.loc[équipe].mean(axis = 0).round(2)
+
+df_final = df_final.dropna(axis = 1, how = "all")
+
+with columns[0] :
+    df_final.index = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"]
+    select_df = st.dataframe(df_final[groupe_non_vide], on_select = "rerun", selection_mode = ["multi-row"])
+
+
 
 #----------------------------------------------- AFFICHAGE GRAPHIQUE ------------------------------------------------------------------------------------
 
+df_plot = df_final.reindex(df_final.index[::-1])[choix_groupe + choix_équipe]
 
-if len(choix_groupe) > 0 :
+if len(df_plot) > 0 :
 
     st.divider()
-
-    if type_groupe == "Top" :
-        df_plot = df_moy.reindex(df_moy.index[::-1])[choix_groupe]
-  
-    else :
-        df_plot = pd.DataFrame(index = dico_annee.keys(), columns = choix_groupe)
-        for saison in df_plot.index :
-            liste_équipe_i = list(set(choix_groupe) & set(dico_df[saison].index))
-            df_plot.loc[saison, :] = dico_df[saison].loc[liste_équipe_i, "Passe"]
-        df_plot = df_plot.reindex(df_plot.index[::-1])
     
     fig = plt.figure()
     plt.plot(df_plot, marker = "+", linewidth = 1)
     plt.grid()
-    plt.legend(df_plot.columns, fontsize = "small", ncol = 2)
+
+    bool_len_grp = len(df_plot.columns) > 1
+    grp_title = []
+    grp_title.append(f'{df_plot.columns[0]}')
+    grp_title.append(f'{", ".join(df_plot.columns[:-1])} et {df_plot.columns[-1]}')
+    plt.title(f"Graphe du nombre de passes avant un but\npour{" le"*(len(choix_groupe) > 0)} {grp_title[bool_len_grp]}",
+                fontweight = "heavy", y = 1.05, fontsize = 9)
+
+    plt.legend(df_plot.columns, bbox_to_anchor=(0.75, -0.25), fontsize = "small", ncol = 3)
     plt.xlabel("Saison", fontsize = "small", fontstyle = "italic", labelpad = 10)
     plt.ylabel("Passes", fontsize = "small", fontstyle = "italic", labelpad = 10)
     plt.tick_params(labelsize = 8)
@@ -142,7 +150,7 @@ if len(select_df.selection.rows) > 0 :
 
     compt = 0
 
-    for saison in df_moy.index[select_df.selection.rows] :
+    for saison in df_final.index[select_df.selection.rows] :
         with columns[compt] :
             if compt < len(select_df.selection.rows) - 1 :
                 columns2 = st.columns([10, 1], vertical_alignment = "center", gap = "medium")

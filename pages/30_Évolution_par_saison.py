@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from functools import partial
 
 st.set_page_config(layout="wide")
 
@@ -79,6 +80,38 @@ def import_df(saison_df, choix_data_df, file_metrique_df) :
                                     index_col=0)
 
 
+
+def couleur_bg_df(col, liste_saison, df) :
+    if col.name == "Évolution en %" :
+        color = []
+        for met in col.index :
+            count_evo = 0
+            for i in range (len(liste_saison) - 1) :
+                count_evo += (df.loc[met, liste_saison[i + 1]] >= df.loc[met, liste_saison[i]])
+            if count_evo == (len(liste_saison) - 1) :
+                color.append("background-color: rgba(0, 255, 0, 0.3)")
+            elif count_evo == 0 :
+                color.append("background-color: rgba(255, 0, 0, 0.3)")
+            elif df.loc[met, liste_saison[-1]] >= df.loc[met, liste_saison[0]] :
+                color.append("background-color: rgba(255, 255, 0, 0.3)")
+            else :
+                color.append("background-color: rgba(255, 130, 0, 0.5)")
+        return(color)
+    
+    else :
+        return ['']*len(df)
+
+def couleur_text_df(row) :
+    color = ['']
+    for i in range (len(row) - 2) :
+        if row.iloc[i] < row.iloc[i + 1] :
+            color.append("color : rgba(0, 200, 0)")
+        else :
+            color.append("color : rgba(255, 0, 0)")
+    color.append('')
+    return color
+
+
 #----------------------------------------------- DÉFINITIONS DES DICTIONNAIRES ------------------------------------------------------------------------------------
 
 
@@ -98,17 +131,23 @@ dico_met = {
     }
 
 
-dico_saison = {"2020_2021" : "2020/2021", "2021_2022" : "2021/2022", "2022_2023" : "2022/2023", "2023_2024" : "2023/2024"}
+dico_saison_fourn = {
+    "Stats Bomb" : {"2020_2021" : "2020/2021", "2021_2022" : "2021/2022", "2022_2023" : "2022/2023", "2023_2024" : "2023/2024"},
+    "Skill Corner" : {"2021_2022" : "2021/2022", "2022_2023" : "2022/2023", "2023_2024" : "2023/2024"}
+               }
 dico_df_saison = {}
 
 
 #----------------------------------------------- CHOIX SAISON ET MÉTRIQUE ------------------------------------------------------------------------------------
 
 
-columns = st.columns([1, 3, 2], gap = "large")
+columns = st.columns([2, 3, 2], gap = "large")
 
 with columns[0] :
     choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"])
+    dico_saison = dico_saison_fourn[choix_data]
+    nb_saison_comp = st.number_input("Nombre de saison à comparer", min_value = 2, max_value = len(dico_saison), value = len(dico_saison))
+    dico_saison = dict(list(dico_saison.items())[-nb_saison_comp:])
 
 if choix_data == "Skill Corner" :
     with columns[1] :
@@ -120,7 +159,7 @@ if choix_data == "Skill Corner" :
 
 #----------------------------------------------- IMPORTATION DATAFRAME SKILL CORNER ------------------------------------------------------------------------------------
     
-    for saison in list(dico_saison.keys())[1:] :
+    for saison in list(dico_saison.keys()) :
         df_import = import_df(saison, "Skill Corner", dico_met[cat_met][0])
         col_keep = [False]*df_import.shape[1]
         for cat_type in moy_met :
@@ -287,11 +326,10 @@ with columns[2] :
 #----------------------------------------------- CRÉATION DF FINAL ------------------------------------------------------------------------------------
 
 
-multi_index_liste = [dico_df_saison[saison].columns, df_groupe.index]
+multi_index_liste = [dico_df_saison[saison].columns, df_groupe.index.tolist()]
 multi_index = pd.MultiIndex.from_product(multi_index_liste, names=["Métrique", "Groupe"])
 
 df_final = pd.DataFrame(index = multi_index, columns = [dico_saison[i] for i in dico_df_saison.keys()])
-
 
 for saison in dico_df_saison.keys() :
     df = dico_df_saison[saison]
@@ -308,60 +346,19 @@ last_year = dico_saison[list(dico_df_saison.keys())[-1]]
 df_final["Évolution en %"] = 100*(df_final[last_year] - df_final[first_year])/abs(df_final[first_year])
 df_final.replace({np.nan : 0}, inplace = True)
 
+df_final = df_final.reindex(abs(df_final.loc[:, "Top", :]).sort_values(by = ["Évolution en %"], ascending = False).index, level = 0)
+
+
 st.divider()
-
-
-
-#----------------------------------------------- APPLICATION STYLE DATAFRAME ------------------------------------------------------------------------------------
-
-
-def couleur_bg_df(col) :
-    if col.name == "Évolution en %" :
-        color = []
-        for met in df_final.index :
-            col_debut = df_final[df_final.columns[0]]
-            col_inter = df_final[df_final.columns[1:-2]].mean(axis = 1)
-            col_fin = df_final[df_final.columns[-2]]
-            if col_fin[met] >= col_inter[met] and col_inter[met] >= col_debut[met] :
-                color.append("background-color: rgba(0, 255, 0, 0.3)")
-            elif col_fin[met] >= col_inter[met] and col_inter[met] < col_debut[met] :
-                color.append("background-color: rgba(255, 255, 0, 0.3)")
-            elif col_fin[met] < col_inter[met] and col_inter[met] >= col_debut[met] :
-                color.append("background-color: rgba(255, 130, 0, 0.5)")
-            else :
-                color.append("background-color: rgba(255, 0, 0, 0.3)")
-        return color
-                    
-    else :
-        return ['']*len(df_final)
-
-def couleur_text_df(row) :
-    color = ['']
-    if choix_data == "Stats Bomb" :
-        if row["2021/2022"] > row["2020/2021"] :
-            color.append("color : rgba(0, 200, 0)")
-        else :
-            color.append("color : rgba(255, 0, 0)")
-    if row["2022/2023"] > row["2021/2022"] :
-        color.append("color : rgba(0, 200, 0)")
-    else :
-        color.append("color : rgba(255, 0, 0)")
-    if row["2023/2024"] > row["2022/2023"] :
-        color.append("color : rgba(0, 200, 0)")
-    else :
-        color.append("color : rgba(255, 0, 0)")
-    color.append('')
-    return color
-
-
-df_style = df_final.style.apply(couleur_bg_df, axis = 0)
-df_style = df_style.apply(couleur_text_df, axis = 1)
 
 
 
 #----------------------------------------------- AFFICHAGE DATAFRAME ------------------------------------------------------------------------------------
 
+couleur_bg_df_partial = partial(couleur_bg_df, liste_saison = df_final.columns[:-1], df = df_final)
 
+df_style = df_final.style.apply(couleur_bg_df_partial, axis = 0)
+df_style = df_style.apply(couleur_text_df, axis = 1)
 
 st.markdown(f"<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison {first_year} et {last_year}</p>",
             unsafe_allow_html=True)
