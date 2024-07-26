@@ -26,6 +26,11 @@ st.divider()
 #----------------------------------------------- DÉFINITION FONCTIONS ------------------------------------------------------------------------------------
 
 
+if "count_type_g" not in st.session_state :
+    st.session_state.count_type_g = "Pourcentage"
+if "count_type_d" not in st.session_state :
+    st.session_state.count_type_d = "Pourcentage"
+
 @st.cache_data
 def import_df(saison_df) :
     return pd.read_excel(f"Heatmap SB/centre/Tableaux/{saison_df}.xlsx", index_col = 0)
@@ -148,8 +153,16 @@ if len(df) > 0 :
 
     with columns[1] :
         liste_type_compt = ["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"] + (1 - choix_goal)*["Pourcentage de but"]
-        count_type_g = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt)
-        count_type_d = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt)
+        index_count_type_g = 0
+        index_count_type_d = 0
+        if st.session_state.count_type_g in liste_type_compt :
+            index_count_type_g = liste_type_compt.index(st.session_state.count_type_g)
+        if st.session_state.count_type_d in liste_type_compt :
+            index_count_type_d = liste_type_compt.index(st.session_state.count_type_d)
+        st.session_state.count_type_g = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt, index = index_count_type_g)
+        st.session_state.count_type_d = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt, index = index_count_type_d)
+        count_type_g = st.session_state.count_type_g
+        count_type_d = st.session_state.count_type_d
 
     if choix_goal :
         df = df[df.But == 1]
@@ -257,11 +270,11 @@ if len(df) > 0 :
         fig2.set_edgecolor("none")
 
         bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_gv*2, bins_gh),
-                                                normalize = "Pourcentage" in count_type_g)
+                                                normalize = count_type_g in liste_type_compt[:2])
         pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000', alpha = 1)
 
         bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh),
-                                                normalize = "Pourcentage" in count_type_d)
+                                                normalize = count_type_d in liste_type_compt[:2])
         pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#FF0000')
        
         if count_type_g == "Pourcentage" :
@@ -277,7 +290,15 @@ if len(df) > 0 :
             labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0', ax = ax1,
                                             ha='center', va='center', str_format='{:.0f}', path_effects=path_eff)
         
-     
+        elif count_type_g == "Pourcentage de but" :
+            bin_statistic_but1 = pitch.bin_statistic(data[data.But == 1].x, data[data.But == 1].y, statistic='count',
+                                bins=(bins_gv*2, bins_gh))
+            (bin_statistic1["statistic"]) = np.nan_to_num((bin_statistic_but1["statistic"]/bin_statistic1["statistic"]), 0)
+            labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0', ax = ax1,
+                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
+
+
+
         if count_type_d == "Pourcentage" :
             labels2 = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0', ax = ax2,
                                             ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)   
@@ -291,6 +312,12 @@ if len(df) > 0 :
             labels2 = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0', ax = ax2,
                                             ha='center', va='center', str_format='{:.0f}', path_effects=path_eff)
 
+        elif count_type_d == "Pourcentage de but" :
+            bin_statistic_but2 = pitch.bin_statistic(data2[data2.But == 1].x_end, data2[data2.But == 1].y_end, statistic='count',
+                                    bins=(bins_dv*2, bins_dh))
+            (bin_statistic2["statistic"]) = np.nan_to_num(bin_statistic_but2["statistic"]/bin_statistic2["statistic"], 0)
+            labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0', ax = ax2,
+                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
         
         return(fig1, fig2, ax1, ax2)
 
