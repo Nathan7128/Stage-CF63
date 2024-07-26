@@ -68,7 +68,7 @@ liste_équipe = list(set(liste_équipe))
 
 st.divider()
 
-columns = st.columns([1, 1, 2], vertical_alignment = "center", gap = "large")
+columns = st.columns([2, 1, 2], vertical_alignment = "center", gap = "large")
 with columns[1] :
    choix_groupe = st.multiselect("Groupe à afficher", groupe_non_vide, default = groupe_non_vide.tolist())
 

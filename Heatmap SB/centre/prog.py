@@ -22,10 +22,14 @@ for saison in liste_saison :
     for i in centre.index :
         team_i = centre.team
         event_i = event.loc[i + 1 : i + n_event]
-        if sum(((event_i.shot_outcome == "Goal") | (event_i.type == "Own Goal Against")) & (event_i.team == centre.loc[i, "team"])) > 0 :
-            centre.loc[i, "goal"] = 1
-    
-    df = pd.concat([centre.match_id, centre.team, centre.goal, pd.DataFrame(centre.location.tolist(), index = centre.index), pd.DataFrame(centre.pass_end_location.tolist(), index = centre.index)], axis = 1, ignore_index = True)
-    df.columns = ["match_id", "Équipe", "But", "x", "y", "x_end", "y_end"]
+        event_i_goal = event_i[((event_i.shot_outcome == "Goal") | (event_i.type == "Own Goal Against")) & (event_i.team == centre.loc[i, "team"])]
+        event_i_shot = event_i[(event_i.type == "Shot") & (event_i.team == centre.loc[i, "team"])]
+        if len(event_i_goal) > 0 :
+            centre.loc[i, ["goal", "tireur/buteur"]] = [1, event_i_goal.iloc[0]["player"]]
+        elif len(event_i_shot) > 0 :
+            centre.loc[i, ["goal", "tireur/buteur"]] = [0, event_i_shot.iloc[0]["player"]]
+        
+    df = pd.concat([centre[["match_id", "team", "goal", "tireur/buteur", "player", "minute"]], pd.DataFrame(centre.location.tolist(), index = centre.index), pd.DataFrame(centre.pass_end_location.tolist(), index = centre.index)], axis = 1, ignore_index = True)
+    df.columns = ["match_id", "Équipe", "But", "tireur/buteur", "centreur", "minute", "x", "y", "x_end", "y_end"]
 
     df.to_excel(f"Heatmap SB/centre/Tableaux/{saison}.xlsx")

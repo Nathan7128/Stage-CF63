@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 
 import cmasher as cmr
 
+import matplotlib.patches as patches
+
+import numpy as np
+
 st.set_page_config(layout="wide")
 
 
@@ -47,6 +51,7 @@ dico_rank = {
 }
 
 dico_df_saison = {}
+dico_info_matchs = {}
 
 liste_équipe = []
 
@@ -69,6 +74,7 @@ for saison in liste_saison :
     df_import = import_df(saison)
     dico_df_saison[saison] = df_import
     liste_équipe += df_import.Équipe.unique().tolist()
+    dico_info_matchs[saison] = pd.read_excel(f"Data_file/Heatmap SB/Info matchs/{saison}.xlsx", index_col = 0)
 
 liste_équipe = list(set(liste_équipe))
 
@@ -124,15 +130,15 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
 
         elif groupe_plot == "Bottom" :  
             df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
-        df = pd.concat([df, df_saison[['x', 'y', 'type_action', 'But']]], axis = 0)
+        df = pd.concat([df, df_saison], axis = 0)
 
     
 else :
     for saison in dico_df_saison.keys() :
         df_saison = dico_df_saison[saison]
         df_saison = df_saison[df_saison.Équipe.isin(choix_équipe)]
-        df = pd.concat([df, df_saison[['x', 'y', 'type_action', 'But']]], axis = 0)
-
+        df_saison = pd.merge(df_saison, dico_info_matchs[saison], on = "match_id")
+        df = pd.concat([df, df_saison], axis = 0)
 
 
 #----------------------------------------------- FILTRAGE HEATMAPS ------------------------------------------------------------------------------------
@@ -143,12 +149,16 @@ if len(df) > 0 :
                                         default = [i for i in st.session_state["Type_action"] if i in df.type_action.unique()], key = "multiselect")
     df = df[df.type_action.isin(st.session_state["Type_action"])]
 
-    columns = st.columns(2, gap = "large", vertical_alignment = "center")
+    columns = st.columns(2, gap = "large", vertical_alignment = "bottom")
 
 
     with columns[0] :
         bins_h = st.number_input("Nombre de colonne pour la Heatmap de gauche", min_value = 1, step = 1, value = 5)
         bins_v = st.number_input("Nombre de ligne pour la Heatmap de gauche", min_value = 1, step = 1, value = 10)
+        
+        ""
+        choix_bins_v = st.number_input("Choisir une ligne",
+                                        min_value = 0, step = 1, max_value = bins_v)
 
     with columns[1] :
         choix_goal = st.checkbox("Sélectionner uniquement les débuts d'actions menant à un but")
@@ -158,7 +168,18 @@ if len(df) > 0 :
         
         count_type = st.selectbox("Type de comptage", ["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"])
 
+        ""
+        choix_bins_h = st.number_input("Choisir une colonne",
+                                    min_value = 0, step = 1, max_value = bins_h)
 
+
+
+    
+    if (choix_bins_h != 0) & (choix_bins_v != 0) :
+        df_sort = df[(df.x >= ((120/bins_v)*(choix_bins_v - 1))) &
+                        (df.x < ((120/bins_v)*(choix_bins_v))) &
+                        (df.y >= (80/bins_h)*(choix_bins_h - 1)) &
+                        (df.y < (80/bins_h)*(choix_bins_h))]
 
     #----------------------------------------------- AFFICHAGE HEATMAPS ------------------------------------------------------------------------------------
 
@@ -185,12 +206,26 @@ if len(df) > 0 :
         @st.cache_data
         def heatmap_percen(data, bins_h, bins_v, count_type) :
             path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
-            pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0",
-                                goal_type = "box", linewidth = 1, spot_scale = 0.002)
+            pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", axis = True,
+                label = True, tick = True, goal_type = "box", linewidth = 1, spot_scale = 0.002)
             fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
+
+            ax1.set_xticks(np.arange(80/(2*bins_h), 80 - 80/(2*bins_h) + 1, 80/bins_h), labels = np.arange(1, bins_h + 1, dtype = int))
+            ax1.set_yticks(np.arange(120/(2*bins_v), 120 - 120/(2*bins_v) + 1, 120/bins_v),
+                        labels = np.arange(1, bins_v + 1, dtype = int))
+            ax1.tick_params(axis = "y", right = False, labelright = False)
+            ax1.spines["right"].set_visible(False)
+            ax1.tick_params(axis = "x", top = False, labeltop = False)
+            ax1.spines["top"].set_visible(False)
+            ax1.spines["bottom"].set_position(("data", 0))
+            ax1.spines["left"].set_position(("data", 0))
+            ax1.set_xlim(0, 80)
+            ax1.set_ylim(0, 125)
             fig1.set_facecolor("none")
             ax1.set_facecolor((98/255, 98/255, 98/255))
             fig1.set_edgecolor("none")
+
+
             bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_v, bins_h),
                                                 normalize = "Pourcentage" in count_type)
             pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000')
@@ -204,7 +239,7 @@ if len(df) > 0 :
             elif count_type == "Valeur" :
                 labels = pitch.label_heatmap(bin_statistic1, fontsize = int(50/(bins_v + bins_h)) + 2, color='#f4edf0', ax = ax1,
                                                 ha='center', va='center', str_format='{:.0f}', path_effects=path_eff)
-            st.pyplot(fig1)
+            return fig1, ax1
 
         @st.cache_data
         def heatmap_smooth(data) :
@@ -216,18 +251,28 @@ if len(df) > 0 :
             ax2.set_facecolor((98/255, 98/255, 98/255))
             fig2.set_edgecolor("none")
             kde = pitch.kdeplot(data.x, data.y, ax = ax2, fill = True, levels = 100, thresh = 0, cmap = cmr.nuclear)
-            st.pyplot(fig2)
+            return fig2, ax2
 
 
 
 
-        col1, col2 = st.columns(2, vertical_alignment = "bottom")
+        col1, col2 = st.columns(2, vertical_alignment = "top")
         with col1 :
-            heatmap_percen(df, bins_h, bins_v, count_type)
+            fig1, ax1 = heatmap_percen(df, bins_h, bins_v, count_type)
+            if (choix_bins_h != 0) & (choix_bins_v != 0) :
+                rect = patches.Rectangle(((80/bins_h)*(choix_bins_h - 1), (120/bins_v)*(choix_bins_v - 1)),
+                                        80/bins_h, 120/bins_v, linewidth=5, edgecolor='r', facecolor='r', alpha=0.6)
+                ax1.add_patch(rect)            
+            st.pyplot(fig1)
         with col2 :
-            heatmap_smooth(df)
+            fig2, ax2 = heatmap_smooth(df)
+            st.pyplot(fig2)
 
 
     liste_goal_label = ["tirs", "buts"]
     st.markdown(f"<p style='text-align: center;'>Nombre total de {liste_goal_label[choix_goal]} : {len(df)}</p>",
                         unsafe_allow_html=True)
+    
+    if choix_bins_h > 0 and choix_bins_v > 0 and len(df_sort) > 0 and choix_groupe == "Choisir équipe" :
+        st.dataframe(df_sort[["match_date", "match_week", "home_team", "away_team", "minute", "Équipe"]],
+                     hide_index = True)

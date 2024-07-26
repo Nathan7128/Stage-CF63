@@ -21,12 +21,14 @@ for saison in liste_saison :
 
     loc_deb_action = pd.DataFrame(deb_action.location.tolist(), index = deb_action.index)
 
-    df = pd.concat([loc_deb_action, shot.team, deb_action.type_action, shot.shot_outcome == "Goal"], axis = 1)
+    df = pd.concat([loc_deb_action, shot[["team", "minute"]], deb_action.type_action, shot.shot_outcome == "Goal"], axis = 1)
 
     df = df.reset_index().drop([2, "period", "possession"], axis = 1)
 
     df.replace(to_replace = ['Interception', 'Ball Recovery', 'Duel', 'Recovery', 'Pass', 'Goal Keeper', '50/50'], value = "Open play", inplace = True)
 
-    df.columns = ["match_id", "x", "y", "Équipe", "type_action", "But"]
+    df.columns = ["match_id", "x", "y", "Équipe", "minute", "type_action", "But"]
+
+    df.drop_duplicates(inplace = True)
 
     df.to_excel(f"Heatmap SB/deb_action/Tableaux/{saison}.xlsx")

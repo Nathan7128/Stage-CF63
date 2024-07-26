@@ -53,6 +53,7 @@ dico_rank = {
 }
 
 dico_df_saison = {}
+dico_info_matchs = {}
 
 liste_équipe = []
 
@@ -74,6 +75,7 @@ for saison in liste_saison :
     df_import = import_df(saison)
     dico_df_saison[saison] = df_import
     liste_équipe += df_import.Équipe.unique().tolist()
+    dico_info_matchs[saison] = pd.read_excel(f"Data_file/Heatmap SB/Info matchs/{saison}.xlsx", index_col = 0)
 
 liste_équipe = list(set(liste_équipe))
 
@@ -139,6 +141,7 @@ else :
     for saison in dico_df_saison.keys() :
         df_saison = dico_df_saison[saison]
         df_saison = df_saison[df_saison.Équipe.isin(choix_équipe)]
+        df_saison = pd.merge(df_saison, dico_info_matchs[saison], on = "match_id")
         df = pd.concat([df, df_saison], axis = 0)
 
 
@@ -150,6 +153,15 @@ if len(df) > 0 :
 
     with columns[0] :
         choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 5 évènements suivants le centre)")
+        choix_sym_g = st.checkbox("Afficher tous les centres du même coté sur la Heatmap de gauche")
+        choix_sym_d = st.checkbox("Afficher tous les centres du même coté sur la Heatmap de droite")
+
+    if choix_sym_g :
+        df.loc[df.y > 40, "y"] = 80 - df.loc[df.y > 40, "y"]
+    if choix_sym_d :
+        df.loc[df.y_end > 40, "y_end"] = 80 - df.loc[df.y_end > 40, "y_end"]
+
+
 
     with columns[1] :
         liste_type_compt = ["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"] + (1 - choix_goal)*["Pourcentage de but"]
@@ -225,6 +237,8 @@ if len(df) > 0 :
     if len(df_sort) == 0 :
         count_type_d = "Aucune valeur"
 
+
+
 # ------------------------------------------------- AFFICHAGE DE LA HEATMAP --------------------------------------------------------
 
 
@@ -234,10 +248,9 @@ if len(df) > 0 :
         pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", half = True,
                     axis = True, label = True, tick = True, linewidth = 1.5, spot_scale = 0.002,
                     goal_type = "box")
+        
+
         fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
-
-
-
         ax1.set_xticks(np.arange(80/(2*bins_gh), 80 - 80/(2*bins_gh) + 1, 80/bins_gh), labels = np.arange(1, bins_gh + 1, dtype = int))
         ax1.set_yticks(np.arange(60 + 60/(2*bins_gv), 120 - 60/(2*bins_gv) + 1, 60/bins_gv),
                     labels = np.arange(1, bins_gv + 1, dtype = int))
@@ -256,13 +269,15 @@ if len(df) > 0 :
 
 
         fig2, ax2 = pitch.draw(constrained_layout=True, tight_layout=False)
-        ax2.set_xticks(np.arange(80/(2*bins_dh), 80 - 80/(2*bins_dh) + 1, 80/bins_dh),
-                    labels = np.arange(1, bins_dh + 1, dtype = int))
+        ax2.set_xticks(np.arange(80/(2*bins_dh), 80 - 80/(2*bins_dh) + 1, 80/bins_dh), labels = np.arange(1, bins_dh + 1, dtype = int))
         ax2.set_yticks(np.arange(60 + 60/(2*bins_dv), 120 - 60/(2*bins_dv) + 1, 60/bins_dv),
                     labels = np.arange(1, bins_dv + 1, dtype = int))
-        ax2.tick_params(axis = "y", right = False, labelright = False, left = False, labelleft = False)
-        ax2.tick_params(axis = "x", bottom = False, labelbottom = False, top = False, labeltop = False)
-        ax2.spines[:].set_visible(False)
+        ax2.tick_params(axis = "y", right = False, labelright = False)
+        ax1.spines["right"].set_visible(False)
+        ax2.tick_params(axis = "x", top = False, labeltop = False)
+        ax2.spines["top"].set_visible(False)
+        ax2.spines["bottom"].set_position(("data", 60))
+        ax2.spines["left"].set_position(("data", 0))
         ax2.set_xlim(0, 80)
         ax2.set_ylim(60, 125)
         fig2.set_facecolor("none")
@@ -336,3 +351,7 @@ if len(df) > 0 :
 
     st.markdown(f"<p style='text-align: center;'>Nombre total de centres : {len(df)}</p>",
                         unsafe_allow_html=True)
+    
+    if choix_bins_h > 0 and choix_bins_v > 0 and len(df_sort) > 0 and choix_groupe == "Choisir équipe" :
+        st.dataframe(df_sort[["match_date", "match_week", "home_team", "away_team", "minute", "centreur", "tireur/buteur", "Équipe"]],
+                     hide_index = True)
