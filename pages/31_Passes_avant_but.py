@@ -112,7 +112,7 @@ if len(df_plot) > 0 :
     grp_title = []
     grp_title.append(f'{df_plot.columns[0]}')
     grp_title.append(f'{", ".join(df_plot.columns[:-1])} et {df_plot.columns[-1]}')
-    plt.title(f"Graphe du nombre de passes avant un but\npour{" le"*(len(choix_groupe) > 0)} {grp_title[bool_len_grp]}",
+    plt.title(f"Graphe du nombre de passes avant un but\npour{' le'*(len(choix_groupe) > 0)} {grp_title[bool_len_grp]}",
                 fontweight = "heavy", y = 1.05, fontsize = 9)
 
     plt.legend(df_plot.columns, bbox_to_anchor=(0.75, -0.25), fontsize = "small", ncol = 3)

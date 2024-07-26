@@ -147,8 +147,9 @@ if len(df) > 0 :
         choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 5 évènements suivants le centre)")
 
     with columns[1] :
-        count_type_g = st.selectbox("Type de comptage Heatmap de gauche", ["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"])
-        count_type_d = st.selectbox("Type de comptage Heatmap de droite", ["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"])
+        liste_type_compt = ["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"] + (1 - choix_goal)*["Pourcentage de but"]
+        count_type_g = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt)
+        count_type_d = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt)
 
     if choix_goal :
         df = df[df.But == 1]

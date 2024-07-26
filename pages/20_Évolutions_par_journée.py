@@ -164,7 +164,7 @@ if len(groupe_plot) + len(choix_équipe) > 0 :
     grp_title = []
     grp_title.append(f'{df_final.columns[0]}')
     grp_title.append(f'{", ".join(df_final.columns[:-1])} et {df_final.columns[-1]}')
-    plt.title(f"Graphe de la métrique {choix_metrique}\npour{" le"*(len(groupe_plot) > 0)} {grp_title[bool_len_grp]} \nau cours des journées de la saison {saison.replace('_', '/')}",
+    plt.title(f"Graphe de la métrique {choix_metrique}\npour{' le'*(len(groupe_plot) > 0)} {grp_title[bool_len_grp]} \nau cours des journées de la saison {saison.replace('_', '/')}",
                 fontweight = "heavy", y = 1.05, fontsize = 9)
     plt.legend(df_final.columns, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
 
