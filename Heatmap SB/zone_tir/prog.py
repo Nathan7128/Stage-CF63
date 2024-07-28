@@ -10,10 +10,10 @@ for saison in liste_saison :
 
     shot = event[(event.type == "Shot") & (event.shot_type != "Penalty")]
 
-    df = pd.concat([pd.DataFrame(shot.location.tolist()), pd.Series(shot.team.tolist()), pd.Series(shot.match_id.tolist())], axis = 1)
+    df = pd.concat([pd.DataFrame(shot.location.tolist(), index = shot.index), shot[["team", "match_id", "player", "minute"]]], axis = 1)
 
     df.drop(2, axis = 1, inplace = True)
 
-    df.columns = ["x", "y", "Équipe", "match_id"]
+    df.columns = ["x", "y", "Équipe", "match_id", "joueur", "minute"]
 
     df.to_excel(f"Heatmap SB/zone_tir/Tableaux/{saison}.xlsx")

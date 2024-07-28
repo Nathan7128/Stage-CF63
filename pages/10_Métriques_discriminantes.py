@@ -15,8 +15,8 @@ st.divider()
 
 @st.cache_data
 def import_df(saison_df, choix_data_df, file_metrique_df) :
-    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{saison_df}/{choix_data_df}/{file_metrique_df}",
-                                    index_col=0)
+    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/{choix_data_df}/{file_metrique_df}",
+                                    index_col=[0, 1])
 
 def couleur_diff(col) :
     if col.name in ["Diff. Top avec Bottom en %", "Diff. Top avec Middle en %", "Diff. Middle avec Bottom en %"] :
@@ -32,12 +32,22 @@ def couleur_diff(col) :
 
 #----------------------------------------------- DÉFINITIONS DES DICTIONNAIRES ------------------------------------------------------------------------------------
 
+dico_rank = {"2023_2024" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Rodez Aveyron", "Paris FC", "SM Caen", "Stade Lavallois Mayenne FC",
+           "Amiens Sporting Club", "En Avant de Guingamp", "Pau FC", "Grenoble Foot 38", "Girondins de Bordeaux", "SC Bastia",
+           "FC Annecy", "AC Ajaccio", "Dunkerque", "ES Troyes AC", "US Quevilly-Rouen", "US Concarneau", "Valenciennes FC"],
+           "2022_2023" : ["Le Havre AC", "FC Metz", "Girondins de Bordeaux", "SC Bastia", "SM Caen", "En Avant de Guingamp", "Paris FC",
+           "AS Saint-Étienne", "FC Sochaux-Montbéliard", "Grenoble Foot 38", "US Quevilly-Rouen", "Amiens Sporting Club", "Pau FC",
+           "Rodez Aveyron", "Stade Lavallois Mayenne FC", "Valenciennes FC", "FC Annecy", "Dijon FCO", "Nîmes Olympique", "Chamois Niortais FC"],
+           "2021_2022" : ["Toulouse FC", "AC Ajaccio", "AJ Auxerre", "Paris FC", "FC Sochaux-Montbéliard", "En Avant de Guingamp",
+                             "SM Caen", "Le Havre AC", "Nîmes Olympique", "Pau FC", "Dijon FCO", "SC Bastia", "Chamois Niortais FC", 
+                             "Amiens Sporting Club", "Grenoble Foot 38", "Valenciennes FC", "Rodez Aveyron", "US Quevilly-Rouen",
+                             "Dunkerque", "AS Nancy-Lorraine"]}
 
 dico_type = {
-    "Physiques" : ["metrique_physical.xlsx",
+    "Physiques" : ["physical.xlsx",
         {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip", "Match all possession" : "_per_Match"}],
     
-    "Courses sans ballon avec la possession" : ["metrique_running.xlsx",
+    "Courses sans ballon avec la possession" : ["running.xlsx",
         {"Match" : "per_match", "100 runs" : "per_100_runs", "30 min. tip" : "per_30_min_tip"},
         "Type de course",
         {"Runs in behind" : "runs_in_behind", "Runs ahead of the ball" : "runs_ahead_of_the_ball", "Support runs" : "support_runs",
@@ -47,12 +57,12 @@ dico_type = {
         {"Leading to goal" : "leading_to_goal", "Leading to shot" : "leading_to_shot", "Received" : "received", "Threat" : "threat",
         "Targeted" : "targeted", "Dangerous" : "dangerous"}],
 
-    "Action sous pression" : ["metrique_pressure.xlsx",
+    "Action sous pression" : ["pressure.xlsx",
         {"Match" : "per_match", "100 pressures" : "per_100_pressures", "30 min. tip" : "per_30_min_tip"},
         "Intensité de pression",
         {"Low" : "low", "Medium" : "medium", "High" : "high"}],
     
-    "Passes à un coéquipier effectuant une course" : ["metrique_passes.xlsx",
+    "Passes à un coéquipier effectuant une course" : ["passes.xlsx",
         {"Match" : "per_match", "100 passes opportunities" : "per_100_pass_opportunities", "30 min. tip" : "per_30_min_tip"},
         "Type de course",
         {"Runs in behind" : "runs_in_behind", "Runs ahead of the ball" : "runs_ahead_of_the_ball", "Support runs" : "support_runs",
@@ -70,10 +80,12 @@ with col1 :
     choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True)
     if choix_data == "Skill Corner" :
         choix_saison = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022"], default = "2023/2024")
+        win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
     else :
         choix_saison = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"],
                                       default = "2023/2024")
     liste_saison = [i.replace("/", "_") for i in choix_saison]
+    
 
 if len(liste_saison) > 0 :
 
@@ -114,6 +126,18 @@ if len(liste_saison) > 0 :
     liste_df_metrique = []
     for saison in liste_saison :
         df_metrique = import_df(saison, choix_data, file_metrique)
+        
+        if choix_data == "Skill Corner" :
+
+            if win_met :
+                df_metrique = df_metrique[df_metrique.result == "win"]
+            
+            nb_matchs_team = df_metrique.groupby("team_name").apply(len).reindex(dico_rank[saison])
+
+            df_metrique = df_metrique.reset_index().drop(["Journée", "result"], axis = 1).groupby("team_name", as_index = True, sort = False).sum().reindex(dico_rank[saison])
+
+            df_metrique = df_metrique.divide(nb_matchs_team, axis = 0)
+            
         liste_df_metrique.append(df_metrique)
 
     # ------------------------------------------------ CRÉATION DATAFRAME MOYENNE -------------------------------------------------------------

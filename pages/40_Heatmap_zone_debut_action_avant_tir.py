@@ -23,6 +23,7 @@ if 'Type_action' not in st.session_state :
 st.title("Heatmap des zones de début d'actions menant à un tir")
 st.divider()
 
+
 #----------------------------------------------- DÉFINITION FONCTIONS ------------------------------------------------------------------------------------
 
 @st.cache_data
@@ -74,7 +75,7 @@ for saison in liste_saison :
     df_import = import_df(saison)
     dico_df_saison[saison] = df_import
     liste_équipe += df_import.Équipe.unique().tolist()
-    dico_info_matchs[saison] = pd.read_excel(f"Data_file/Heatmap SB/Info matchs/{saison}.xlsx", index_col = 0)
+    dico_info_matchs[saison] = pd.read_excel(f"Info matchs/Stats Bomb/{saison}.xlsx", index_col = 0)
 
 liste_équipe = list(set(liste_équipe))
 
@@ -156,10 +157,6 @@ if len(df) > 0 :
         bins_h = st.number_input("Nombre de colonne pour la Heatmap de gauche", min_value = 1, step = 1, value = 5)
         bins_v = st.number_input("Nombre de ligne pour la Heatmap de gauche", min_value = 1, step = 1, value = 10)
         
-        ""
-        choix_bins_v = st.number_input("Choisir une ligne",
-                                        min_value = 0, step = 1, max_value = bins_v)
-
     with columns[1] :
         choix_goal = st.checkbox("Sélectionner uniquement les débuts d'actions menant à un but")
 
@@ -168,18 +165,20 @@ if len(df) > 0 :
         
         count_type = st.selectbox("Type de comptage", ["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"])
 
-        ""
-        choix_bins_h = st.number_input("Choisir une colonne",
-                                    min_value = 0, step = 1, max_value = bins_h)
+    if choix_groupe == "Choisir équipe" :
+        columns = st.columns(2)
 
+        with columns[0] :
+            choix_bins_v = st.number_input("Choisir une ligne", min_value = 0, step = 1, max_value = bins_v)
 
-
+        with columns[1] :
+            choix_bins_h = st.number_input("Choisir une colonne", min_value = 0, step = 1, max_value = bins_h)
     
-    if (choix_bins_h != 0) & (choix_bins_v != 0) :
-        df_sort = df[(df.x >= ((120/bins_v)*(choix_bins_v - 1))) &
-                        (df.x < ((120/bins_v)*(choix_bins_v))) &
-                        (df.y >= (80/bins_h)*(choix_bins_h - 1)) &
-                        (df.y < (80/bins_h)*(choix_bins_h))]
+        if (choix_bins_h != 0) & (choix_bins_v != 0) :
+            df_sort = df[(df.x >= ((120/bins_v)*(choix_bins_v - 1))) &
+                            (df.x <= ((120/bins_v)*(choix_bins_v))) &
+                            (df.y >= (80/bins_h)*(choix_bins_h - 1)) &
+                            (df.y <= (80/bins_h)*(choix_bins_h))]
 
     #----------------------------------------------- AFFICHAGE HEATMAPS ------------------------------------------------------------------------------------
 
@@ -259,9 +258,9 @@ if len(df) > 0 :
         col1, col2 = st.columns(2, vertical_alignment = "top")
         with col1 :
             fig1, ax1 = heatmap_percen(df, bins_h, bins_v, count_type)
-            if (choix_bins_h != 0) & (choix_bins_v != 0) :
+            if choix_groupe == "Choisir équipe" and (choix_bins_h != 0) & (choix_bins_v != 0) :
                 rect = patches.Rectangle(((80/bins_h)*(choix_bins_h - 1), (120/bins_v)*(choix_bins_v - 1)),
-                                        80/bins_h, 120/bins_v, linewidth=5, edgecolor='r', facecolor='r', alpha=0.6)
+                                        80/bins_h, 120/bins_v, linewidth=4, edgecolor='r', facecolor='r', alpha=0.8)
                 ax1.add_patch(rect)            
             st.pyplot(fig1)
         with col2 :

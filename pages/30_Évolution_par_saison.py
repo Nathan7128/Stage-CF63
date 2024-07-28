@@ -76,8 +76,8 @@ st.markdown(
 
 
 def import_df(saison_df, choix_data_df, file_metrique_df) :
-    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{saison_df}/{choix_data_df}/{file_metrique_df}",
-                                    index_col=0)
+    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/{choix_data_df}/{file_metrique_df}",
+                                    index_col= [0, 1])
 
 
 
@@ -116,15 +116,15 @@ def couleur_text_df(row) :
 
 
 dico_met = {
-    "Physiques" : ["metrique_physical.xlsx", {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip",
+    "Physiques" : ["physical.xlsx", {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip",
         "Match all possession" : "_per_Match"}],
-    "Courses sans ballon avec la possession" : ["metrique_running.xlsx", {"Match" : "per_match",
+    "Courses sans ballon avec la possession" : ["running.xlsx", {"Match" : "per_match",
         "100 runs" : "per_100_runs", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind", "runs_ahead_of_the_ball",
         "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs", "dropping_off_runs",
         "pulling_half_space_runs", "cross_receiver_runs"]],
-    "Action sous pression" : ["metrique_pressure.xlsx", {"Match" : "per_match",
+    "Action sous pression" : ["pressure.xlsx", {"Match" : "per_match",
         "100 pressures" : "per_100_pressures", "30 min. tip" : "per_30_min_tip"}, ["low", "medium", "high"]],
-    "Passes à un coéquipier effectuant une course" : ["metrique_passes.xlsx", {"Match" : "per_match",
+    "Passes à un coéquipier effectuant une course" : ["passes.xlsx", {"Match" : "per_match",
         "100 passes opportunities" : "_per_100_pass_opportunities", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind",
         "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
         "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"]]
@@ -137,6 +137,17 @@ dico_saison_fourn = {
                }
 dico_df_saison = {}
 
+
+dico_rank = {"2023_2024" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Rodez Aveyron", "Paris FC", "SM Caen", "Stade Lavallois Mayenne FC",
+           "Amiens Sporting Club", "En Avant de Guingamp", "Pau FC", "Grenoble Foot 38", "Girondins de Bordeaux", "SC Bastia",
+           "FC Annecy", "AC Ajaccio", "Dunkerque", "ES Troyes AC", "US Quevilly-Rouen", "US Concarneau", "Valenciennes FC"],
+           "2022_2023" : ["Le Havre AC", "FC Metz", "Girondins de Bordeaux", "SC Bastia", "SM Caen", "En Avant de Guingamp", "Paris FC",
+           "AS Saint-Étienne", "FC Sochaux-Montbéliard", "Grenoble Foot 38", "US Quevilly-Rouen", "Amiens Sporting Club", "Pau FC",
+           "Rodez Aveyron", "Stade Lavallois Mayenne FC", "Valenciennes FC", "FC Annecy", "Dijon FCO", "Nîmes Olympique", "Chamois Niortais FC"],
+           "2021_2022" : ["Toulouse FC", "AC Ajaccio", "AJ Auxerre", "Paris FC", "FC Sochaux-Montbéliard", "En Avant de Guingamp",
+                             "SM Caen", "Le Havre AC", "Nîmes Olympique", "Pau FC", "Dijon FCO", "SC Bastia", "Chamois Niortais FC", 
+                             "Amiens Sporting Club", "Grenoble Foot 38", "Valenciennes FC", "Rodez Aveyron", "US Quevilly-Rouen",
+                             "Dunkerque", "AS Nancy-Lorraine"]}
 
 #----------------------------------------------- CHOIX SAISON ET MÉTRIQUE ------------------------------------------------------------------------------------
 
@@ -152,6 +163,7 @@ with columns[0] :
 if choix_data == "Skill Corner" :
     with columns[1] :
         cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True)
+        win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
 
     with columns[2] :
         moy_met = st.multiselect("Moyenne de la métrique", list(dico_met[cat_met][1].keys()), default = list(dico_met[cat_met][1].keys()))
@@ -161,6 +173,16 @@ if choix_data == "Skill Corner" :
     
     for saison in list(dico_saison.keys()) :
         df_import = import_df(saison, "Skill Corner", dico_met[cat_met][0])
+
+        if win_met :
+                df_import = df_import[df_import.result == "win"]
+            
+        nb_matchs_team = df_import.groupby("team_name").apply(len).reindex(dico_rank[saison])
+
+        df_import = df_import.reset_index().drop(["Journée", "result"], axis = 1).groupby("team_name", as_index = True, sort = False).sum().reindex(dico_rank[saison])
+
+        df_import = df_import.divide(nb_matchs_team, axis = 0)
+
         col_keep = [False]*df_import.shape[1]
         for cat_type in moy_met :
             cat_type = dico_met[cat_met][1][cat_type]

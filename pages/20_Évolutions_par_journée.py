@@ -20,21 +20,21 @@ groupe_non_vide = []
 choix_équipe = []
 
 dico_met = {
-    "Physiques" : ["physical",
+    "Physiques" : ["physical.xlsx",
         {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip", "Match all possession" : "_per_Match"}],
 
-    "Courses sans ballon avec la possession" : ["running",
+    "Courses sans ballon avec la possession" : ["running.xlsx",
         {"Match" : "per_match", "100 runs" : "per_100_runs", "30 min. tip" : "per_30_min_tip"},
         ["runs_in_behind", "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs",
         "overlap_runs", "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"],
         "Type de course"],
 
-    "Action sous pression" : ["pressure",
+    "Action sous pression" : ["pressure.xlsx",
         {"Match" : "per_match", "100 pressures" : "per_100_pressures", "30 min. tip" : "per_30_min_tip"},
         ["low", "medium", "high"],
         "Intensité de pression"],
 
-    "Passes à un coéquipier effectuant une course" : ["passes",
+    "Passes à un coéquipier effectuant une course" : ["passes.xlsx",
         {"Match" : "per_match", "100 passes opportunities" : "_per_100_pass_opportunities", "30 min. tip" : "per_30_min_tip"},
         ["runs_in_behind", "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs",
         "overlap_runs", "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"],
@@ -73,15 +73,22 @@ with columns[3] :
     ""
     choix_groupe_équipe = st.checkbox("Sélectionner équipe", value = False)
     choix_groupe_top = st.checkbox("Sélectionner Top/Middle/Bottom", value = False)
+    win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
 
 
 #----------------------------------------------- IMPORTATION DATAFRAME ------------------------------------------------------------------------------------
 
 @st.cache_data
 def import_df(saison_df, cat_met_df) :
-    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/Evolutions métriques/Par journée/{saison_df}/Skill Corner/{dico_met[cat_met_df][0]}_équipe.xlsx", index_col = [0, 1])
+    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/Skill Corner/{dico_met[cat_met_df][0]}", index_col = [0, 1])
 
 df = import_df(saison, cat_met)
+
+df
+
+if win_met :
+    df = df[df.result == "win"]
+
 df = df[df.columns[[(dico_met[cat_met][1][moy_met] in i) or ("ratio" in i) for i in df.columns]]]
 
 #----------------------------------------------- CHOIX MÉTRIQUE ------------------------------------------------------------------------------------
@@ -172,6 +179,7 @@ if len(groupe_plot) + len(choix_équipe) > 0 :
 
     plt.xlabel("Journée", fontsize = "small", fontstyle = "italic", labelpad = 10)
     plt.ylabel(choix_metrique, fontsize = "small", fontstyle = "italic", labelpad = 10)
+    plt.xticks(np.arange(1, df.index.levels[0][-1], 3))
 
     plt.tick_params(labelsize = 8)
     ax = plt.gca()
