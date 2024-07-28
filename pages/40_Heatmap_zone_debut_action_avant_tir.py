@@ -272,6 +272,6 @@ if len(df) > 0 :
     st.markdown(f"<p style='text-align: center;'>Nombre total de {liste_goal_label[choix_goal]} : {len(df)}</p>",
                         unsafe_allow_html=True)
     
-    if choix_bins_h > 0 and choix_bins_v > 0 and len(df_sort) > 0 and choix_groupe == "Choisir équipe" :
+    if choix_groupe == "Choisir équipe" and choix_bins_h > 0 and choix_bins_v > 0 and len(df_sort) > 0  :
         st.dataframe(df_sort[["match_date", "match_week", "home_team", "away_team", "minute", "Équipe"]],
                      hide_index = True)
