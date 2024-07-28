@@ -76,7 +76,7 @@ st.markdown(
 
 
 def import_df(saison_df, choix_data_df, file_metrique_df) :
-    return pd.read_excel(f"../Métriques discriminantes/Tableau métriques/{saison_df}/{choix_data_df}/{file_metrique_df}",
+    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/{choix_data_df}/{file_metrique_df}",
                                     index_col= [0, 1])
 
 

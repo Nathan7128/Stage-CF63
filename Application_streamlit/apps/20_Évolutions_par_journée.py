@@ -80,7 +80,7 @@ with columns[3] :
 
 @st.cache_data
 def import_df(saison_df, cat_met_df) :
-    return pd.read_excel(f"../Métriques discriminantes/Tableau métriques/{saison_df}/Skill Corner/{dico_met[cat_met_df][0]}", index_col = [0, 1])
+    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/Skill Corner/{dico_met[cat_met_df][0]}", index_col = [0, 1])
 
 df = import_df(saison, cat_met)
 

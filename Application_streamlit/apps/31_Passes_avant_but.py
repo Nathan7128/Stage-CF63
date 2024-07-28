@@ -59,7 +59,7 @@ groupe_non_vide = df_groupe[df_groupe.Taille > 0].index
 
 
 for saison in dico_saison.keys() :
-    df = pd.read_excel(f"../Passes avant un but/{saison}.xlsx", index_col = 0)
+    df = pd.read_excel(f"Passes avant un but/{saison}.xlsx", index_col = 0)
     df = df.reindex(dico_saison[saison])
     dico_df[saison] = df
     liste_équipe += df.index.tolist()

@@ -28,7 +28,7 @@ st.divider()
 
 @st.cache_data
 def import_df(saison_df) :
-    return pd.read_excel(f"../Heatmap SB/deb_action/Tableaux/{saison_df}.xlsx", index_col = 0)
+    return pd.read_excel(f"Heatmap SB/deb_action/Tableaux/{saison_df}.xlsx", index_col = 0)
 
 
 def select_type_action():
@@ -75,7 +75,7 @@ for saison in liste_saison :
     df_import = import_df(saison)
     dico_df_saison[saison] = df_import
     liste_équipe += df_import.Équipe.unique().tolist()
-    dico_info_matchs[saison] = pd.read_excel(f"../Info matchs/Stats Bomb/{saison}.xlsx", index_col = 0)
+    dico_info_matchs[saison] = pd.read_excel(f"Info matchs/Stats Bomb/{saison}.xlsx", index_col = 0)
 
 liste_équipe = list(set(liste_équipe))
 
