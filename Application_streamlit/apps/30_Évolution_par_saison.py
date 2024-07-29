@@ -318,7 +318,7 @@ if choix_data == "Skill Corner" :
 
 else :
     for saison in dico_saison.keys() :
-        df_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/moyenne/{saison}/Stats Bomb/metriques.xlsx", index_col = 0)
+        df_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison}/Stats Bomb/metriques.xlsx", index_col = 0)
         dico_df_saison[saison] = df_import
 
 
@@ -386,6 +386,7 @@ st.markdown(f"<p style='text-align: center;'>Tableau de l'évolution de chaque m
             unsafe_allow_html=True)
 
 met_sel = st.dataframe(df_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
+
 
 st.markdown(f"<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison {first_year} et {last_year} :</p>",
             unsafe_allow_html=True)
