@@ -318,7 +318,7 @@ if choix_data == "Skill Corner" :
 
 else :
     for saison in dico_saison.keys() :
-        df_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison}/Stats Bomb/metriques.xlsx", index_col = 0)
+        df_import = pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison}/{choix_data}/metriques.xlsx", index_col = 0)
         dico_df_saison[saison] = df_import
 
 
