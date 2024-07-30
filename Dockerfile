@@ -7,6 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8501
+EXPOSE 8500
 
 CMD ["streamlit", "run", "Application_streamlit/Main.py"]

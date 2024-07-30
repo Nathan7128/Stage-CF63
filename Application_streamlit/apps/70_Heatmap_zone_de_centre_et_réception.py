@@ -286,11 +286,13 @@ if len(df) > 0 :
 
         bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_gv*2, bins_gh),
                                                 normalize = count_type_g in liste_type_compt[:2])
-        pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000', alpha = 1)
-
+        
         bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh),
                                                 normalize = count_type_d in liste_type_compt[:2])
-        pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#FF0000')
+
+        if count_type_g != "Pourcentage de but" :
+            pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000', alpha = 1)        
+            pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#FF0000')
        
         if count_type_g == "Pourcentage" :
             labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0', ax = ax1,
@@ -309,6 +311,7 @@ if len(df) > 0 :
             bin_statistic_but1 = pitch.bin_statistic(data[data.But == 1].x, data[data.But == 1].y, statistic='count',
                                 bins=(bins_gv*2, bins_gh))
             (bin_statistic1["statistic"]) = np.nan_to_num((bin_statistic_but1["statistic"]/bin_statistic1["statistic"]), 0)
+            pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000', alpha = 1)
             labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0', ax = ax1,
                                             ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
 
@@ -331,6 +334,7 @@ if len(df) > 0 :
             bin_statistic_but2 = pitch.bin_statistic(data2[data2.But == 1].x_end, data2[data2.But == 1].y_end, statistic='count',
                                     bins=(bins_dv*2, bins_dh))
             (bin_statistic2["statistic"]) = np.nan_to_num(bin_statistic_but2["statistic"]/bin_statistic2["statistic"], 0)
+            pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#FF0000')
             labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0', ax = ax2,
                                             ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
         
