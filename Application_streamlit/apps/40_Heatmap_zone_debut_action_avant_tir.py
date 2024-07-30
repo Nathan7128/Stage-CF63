@@ -1,8 +1,8 @@
 import streamlit as st
 
-import matplotlib.patheffects as path_effects
-
 import pandas as pd
+
+import matplotlib.patheffects as path_effects
 
 from mplsoccer import Pitch, VerticalPitch
 
@@ -204,58 +204,60 @@ if len(df) > 0 :
 
         @st.cache_data
         def heatmap_percen(data, bins_h, bins_v, count_type) :
-            path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
-            pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", axis = True,
+            pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green", axis = True,
                 label = True, tick = True, goal_type = "box", linewidth = 1, spot_scale = 0.002)
             fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
-
             ax1.set_xticks(np.arange(80/(2*bins_h), 80 - 80/(2*bins_h) + 1, 80/bins_h), labels = np.arange(1, bins_h + 1, dtype = int))
             ax1.set_yticks(np.arange(120/(2*bins_v), 120 - 120/(2*bins_v) + 1, 120/bins_v),
                         labels = np.arange(1, bins_v + 1, dtype = int))
-            ax1.tick_params(axis = "y", right = False, labelright = False)
-            ax1.spines["right"].set_visible(False)
-            ax1.tick_params(axis = "x", top = False, labeltop = False)
-            ax1.spines["top"].set_visible(False)
-            ax1.spines["bottom"].set_position(("data", 0))
-            ax1.spines["left"].set_position(("data", 0))
+            ax1.tick_params(axis = "y", right = False, labelright = False, labelsize = "xx-small")
+            ax1.spines[:].set_visible(False)
+            ax1.tick_params(axis = "x", top = False, labeltop = False, labelsize = "xx-small")
             ax1.set_xlim(0, 80)
             ax1.set_ylim(0, 125)
             fig1.set_facecolor("none")
-            ax1.set_facecolor((98/255, 98/255, 98/255))
+            ax1.set_facecolor((1, 1, 1))
             fig1.set_edgecolor("none")
 
 
             bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_v, bins_h),
                                                 normalize = "Pourcentage" in count_type)
-            pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000')
-            if count_type == "Pourcentage" :
-                labels = pitch.label_heatmap(bin_statistic1, fontsize = int(50/(bins_v + bins_h)) + 2, color='#f4edf0', ax = ax1,
-                                                ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
-            elif count_type == "Pourcentage sans %" :
-                (bin_statistic1["statistic"]) = 100*(bin_statistic1["statistic"])
-                labels = pitch.label_heatmap(bin_statistic1, fontsize = int(50/(bins_v + bins_h)) + 2, color='#f4edf0', ax = ax1,
-                                                ha='center', va='center', str_format='{:.0f}', path_effects=path_eff)
-            elif count_type == "Valeur" :
-                labels = pitch.label_heatmap(bin_statistic1, fontsize = int(50/(bins_v + bins_h)) + 2, color='#f4edf0', ax = ax1,
-                                                ha='center', va='center', str_format='{:.0f}', path_effects=path_eff)
+            
+            pitch.heatmap(bin_statistic1, ax = ax1, cmap = st.session_state.colormapred, edgecolor='#000000', linewidth = 0.2)
+
+            dico_label_heatmap1 = {
+                "Pourcentage" : {"statistique" : np.round(bin_statistic1["statistic"], 2), "str_format" : '{:.0%}'},
+                "Pourcentage sans %" : {"statistique" : 100*np.round(bin_statistic1["statistic"], 2), "str_format" : '{:.0f}'},
+                "Valeur" : {"statistique" : bin_statistic1["statistic"], "str_format" : '{:.0f}'},
+            }
+
+            path_eff = [path_effects.Stroke(linewidth=1, foreground='black'), path_effects.Normal()]
+
+            if count_type != "Aucune valeur" :
+                dico_label_heatmap1 = dico_label_heatmap1[count_type]
+                bin_statistic1["statistic"] = dico_label_heatmap1["statistique"]
+                labels1 = pitch.label_heatmap(bin_statistic1, exclude_zeros = True, fontsize = int(50/(bins_v + bins_h)) + 2,
+                    color='#f4edf0', ax = ax1, ha='center', va='center', str_format=dico_label_heatmap1["str_format"], path_effects=path_eff)
+
             return fig1, ax1
 
         @st.cache_data
         def heatmap_smooth(data) :
-            path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
-            pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0",
+            pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green",
                                 goal_type = "box", linewidth = 1, spot_scale = 0.002)
             fig2, ax2 = pitch.draw(constrained_layout=True, tight_layout=False)
             fig2.set_facecolor("none")
-            ax2.set_facecolor((98/255, 98/255, 98/255))
+            ax2.set_xlim([0, 87])
+            ax2.set_ylim([0, 125])
+            ax2.set_facecolor((1, 1, 1))
             fig2.set_edgecolor("none")
-            kde = pitch.kdeplot(data.x, data.y, ax = ax2, fill = True, levels = 100, thresh = 0, cmap = cmr.nuclear)
+            kde = pitch.kdeplot(data.x, data.y, ax = ax2, fill = True, levels = 100, thresh = 0, cmap = st.session_state.colormapblue)
             return fig2, ax2
 
 
 
 
-        col1, col2 = st.columns(2, vertical_alignment = "top")
+        col1, col2 = st.columns(2)
         with col1 :
             fig1, ax1 = heatmap_percen(df, bins_h, bins_v, count_type)
             if choix_groupe == "Choisir équipe" and (choix_bins_h != 0) & (choix_bins_v != 0) :
