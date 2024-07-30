@@ -155,7 +155,10 @@ dico_rank = {"2023_2024" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Ro
 columns = st.columns([2, 3, 2], gap = "large")
 
 with columns[0] :
-    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"])
+    def func_select_data() :
+        st.session_state.choix_data = st.session_state.select_data
+    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], index = ["Skill Corner", "Stats Bomb"].index(st.session_state.choix_data),
+                          horizontal = True, key = "select_data", on_change = func_select_data)
     dico_saison = dico_saison_fourn[choix_data]
     nb_saison_comp = st.number_input("Nombre de saison à comparer", min_value = 2, max_value = len(dico_saison), value = len(dico_saison))
     dico_saison = dict(list(dico_saison.items())[-nb_saison_comp:])

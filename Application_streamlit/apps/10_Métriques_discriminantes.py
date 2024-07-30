@@ -75,7 +75,10 @@ dico_type = {
 col1, col2 = st.columns([1, 3], gap = "large")
 
 with col1 :
-    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True)
+    def func_select_data() :
+        st.session_state.choix_data = st.session_state.select_data
+    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], index = ["Skill Corner", "Stats Bomb"].index(st.session_state.choix_data),
+                          horizontal = True, key = "select_data", on_change = func_select_data)
     if choix_data == "Skill Corner" :
         choix_saison = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022"], default = "2023/2024")
         win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")

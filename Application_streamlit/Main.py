@@ -2,6 +2,17 @@ import streamlit as st
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patheffects as path_effects
 
+dico_session_state = {
+    "colormapblue" : LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (0, 47/255, 103/255)]),
+    "colormapred" : LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (195/255, 1/255, 64/255)]),
+    "path_eff_heatmap" : [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()],
+    "choix_data" : "Stats Bomb"
+}
+
+for key in dico_session_state.keys() :
+    if key not in st.session_state :
+        st.session_state[key] = dico_session_state[key]
+
 liste_page = []
 liste_page.append(st.Page("apps/10_Métriques_discriminantes.py", title = "Métriques discriminantes"))
 liste_page.append(st.Page("apps/20_Évolutions_par_journée.py", title = "Évolution des métriques par journée"))
@@ -15,12 +26,3 @@ pg = st.navigation(liste_page)
 
 pg.run()
 
-dico_session_state = {
-    "colormapblue" : LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (0, 47/255, 103/255)]),
-    "colormapred" : LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (195/255, 1/255, 64/255)]),
-    "path_eff_heatmap" : [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()],
-}
-
-for key in dico_session_state.keys() :
-    if key not in st.session_state :
-        st.session_state[key] = dico_session_state[key]
