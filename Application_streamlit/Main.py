@@ -1,7 +1,7 @@
 import streamlit as st
 
 dico_session_state = {
-    "choix_data" : "Stats Bomb",
+    "choix_data" : "Skill Corner",
     "cat_met" : "Physiques",
     'Type_action_deb_action' : ["Open play"],
     'Type_action_passes' : ["Open play"]
