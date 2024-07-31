@@ -1,3 +1,14 @@
+
+import matplotlib.patheffects as path_effects
+from matplotlib.colors import LinearSegmentedColormap
+
+path_effect_1 = [path_effects.Stroke(linewidth=1, foreground='black'), path_effects.Normal()]
+path_effect_2 = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
+
+colormapblue = LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (0, 47/255, 103/255)])
+colormapred = LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (195/255, 1/255, 64/255)])
+
+
 dico_type = {
     "Physiques" : ["physical.xlsx",
         {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip", "Match all possession" : "_per_Match"}],
@@ -36,6 +47,22 @@ dico_rank_SK = {"2023_2024" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", 
                              "SM Caen", "Le Havre AC", "Nîmes Olympique", "Pau FC", "Dijon FCO", "SC Bastia", "Chamois Niortais FC", 
                              "Amiens Sporting Club", "Grenoble Foot 38", "Valenciennes FC", "Rodez Aveyron", "US Quevilly-Rouen",
                              "Dunkerque", "AS Nancy-Lorraine"]}
+
+
+dico_rank_SB = {
+    "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval",
+           "Amiens", "Guingamp", "Pau", "Grenoble Foot", "Bordeaux", "Bastia",
+           "FC Annecy", "AC Ajaccio", "Dunkerque", "Troyes", "Quevilly Rouen", "Concarneau", "Valenciennes"],
+    "2022_2023" :["Le Havre", "Metz", "Bordeaux", "Bastia", "Caen", "Guingamp", "Paris FC",
+           "Saint-Étienne", "Sochaux", "Grenoble Foot", "Quevilly Rouen", "Amiens", "Pau",
+           "Rodez", "Laval", "Valenciennes", "FC Annecy", "Dijon", "Nîmes", "Chamois Niortais"],
+    "2021_2022" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux", "Guingamp", "Caen", "Le Havre", "Nîmes",
+                             "Pau", "Dijon", "Bastia", "Chamois Niortais", "Amiens", "Grenoble Foot", "Valenciennes", "Rodez", 
+                             "Quevilly Rouen", "Dunkerque", "Nancy"],
+    "2020_2021" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC", "Auxerre", "Sochaux", "Nancy",
+                             "Guingamp", "Amiens", "Valenciennes", "Le Havre", "AC Ajaccio", "Pau", "Rodez", "Dunkerque", "Caen", 
+                             "Chamois Niortais", "Chambly", "Châteauroux"]
+                             }
 
 dico_cat_run = {"Dangerous" : "dangerous",
                                 "Leading to shot" : "leading_to_shot",

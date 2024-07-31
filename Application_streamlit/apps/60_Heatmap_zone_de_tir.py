@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 
 import matplotlib.patches as patches
 
+from config_py.variable import path_effect_2, dico_rank_SB, colormapblue, colormapred
+
 st.set_page_config(layout="wide")
 
 
@@ -26,22 +28,6 @@ st.divider()
 def import_df(saison_df) :
     return pd.read_excel(f"Heatmap SB/zone_tir/Tableaux/{saison_df}.xlsx", index_col = 0)
 
-
-#----------------------------------------------- DÉFINITION DES DICOS ------------------------------------------------------------------------------------
-
-
-dico_rank = {
-     "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval", "Amiens", "Guingamp", "Pau",
-          "Grenoble Foot", "Bordeaux", "Bastia", "FC Annecy", "AC Ajaccio", "Dunkerque", "Troyes", "Quevilly Rouen", "Concarneau",
-          "Valenciennes"],
-     "2022_2023" : ["Le Havre", "Metz", "Bordeaux", "Bastia", "Caen", "Guingamp", "Paris FC", "Saint-Étienne", "Sochaux", "Grenoble Foot",
-          "Quevilly Rouen", "Amiens", "Pau", "Rodez", "Laval", "Valenciennes", "FC Annecy", "Dijon", "Nîmes", "Chamois Niortais"],
-     "2021_2022" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux", "Guingamp", "Caen", "Le Havre", "Nîmes", "Pau", "Dijon",
-          "Bastia", "Chamois Niortais", "Amiens", "Grenoble Foot", "Valenciennes", "Rodez",  "Quevilly Rouen", "Dunkerque", "Nancy"],
-     "2020_2021" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC", "Auxerre", "Sochaux", "Nancy", "Guingamp",
-          "Amiens", "Valenciennes", "Le Havre", "AC Ajaccio", "Pau", "Rodez", "Dunkerque", "Caen",  "Chamois Niortais", "Chambly",
-          "Châteauroux"]
-}
 
 dico_df_saison = {}
 dico_info_matchs = {}
@@ -118,13 +104,13 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
         df_saison = dico_df_saison[saison]
     
         if groupe_plot == "Top" :
-            df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][:df_groupe.loc["Top", "Taille"]])]
+            df_saison = df_saison[df_saison.Équipe.isin(dico_rank_SB[saison][:df_groupe.loc["Top", "Taille"]])]
 
         elif groupe_plot == "Middle" :
-            df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]])]
+            df_saison = df_saison[df_saison.Équipe.isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]])]
 
         elif groupe_plot == "Bottom" :  
-            df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
+            df_saison = df_saison[df_saison.Équipe.isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
         df = pd.concat([df, df_saison[['x', 'y']]], axis = 0)
 
     
@@ -209,7 +195,7 @@ if len(df) > 0 :
         ax1.set_ylim([80, 125])
         bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_v*3, bins_h),
                                                 normalize = "Pourcentage" in count_type)
-        pitch.heatmap(bin_statistic1, ax = ax1, cmap = st.session_state.colormapred, edgecolor='#000000', linewidth = 0.2)
+        pitch.heatmap(bin_statistic1, ax = ax1, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
 
         dico_label_heatmap1 = {
             "Pourcentage" : {"statistique" : np.round(bin_statistic1["statistic"], 2), "str_format" : '{:.0%}'},
@@ -217,13 +203,11 @@ if len(df) > 0 :
             "Valeur" : {"statistique" : bin_statistic1["statistic"], "str_format" : '{:.0f}'},
         }
 
-        path_eff = st.session_state.path_eff_heatmap
-
         if count_type != "Aucune valeur" :
             dico_label_heatmap1 = dico_label_heatmap1[count_type]
             bin_statistic1["statistic"] = dico_label_heatmap1["statistique"]
             labels1 = pitch.label_heatmap(bin_statistic1, exclude_zeros = True, fontsize = int(100/(bins_h + bins_v)) + 2,
-                color='#f4edf0', ax = ax1, ha='center', va='center', str_format=dico_label_heatmap1["str_format"], path_effects=path_eff)
+                color='#f4edf0', ax = ax1, ha='center', va='center', str_format=dico_label_heatmap1["str_format"], path_effects=path_effect_2)
 
         return fig1, ax1
 
@@ -237,7 +221,7 @@ if len(df) > 0 :
         fig2.set_facecolor("none")
         ax2.set_facecolor((1, 1, 1))
         fig2.set_edgecolor("none")
-        kde = pitch.kdeplot(data.x, data.y, ax = ax2, fill = True, levels = 100, thresh = 0, cmap = st.session_state.colormapblue)
+        kde = pitch.kdeplot(data.x, data.y, ax = ax2, fill = True, levels = 100, thresh = 0, cmap = colormapblue)
         
         return fig2, ax2
 

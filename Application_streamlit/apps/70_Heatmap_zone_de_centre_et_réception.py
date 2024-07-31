@@ -1,18 +1,14 @@
 import streamlit as st
 
-import matplotlib.patheffects as path_effects
-
 import pandas as pd
 
 from mplsoccer import Pitch, VerticalPitch
 
-import streamlit_vertical_slider as svs
-
 import matplotlib.pyplot as plt
 
-import cmasher as cmr
-
 import numpy as np
+
+from config_py.variable import path_effect_2, dico_rank_SB, colormapblue, colormapred
 
 import matplotlib.patches as patches
 
@@ -25,32 +21,10 @@ st.divider()
 
 #----------------------------------------------- DÉFINITION FONCTIONS ------------------------------------------------------------------------------------
 
-
-if "count_type_g" not in st.session_state :
-    st.session_state.count_type_g = "Pourcentage"
-if "count_type_d" not in st.session_state :
-    st.session_state.count_type_d = "Pourcentage"
-
 @st.cache_data
 def import_df(saison_df) :
     return pd.read_excel(f"Heatmap SB/centre/Tableaux/{saison_df}.xlsx", index_col = 0)
 
-
-#----------------------------------------------- DÉFINITION DES DICOS ------------------------------------------------------------------------------------
-
-
-dico_rank = {
-     "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval", "Amiens", "Guingamp", "Pau",
-          "Grenoble Foot", "Bordeaux", "Bastia", "FC Annecy", "AC Ajaccio", "Dunkerque", "Troyes", "Quevilly Rouen", "Concarneau",
-          "Valenciennes"],
-     "2022_2023" : ["Le Havre", "Metz", "Bordeaux", "Bastia", "Caen", "Guingamp", "Paris FC", "Saint-Étienne", "Sochaux", "Grenoble Foot",
-          "Quevilly Rouen", "Amiens", "Pau", "Rodez", "Laval", "Valenciennes", "FC Annecy", "Dijon", "Nîmes", "Chamois Niortais"],
-     "2021_2022" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux", "Guingamp", "Caen", "Le Havre", "Nîmes", "Pau", "Dijon",
-          "Bastia", "Chamois Niortais", "Amiens", "Grenoble Foot", "Valenciennes", "Rodez",  "Quevilly Rouen", "Dunkerque", "Nancy"],
-     "2020_2021" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC", "Auxerre", "Sochaux", "Nancy", "Guingamp",
-          "Amiens", "Valenciennes", "Le Havre", "AC Ajaccio", "Pau", "Rodez", "Dunkerque", "Caen",  "Chamois Niortais", "Chambly",
-          "Châteauroux"]
-}
 
 dico_df_saison = {}
 dico_info_matchs = {}
@@ -127,13 +101,13 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
         df_saison = dico_df_saison[saison]
     
         if groupe_plot == "Top" :
-            df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][:df_groupe.loc["Top", "Taille"]])]
+            df_saison = df_saison[df_saison.Équipe.isin(dico_rank_SB[saison][:df_groupe.loc["Top", "Taille"]])]
 
         elif groupe_plot == "Middle" :
-            df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]])]
+            df_saison = df_saison[df_saison.Équipe.isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]])]
 
         elif groupe_plot == "Bottom" :  
-            df_saison = df_saison[df_saison.Équipe.isin(dico_rank[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
+            df_saison = df_saison[df_saison.Équipe.isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
         df = pd.concat([df, df_saison], axis = 0)
 
     
@@ -165,16 +139,8 @@ if len(df) > 0 :
 
     with columns[1] :
         liste_type_compt = ["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"] + (1 - choix_goal)*["Pourcentage de but"]
-        index_count_type_g = 0
-        index_count_type_d = 0
-        if st.session_state.count_type_g in liste_type_compt :
-            index_count_type_g = liste_type_compt.index(st.session_state.count_type_g)
-        if st.session_state.count_type_d in liste_type_compt :
-            index_count_type_d = liste_type_compt.index(st.session_state.count_type_d)
-        st.session_state.count_type_g = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt, index = index_count_type_g)
-        st.session_state.count_type_d = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt, index = index_count_type_d)
-        count_type_g = st.session_state.count_type_g
-        count_type_d = st.session_state.count_type_d
+        count_type_g = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt)
+        count_type_d = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt)
 
     if choix_goal :
         df = df[df.But == 1]
@@ -244,7 +210,6 @@ if len(df) > 0 :
 
     @st.cache_data
     def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, count_type_g, count_type_d) :
-        path_eff = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
         pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color='#f4edf0', line_color = "#f4edf0", half = True,
                     axis = True, label = True, tick = True, linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
         
@@ -291,52 +256,52 @@ if len(df) > 0 :
 
         if count_type_g != "Pourcentage de but" :
             # {'flat', 'nearest', 'gouraud', 'auto'}
-            pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000', )        
-            pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#FF0000')
+            pitch.heatmap(bin_statistic1, ax = ax1, cmap = colormapred, edgecolor='#FF0000', )        
+            pitch.heatmap(bin_statistic2, ax = ax2, cmap = colormapblue, edgecolor='#FF0000')
        
         if count_type_g == "Pourcentage" :
             labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0', ax = ax1,
-                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
+                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_effect_2)
 
         elif count_type_g == "Pourcentage sans %" :
             (bin_statistic1["statistic"]) = 100*(bin_statistic1["statistic"])
             labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0', ax = ax1,
-                                            ha='center', va='center', str_format='{:.0f}', path_effects=path_eff)
+                                            ha='center', va='center', str_format='{:.0f}', path_effects=path_effect_2)
             
         elif count_type_g == "Valeur" :
             labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0', ax = ax1,
-                                            ha='center', va='center', str_format='{:.0f}', path_effects=path_eff)
+                                            ha='center', va='center', str_format='{:.0f}', path_effects=path_effect_2)
         
         elif count_type_g == "Pourcentage de but" :
             bin_statistic_but1 = pitch.bin_statistic(data[data.But == 1].x, data[data.But == 1].y, statistic='count',
                                 bins=(bins_gv*2, bins_gh))
             (bin_statistic1["statistic"]) = np.nan_to_num((bin_statistic_but1["statistic"]/bin_statistic1["statistic"]), 0)
-            pitch.heatmap(bin_statistic1, ax = ax1, cmap = cmr.nuclear, edgecolor='#FF0000', alpha = 1)
+            pitch.heatmap(bin_statistic1, ax = ax1, cmap = colormapred, edgecolor='#FF0000', alpha = 1)
             labels = pitch.label_heatmap(bin_statistic1, fontsize = int(100/(bins_gv + bins_gh)) + 2, color='#f4edf0', ax = ax1,
-                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
+                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_effect_2)
 
 
 
         if count_type_d == "Pourcentage" :
             labels2 = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0', ax = ax2,
-                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)   
+                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_effect_2)   
    
         elif count_type_d == "Pourcentage sans %" :
             (bin_statistic2["statistic"]) = 100*(bin_statistic2["statistic"])
             labels2 = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0', ax = ax2,
-                                            ha='center', va='center', str_format='{:.0f}', path_effects=path_eff)
+                                            ha='center', va='center', str_format='{:.0f}', path_effects=path_effect_2)
     
         elif count_type_d == "Valeur" :
             labels2 = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0', ax = ax2,
-                                            ha='center', va='center', str_format='{:.0f}', path_effects=path_eff)
+                                            ha='center', va='center', str_format='{:.0f}', path_effects=path_effect_2)
 
         elif count_type_d == "Pourcentage de but" :
             bin_statistic_but2 = pitch.bin_statistic(data2[data2.But == 1].x_end, data2[data2.But == 1].y_end, statistic='count',
                                     bins=(bins_dv*2, bins_dh))
             (bin_statistic2["statistic"]) = np.nan_to_num(bin_statistic_but2["statistic"]/bin_statistic2["statistic"], 0)
-            pitch.heatmap(bin_statistic2, ax = ax2, cmap = cmr.nuclear, edgecolor='#FF0000')
+            pitch.heatmap(bin_statistic2, ax = ax2, cmap = colormapblue, edgecolor='#FF0000')
             labels = pitch.label_heatmap(bin_statistic2, fontsize = int(100/(bins_dv + bins_dh)) + 2, color='#f4edf0', ax = ax2,
-                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_eff)
+                                            ha='center', va='center', str_format='{:.0%}', path_effects=path_effect_2)
         
         return(fig1, fig2, ax1, ax2)
 

@@ -1,11 +1,6 @@
 import streamlit as st
-from matplotlib.colors import LinearSegmentedColormap
-import matplotlib.patheffects as path_effects
 
 dico_session_state = {
-    "colormapblue" : LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (0, 47/255, 103/255)]),
-    "colormapred" : LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (195/255, 1/255, 64/255)]),
-    "path_eff_heatmap" : [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()],
     "choix_data" : "Stats Bomb",
     "cat_met" : "Physiques",
     'Type_action_deb_action' : ["Open play"],

@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from config_py.variable import dico_rank_SB
+
 st.set_page_config(layout="wide")
 
 st.title("Moyenne du nombre de passes avant un but d'une compétition")
@@ -9,25 +11,6 @@ st.title("Moyenne du nombre de passes avant un but d'une compétition")
 
 def func_change(key1, key2) :
     st.session_state[key1] = st.session_state[key2]
-
-
-#----------------------------------------------- DEFINITION DICTIONNAIRE ------------------------------------------------------------------------------------
-
-
-dico_saison = {
-    "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval",
-           "Amiens", "Guingamp", "Pau", "Grenoble Foot", "Bordeaux", "Bastia",
-           "FC Annecy", "AC Ajaccio", "Dunkerque", "Troyes", "Quevilly Rouen", "Concarneau", "Valenciennes"],
-    "2022_2023" :["Le Havre", "Metz", "Bordeaux", "Bastia", "Caen", "Guingamp", "Paris FC",
-           "Saint-Étienne", "Sochaux", "Grenoble Foot", "Quevilly Rouen", "Amiens", "Pau",
-           "Rodez", "Laval", "Valenciennes", "FC Annecy", "Dijon", "Nîmes", "Chamois Niortais"],
-    "2021_2022" : ["Toulouse", "AC Ajaccio", "Auxerre", "Paris FC", "Sochaux", "Guingamp", "Caen", "Le Havre", "Nîmes",
-                             "Pau", "Dijon", "Bastia", "Chamois Niortais", "Amiens", "Grenoble Foot", "Valenciennes", "Rodez", 
-                             "Quevilly Rouen", "Dunkerque", "Nancy"],
-    "2020_2021" : ["Troyes", "Clermont Foot", "Toulouse", "Grenoble Foot", "Paris FC", "Auxerre", "Sochaux", "Nancy",
-                             "Guingamp", "Amiens", "Valenciennes", "Le Havre", "AC Ajaccio", "Pau", "Rodez", "Dunkerque", "Caen", 
-                             "Chamois Niortais", "Chambly", "Châteauroux"]
-                             }
 
 
 liste_équipe = []
@@ -65,7 +48,7 @@ groupe_non_vide = df_groupe[df_groupe.Taille > 0].index
 #----------------------------------------------- IMPORTATION ET AFFICHAGE DATAFRAME ------------------------------------------------------------------------------------
 
 
-for saison in dico_saison.keys() :
+for saison in dico_rank_SB.keys() :
     df = pd.read_excel(f"Passes avant un but/{saison}.xlsx", index_col = 0)
     dico_df[saison] = df
     liste_équipe += df.team.unique().tolist()
@@ -83,12 +66,12 @@ type_action = st.multiselect("Choisir le type de début d'action", options = df.
 if len(type_action) > 0 :
 
 
-    for saison in dico_saison.keys() :
+    for saison in dico_rank_SB.keys() :
         df = dico_df[saison]
         df = df[df.type_action.isin(type_action)][["team", 'Passe']].groupby("team")
         nb_but = df.size()
         df = df.sum()
-        df = df.divide(nb_but, axis = 0).reindex(dico_saison[saison])
+        df = df.divide(nb_but, axis = 0).reindex(dico_rank_SB[saison])
         dico_df[saison] = df
 
     st.divider()
@@ -101,9 +84,9 @@ if len(type_action) > 0 :
         choix_équipe = st.multiselect("Équipe à afficher", sorted(liste_équipe))
 
 
-    df_final = pd.DataFrame(index = dico_saison.keys())
+    df_final = pd.DataFrame(index = dico_rank_SB.keys())
 
-    for saison in dico_saison.keys() :
+    for saison in dico_rank_SB.keys() :
         df = dico_df[saison]
         df_final.loc[saison, "Top"] = df.iloc[:df_groupe.loc["Top", "Taille"]].mean(axis = 0).iloc[0].round(2)
         df_final.loc[saison, "Middle"] = df.iloc[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]].mean(axis = 0).iloc[0].round(2)
