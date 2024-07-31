@@ -88,8 +88,6 @@ def import_df(saison_df, cat_met_df) :
 
 df = import_df(saison, cat_met)
 
-df
-
 if win_met :
     df = df[df.result == "win"]
 

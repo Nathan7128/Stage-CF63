@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import signal
 
+from config_py.fonction import func_change
+
 st.set_page_config(layout = "wide")
 
 st.title("Métriques discriminantes d'une compétition")
@@ -15,9 +17,6 @@ st.divider()
 def import_df(saison_df, choix_data_df, file_metrique_df) :
     return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/{choix_data_df}/{file_metrique_df}",
                                     index_col=[0, 1])
-
-def func_change(key1, key2) :
-    st.session_state[key1] = st.session_state[key2]
 
 def couleur_diff(col) :
     if col.name in ["Diff. Top avec Bottom en %", "Diff. Top avec Middle en %", "Diff. Middle avec Bottom en %"] :
