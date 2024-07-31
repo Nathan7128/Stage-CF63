@@ -16,10 +16,6 @@ import numpy as np
 
 st.set_page_config(layout="wide")
 
-
-if 'Type_action' not in st.session_state :
-    st.session_state['Type_action'] = ["Open play"]
-
 st.title("Heatmap des zones de début d'actions menant à un tir")
 st.divider()
 
@@ -31,8 +27,8 @@ def import_df(saison_df) :
     return pd.read_excel(f"Heatmap SB/deb_action/Tableaux/{saison_df}.xlsx", index_col = 0)
 
 
-def select_type_action():
-    st.session_state['Type_action'] = st.session_state.multiselect
+def func_change(key1, key2) :
+    st.session_state[key1] = st.session_state[key2]
 
 
 #----------------------------------------------- DÉFINITION DES DICOS ------------------------------------------------------------------------------------
@@ -145,10 +141,10 @@ else :
 #----------------------------------------------- FILTRAGE HEATMAPS ------------------------------------------------------------------------------------
 
 if len(df) > 0 :
-
-    st.multiselect("Choisir le type de début d'action", options = df.type_action.unique(), on_change = select_type_action,
-                                        default = [i for i in st.session_state["Type_action"] if i in df.type_action.unique()], key = "multiselect")
-    df = df[df.type_action.isin(st.session_state["Type_action"])]
+    st.session_state["select_Type_action_deb_action"] = [i for i in st.session_state["Type_action_deb_action"] if i in df.type_action.unique()]
+    type_action = st.multiselect("Choisir le type de début d'action", options = df.type_action.unique(), on_change = func_change,
+                   key = "select_Type_action_deb_action", args = ("Type_action_deb_action", "select_Type_action_deb_action"))
+    df = df[df.type_action.isin(type_action)]
 
     columns = st.columns(2, gap = "large", vertical_alignment = "bottom")
 
@@ -182,7 +178,7 @@ if len(df) > 0 :
 
     #----------------------------------------------- AFFICHAGE HEATMAPS ------------------------------------------------------------------------------------
 
-    if len(st.session_state["Type_action"]) > 0 :
+    if len(type_action) > 0 :
         
         st.divider()
         bool_len_grp = (len(saison_choice) > 1)

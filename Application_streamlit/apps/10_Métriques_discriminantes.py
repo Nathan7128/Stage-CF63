@@ -16,6 +16,9 @@ def import_df(saison_df, choix_data_df, file_metrique_df) :
     return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/{choix_data_df}/{file_metrique_df}",
                                     index_col=[0, 1])
 
+def func_change(key1, key2) :
+    st.session_state[key1] = st.session_state[key2]
+
 def couleur_diff(col) :
     if col.name in ["Diff. Top avec Bottom en %", "Diff. Top avec Middle en %", "Diff. Middle avec Bottom en %"] :
         color = []
@@ -75,10 +78,9 @@ dico_type = {
 col1, col2 = st.columns([1, 3], gap = "large")
 
 with col1 :
-    def func_select_data() :
-        st.session_state.choix_data = st.session_state.select_data
-    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], index = ["Skill Corner", "Stats Bomb"].index(st.session_state.choix_data),
-                          horizontal = True, key = "select_data", on_change = func_select_data)
+    func_change("select_data", "choix_data")
+    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True,
+                          key = "select_data", on_change = func_change, args = ("choix_data", "select_data"))
     if choix_data == "Skill Corner" :
         choix_saison = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022"], default = "2023/2024")
         win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
@@ -115,7 +117,9 @@ if len(liste_saison) > 0 :
 
     if choix_data == "Skill Corner" :
         with col2 :
-            cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True)
+            func_change("select_cat_met", "cat_met")
+            cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True, key = 'select_cat_met',
+                               on_change = func_change, args = ("cat_met", "select_cat_met"))
 
             cat_moy = st.radio("Moyenne de la métrique", dico_type[cat_met][1].keys(), horizontal = True)
 

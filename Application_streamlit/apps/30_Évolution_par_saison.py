@@ -74,12 +74,13 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
+@st.cache_data
 def import_df(saison_df, choix_data_df, file_metrique_df) :
     return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/{choix_data_df}/{file_metrique_df}",
                                     index_col= [0, 1])
 
-
+def func_change(key1, key2) :
+    st.session_state[key1] = st.session_state[key2]
 
 def couleur_bg_df(col, liste_saison, df) :
     if col.name == "Évolution en %" :
@@ -155,17 +156,18 @@ dico_rank = {"2023_2024" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Ro
 columns = st.columns([2, 3, 2], gap = "large")
 
 with columns[0] :
-    def func_select_data() :
-        st.session_state.choix_data = st.session_state.select_data
-    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], index = ["Skill Corner", "Stats Bomb"].index(st.session_state.choix_data),
-                          horizontal = True, key = "select_data", on_change = func_select_data)
+    func_change("select_data", "choix_data")
+    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True,
+                          key = "select_data", on_change = func_change, args = ("choix_data", "select_data"))
     dico_saison = dico_saison_fourn[choix_data]
     nb_saison_comp = st.number_input("Nombre de saison à comparer", min_value = 2, max_value = len(dico_saison), value = len(dico_saison))
     dico_saison = dict(list(dico_saison.items())[-nb_saison_comp:])
 
 if choix_data == "Skill Corner" :
     with columns[1] :
-        cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True)
+        func_change("select_cat_met", "cat_met")
+        cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True, key = 'select_cat_met',
+                            on_change = func_change, args = ("cat_met", "select_cat_met"))
         win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
 
     with columns[2] :
@@ -356,56 +358,58 @@ multi_index = pd.MultiIndex.from_product(multi_index_liste, names=["Métrique", 
 
 df_final = pd.DataFrame(index = multi_index, columns = [dico_saison[i] for i in dico_df_saison.keys()])
 
-for saison in dico_df_saison.keys() :
-    df = dico_df_saison[saison]
-    saison = dico_saison[saison]
+if len(df_final) > 0 :
 
-    df_final.loc[idx[:, "Top"], saison] = df.iloc[:df_groupe.loc["Top", "Taille"]].mean(axis = 0).values
-    df_final.loc[idx[:, "Middle"], saison] = df.iloc[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]].mean(axis = 0).values
-    df_final.loc[idx[:, "Bottom"], saison] = df.iloc[df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:].mean(axis = 0).values
+    for saison in dico_df_saison.keys() :
+        df = dico_df_saison[saison]
+        saison = dico_saison[saison]
 
-df_final.dropna(axis = 0, how = "all", inplace = True)
-df_final.replace({0 : np.nan}, inplace = True)
-first_year = dico_saison[list(dico_df_saison.keys())[0]]
-last_year = dico_saison[list(dico_df_saison.keys())[-1]]
-df_final["Évolution en %"] = 100*(df_final[last_year] - df_final[first_year])/abs(df_final[first_year])
-df_final.replace({np.nan : 0}, inplace = True)
+        df_final.loc[idx[:, "Top"], saison] = df.iloc[:df_groupe.loc["Top", "Taille"]].mean(axis = 0).values
+        df_final.loc[idx[:, "Middle"], saison] = df.iloc[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]].mean(axis = 0).values
+        df_final.loc[idx[:, "Bottom"], saison] = df.iloc[df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:].mean(axis = 0).values
 
-df_final = df_final.reindex(abs(df_final.loc[:, "Top", :]).sort_values(by = ["Évolution en %"], ascending = False).index, level = 0)
+    df_final.dropna(axis = 0, how = "all", inplace = True)
+    df_final.replace({0 : np.nan}, inplace = True)
+    first_year = dico_saison[list(dico_df_saison.keys())[0]]
+    last_year = dico_saison[list(dico_df_saison.keys())[-1]]
+    df_final["Évolution en %"] = 100*(df_final[last_year] - df_final[first_year])/abs(df_final[first_year])
+    df_final.replace({np.nan : 0}, inplace = True)
+
+    df_final = df_final.reindex(abs(df_final.loc[:, "Top", :]).sort_values(by = ["Évolution en %"], ascending = False).index, level = 0)
 
 
-st.divider()
+    st.divider()
 
 
 
 #----------------------------------------------- AFFICHAGE DATAFRAME ------------------------------------------------------------------------------------
 
-couleur_bg_df_partial = partial(couleur_bg_df, liste_saison = df_final.columns[:-1], df = df_final)
+    couleur_bg_df_partial = partial(couleur_bg_df, liste_saison = df_final.columns[:-1], df = df_final)
 
-df_style = df_final.style.apply(couleur_bg_df_partial, axis = 0)
-df_style = df_style.apply(couleur_text_df, axis = 1)
+    df_style = df_final.style.apply(couleur_bg_df_partial, axis = 0)
+    df_style = df_style.apply(couleur_text_df, axis = 1)
 
-st.markdown(f"<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison {first_year} et {last_year}</p>",
-            unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center;'>Tableau de l'évolution de chaque métrique entre la saison {first_year} et {last_year}</p>",
+                unsafe_allow_html=True)
 
-met_sel = st.dataframe(df_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
-
-
-st.markdown(f"<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison {first_year} et {last_year} :</p>",
-            unsafe_allow_html=True)
+    met_sel = st.dataframe(df_style, width = 10000, on_select = "rerun", selection_mode = "multi-row")
 
 
-# Afficher le texte avec le style défini
+    st.markdown(f"<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison {first_year} et {last_year} :</p>",
+                unsafe_allow_html=True)
 
-columns = st.columns(4)
-with columns[0] :
-    st.markdown('<div class="highlight1">Augmentation constante</div>', unsafe_allow_html=True)
-with columns[1] :
-    st.markdown('<div class="highlight2">Tendance haussière</div>', unsafe_allow_html=True)
-with columns[2] :
-    st.markdown('<div class="highlight3">Tendance baissière</div>', unsafe_allow_html=True)
-with columns[3] :
-    st.markdown('<div class="highlight4">Diminution constante</div>', unsafe_allow_html=True)
+
+    # Afficher le texte avec le style défini
+
+    columns = st.columns(4)
+    with columns[0] :
+        st.markdown('<div class="highlight1">Augmentation constante</div>', unsafe_allow_html=True)
+    with columns[1] :
+        st.markdown('<div class="highlight2">Tendance haussière</div>', unsafe_allow_html=True)
+    with columns[2] :
+        st.markdown('<div class="highlight3">Tendance baissière</div>', unsafe_allow_html=True)
+    with columns[3] :
+        st.markdown('<div class="highlight4">Diminution constante</div>', unsafe_allow_html=True)
 
 
 
@@ -413,26 +417,26 @@ with columns[3] :
 
 
 
-if len(met_sel.selection.rows) > 0 :
+    if len(met_sel.selection.rows) > 0 :
 
-    st.divider()
+        st.divider()
 
-    evo_graphe = df_style.data.iloc[met_sel.selection.rows].drop("Évolution en %", axis = 1)
-    new_index = []
-    for i in df_style.index[met_sel.selection.rows] :
-        new_index.append(i[1] + " - " + i[0])
-    evo_graphe = evo_graphe.reset_index()
-    evo_graphe.index = new_index
-    evo_graphe = evo_graphe.drop(["Métrique", "Groupe"], axis = 1).T
-    fig = plt.figure()
-    plt.plot(evo_graphe, linewidth = 0.7)
-    plt.title("Graphique de l'évolution des métriques sélectionnées", fontweight = "heavy", y = 1.05, fontsize = 9)
-    plt.grid()
-    plt.legend(evo_graphe.columns, loc = "lower center", bbox_to_anchor=(0.5, -0.35 - 0.08*(int((len(evo_graphe.columns) + 1)/2) - 1)),
-               fontsize = "small", ncol = 2)
-    plt.xlabel("Saison", fontsize = "small", fontstyle = "italic", labelpad = 10)
-    plt.ylabel("Métrique", fontsize = "small", fontstyle = "italic", labelpad = 10)
-    plt.tick_params(labelsize = 8)
-    ax = plt.gca()
-    ax.spines[:].set_visible(False)
-    st.pyplot(fig)
+        evo_graphe = df_style.data.iloc[met_sel.selection.rows].drop("Évolution en %", axis = 1)
+        new_index = []
+        for i in df_style.index[met_sel.selection.rows] :
+            new_index.append(i[1] + " - " + i[0])
+        evo_graphe = evo_graphe.reset_index()
+        evo_graphe.index = new_index
+        evo_graphe = evo_graphe.drop(["Métrique", "Groupe"], axis = 1).T
+        fig = plt.figure()
+        plt.plot(evo_graphe, linewidth = 0.7)
+        plt.title("Graphique de l'évolution des métriques sélectionnées", fontweight = "heavy", y = 1.05, fontsize = 9)
+        plt.grid()
+        plt.legend(evo_graphe.columns, loc = "lower center", bbox_to_anchor=(0.5, -0.35 - 0.08*(int((len(evo_graphe.columns) + 1)/2) - 1)),
+                fontsize = "small", ncol = 2)
+        plt.xlabel("Saison", fontsize = "small", fontstyle = "italic", labelpad = 10)
+        plt.ylabel("Métrique", fontsize = "small", fontstyle = "italic", labelpad = 10)
+        plt.tick_params(labelsize = 8)
+        ax = plt.gca()
+        ax.spines[:].set_visible(False)
+        st.pyplot(fig)

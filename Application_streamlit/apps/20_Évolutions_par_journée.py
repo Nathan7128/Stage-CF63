@@ -12,6 +12,8 @@ st.divider()
 
 #----------------------------------------------- DÉFINITIONS DES DICTIONNAIRES ------------------------------------------------------------------------------------
 
+def func_change(key1, key2) :
+    st.session_state[key1] = st.session_state[key2]
 
 groupe_plot = []
 
@@ -64,7 +66,9 @@ with columns[0] :
     liste_équipe = dico_rank[saison]
 
 with columns[1] :
-    cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True)
+    func_change("select_cat_met", "cat_met")
+    cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True, key = 'select_cat_met',
+                        on_change = func_change, args = ("cat_met", "select_cat_met"))
 
 with columns[2] :
     moy_met = st.radio("Moyenne de la métrique", dico_met[cat_met][1].keys())

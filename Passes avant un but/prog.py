@@ -8,11 +8,11 @@ for annee in liste_annee :
     df.set_index(["match_id", "period", "possession"], inplace = True)
     goal = df[(df.shot_type == "Open Play") & ((df.shot_outcome == "Goal") | (df.type == "Own Goal Against"))]
     df_goal = df.loc[goal.index]
+    deb_action = df_goal.groupby(level = [0, 1, 2], sort = False).head(1)
+    deb_action["type_action"] = deb_action.pass_type.fillna(deb_action.shot_type).fillna(deb_action.type)
     count_passe = df_goal[df_goal.type == "Pass"].groupby(["match_id", "period", "possession"],sort = False, as_index = True).size()
-    goal = pd.concat([goal, count_passe], axis = 1)
+    goal = pd.concat([goal, count_passe, deb_action.type_action], axis = 1)
     goal.rename({0 : "Passe"}, axis = 1, inplace = True)
-    goal = goal.reset_index()[["team", "Passe"]]
-    nb_but = goal.groupby("team").size()
-    goal = goal.groupby("team").sum()
-    goal = goal.divide(nb_but, axis = 0)
+    goal.replace(to_replace = ['Interception', 'Ball Recovery', 'Duel', 'Recovery', 'Pass', 'Goal Keeper', '50/50'], value = "Open play", inplace = True)
+    goal = goal.reset_index()[["team", "Passe", "type_action"]]
     goal.to_excel(f"Passes avant un but/{annee}.xlsx")
