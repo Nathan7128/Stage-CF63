@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from functools import partial
 
+from config_py.fonction import func_change
+from config_py.variable import dico_type, dico_rank_SK, dico_cat_run, dico_cat_met_pressure, dico_type_passe
+
 st.set_page_config(layout="wide")
 
 st.title("Évolution des métriques au cours des saisons")
@@ -79,9 +82,6 @@ def import_df(saison_df, choix_data_df, file_metrique_df) :
     return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/{choix_data_df}/{file_metrique_df}",
                                     index_col= [0, 1])
 
-def func_change(key1, key2) :
-    st.session_state[key1] = st.session_state[key2]
-
 def couleur_bg_df(col, liste_saison, df) :
     if col.name == "Évolution en %" :
         color = []
@@ -116,22 +116,6 @@ def couleur_text_df(row) :
 #----------------------------------------------- DÉFINITIONS DES DICTIONNAIRES ------------------------------------------------------------------------------------
 
 
-dico_met = {
-    "Physiques" : ["physical.xlsx", {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip",
-        "Match all possession" : "_per_Match"}],
-    "Courses sans ballon avec la possession" : ["running.xlsx", {"Match" : "per_match",
-        "100 runs" : "per_100_runs", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind", "runs_ahead_of_the_ball",
-        "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs", "dropping_off_runs",
-        "pulling_half_space_runs", "cross_receiver_runs"]],
-    "Action sous pression" : ["pressure.xlsx", {"Match" : "per_match",
-        "100 pressures" : "per_100_pressures", "30 min. tip" : "per_30_min_tip"}, ["low", "medium", "high"]],
-    "Passes à un coéquipier effectuant une course" : ["passes.xlsx", {"Match" : "per_match",
-        "100 passes opportunities" : "_per_100_pass_opportunities", "30 min. tip" : "per_30_min_tip"}, ["runs_in_behind",
-        "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs", "overlap_runs",
-        "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"]]
-    }
-
-
 dico_saison_fourn = {
     "Stats Bomb" : {"2020_2021" : "2020/2021", "2021_2022" : "2021/2022", "2022_2023" : "2022/2023", "2023_2024" : "2023/2024"},
     "Skill Corner" : {"2021_2022" : "2021/2022", "2022_2023" : "2022/2023", "2023_2024" : "2023/2024"}
@@ -139,16 +123,6 @@ dico_saison_fourn = {
 dico_df_saison = {}
 
 
-dico_rank = {"2023_2024" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Rodez Aveyron", "Paris FC", "SM Caen", "Stade Lavallois Mayenne FC",
-           "Amiens Sporting Club", "En Avant de Guingamp", "Pau FC", "Grenoble Foot 38", "Girondins de Bordeaux", "SC Bastia",
-           "FC Annecy", "AC Ajaccio", "Dunkerque", "ES Troyes AC", "US Quevilly-Rouen", "US Concarneau", "Valenciennes FC"],
-           "2022_2023" : ["Le Havre AC", "FC Metz", "Girondins de Bordeaux", "SC Bastia", "SM Caen", "En Avant de Guingamp", "Paris FC",
-           "AS Saint-Étienne", "FC Sochaux-Montbéliard", "Grenoble Foot 38", "US Quevilly-Rouen", "Amiens Sporting Club", "Pau FC",
-           "Rodez Aveyron", "Stade Lavallois Mayenne FC", "Valenciennes FC", "FC Annecy", "Dijon FCO", "Nîmes Olympique", "Chamois Niortais FC"],
-           "2021_2022" : ["Toulouse FC", "AC Ajaccio", "AJ Auxerre", "Paris FC", "FC Sochaux-Montbéliard", "En Avant de Guingamp",
-                             "SM Caen", "Le Havre AC", "Nîmes Olympique", "Pau FC", "Dijon FCO", "SC Bastia", "Chamois Niortais FC", 
-                             "Amiens Sporting Club", "Grenoble Foot 38", "Valenciennes FC", "Rodez Aveyron", "US Quevilly-Rouen",
-                             "Dunkerque", "AS Nancy-Lorraine"]}
 
 #----------------------------------------------- CHOIX SAISON ET MÉTRIQUE ------------------------------------------------------------------------------------
 
@@ -166,31 +140,31 @@ with columns[0] :
 if choix_data == "Skill Corner" :
     with columns[1] :
         func_change("select_cat_met", "cat_met")
-        cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True, key = 'select_cat_met',
+        cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True, key = 'select_cat_met',
                             on_change = func_change, args = ("cat_met", "select_cat_met"))
         win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
 
     with columns[2] :
-        moy_met = st.multiselect("Moyenne de la métrique", list(dico_met[cat_met][1].keys()), default = list(dico_met[cat_met][1].keys()))
+        moy_met = st.multiselect("Moyenne de la métrique", list(dico_type[cat_met][1].keys()), default = list(dico_type[cat_met][1].keys()))
 
 
 #----------------------------------------------- IMPORTATION DATAFRAME SKILL CORNER ------------------------------------------------------------------------------------
     
     for saison in list(dico_saison.keys()) :
-        df_import = import_df(saison, "Skill Corner", dico_met[cat_met][0])
+        df_import = import_df(saison, "Skill Corner", dico_type[cat_met][0])
 
         if win_met :
                 df_import = df_import[df_import.result == "win"]
             
-        nb_matchs_team = df_import.groupby("team_name").apply(len).reindex(dico_rank[saison])
+        nb_matchs_team = df_import.groupby("team_name").apply(len).reindex(dico_rank_SK[saison])
 
-        df_import = df_import.reset_index().drop(["Journée", "result"], axis = 1).groupby("team_name", as_index = True, sort = False).sum().reindex(dico_rank[saison])
+        df_import = df_import.reset_index().drop(["Journée", "result"], axis = 1).groupby("team_name", as_index = True, sort = False).sum().reindex(dico_rank_SK[saison])
 
         df_import = df_import.divide(nb_matchs_team, axis = 0)
 
         col_keep = [False]*df_import.shape[1]
         for cat_type in moy_met :
-            cat_type = dico_met[cat_met][1][cat_type]
+            cat_type = dico_type[cat_met][1][cat_type]
             col_keep = np.logical_or(col_keep, [(cat_type in i) or ("ratio" in i) for i in df_import.columns])
         df_import = df_import[df_import.columns[col_keep]]
         dico_df_saison[saison] = df_import
@@ -200,9 +174,10 @@ if choix_data == "Skill Corner" :
     if cat_met != "Physiques" :
         st.divider()
         
-        type_met = st.multiselect("Type de la métrique", dico_met[cat_met][2], default = dico_met[cat_met][2])
+        type_met = st.multiselect(dico_type[cat_met][2], dico_type[cat_met][3], default = dico_type[cat_met][3])
         col_keep_type_met = [False]*df_import.shape[1]
         for cat_type in type_met :
+            cat_type = dico_type[cat_met][3][cat_type]
             col_keep_type_met = np.logical_or(col_keep_type_met, [(cat_type in i) or ("ratio" in i and cat_type in i) for i in df_import.columns])
         
         for saison in dico_df_saison.keys() :
@@ -213,9 +188,6 @@ if choix_data == "Skill Corner" :
             col_keep = [True]*df.shape[1]
             columns = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
             with columns[0] :
-                dico_cat_run = {"Dangerous" : "dangerous",
-                                "Leading to shot" : "leading_to_shot",
-                                "Leading to goal" : "leading_to_goal"}
                 liste_cat_run = ["All"] + list(dico_cat_run.keys())
                 cat_run_choice = st.multiselect("Catégorie du run", options = liste_cat_run, default = liste_cat_run)
                 if "All" not in cat_run_choice :
@@ -243,8 +215,6 @@ if choix_data == "Skill Corner" :
             col_keep = [False]*df.shape[1]
             columns = st.columns(3, vertical_alignment = "center", gap = "large")
             with columns[0] :
-                dico_cat_met_pressure = {"Passes" : "pass", "Conservation du ballon" : "ball_retention", "Perte de balle" : "forced_losses",
-                                        "Pression reçue" : "received_per"}
                 cat_met_pressure = st.multiselect("Catégorie de métrique liée au pressing", dico_cat_met_pressure.keys(),
                                                 default = dico_cat_met_pressure.keys())
                 for cat_met in cat_met_pressure :
@@ -281,9 +251,6 @@ if choix_data == "Skill Corner" :
             columns = st.columns([2, 1, 1, 2], vertical_alignment = "center", gap = "large")
 
             with columns[0] :
-                dico_cat_run = {"Dangerous" : "dangerous",
-                                "Leading to shot" : "leading_to_shot",
-                                "Leading to goal" : "leading_to_goal"}
                 liste_cat_run = ["All"] + list(dico_cat_run.keys())
                 cat_run_choice = st.multiselect("Catégorie du run", options = liste_cat_run, default = liste_cat_run)
                 if "All" not in cat_run_choice :
@@ -295,7 +262,6 @@ if choix_data == "Skill Corner" :
                         col_keep = np.logical_and(col_keep, [dico_cat_run[cat_run] not in i for i in df.columns])
 
             with columns[3] :
-                dico_type_passe = {"Attempts" : "attempt", "Completed" : "completed", "Opportunities" : "opportunities"}
                 choix_type_passe = st.multiselect("Type de passe", dico_type_passe.keys(), default = dico_type_passe.keys())
                 col_keep_passe = [False]*df.shape[1]
                 for type_passe in choix_type_passe :

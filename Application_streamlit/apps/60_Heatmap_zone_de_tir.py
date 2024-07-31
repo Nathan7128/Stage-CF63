@@ -8,8 +8,6 @@ from mplsoccer import Pitch, VerticalPitch
 
 import matplotlib.pyplot as plt
 
-import cmasher as cmr
-
 import matplotlib.patches as patches
 
 st.set_page_config(layout="wide")

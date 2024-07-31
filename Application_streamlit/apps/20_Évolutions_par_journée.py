@@ -3,6 +3,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from config_py.fonction import func_change
+from config_py.variable import dico_type, dico_rank_SK
+
+
 st.set_page_config(layout = "wide")
 
 idx = pd.IndexSlice
@@ -10,49 +14,11 @@ idx = pd.IndexSlice
 st.title("Évolutions des métriques au cours des journées")
 st.divider()
 
-#----------------------------------------------- DÉFINITIONS DES DICTIONNAIRES ------------------------------------------------------------------------------------
-
-def func_change(key1, key2) :
-    st.session_state[key1] = st.session_state[key2]
-
 groupe_plot = []
 
 groupe_non_vide = []
 
 choix_équipe = []
-
-dico_met = {
-    "Physiques" : ["physical.xlsx",
-        {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip", "Match all possession" : "_per_Match"}],
-
-    "Courses sans ballon avec la possession" : ["running.xlsx",
-        {"Match" : "per_match", "100 runs" : "per_100_runs", "30 min. tip" : "per_30_min_tip"},
-        ["runs_in_behind", "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs",
-        "overlap_runs", "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"],
-        "Type de course"],
-
-    "Action sous pression" : ["pressure.xlsx",
-        {"Match" : "per_match", "100 pressures" : "per_100_pressures", "30 min. tip" : "per_30_min_tip"},
-        ["low", "medium", "high"],
-        "Intensité de pression"],
-
-    "Passes à un coéquipier effectuant une course" : ["passes.xlsx",
-        {"Match" : "per_match", "100 passes opportunities" : "_per_100_pass_opportunities", "30 min. tip" : "per_30_min_tip"},
-        ["runs_in_behind", "runs_ahead_of_the_ball", "support_runs", "pulling_wide_runs", "coming_short_runs", "underlap_runs",
-        "overlap_runs", "dropping_off_runs", "pulling_half_space_runs", "cross_receiver_runs"],
-        "Type de course"]
-    }
-
-dico_rank = {"2023_2024" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Rodez Aveyron", "Paris FC", "SM Caen", "Stade Lavallois Mayenne FC",
-           "Amiens Sporting Club", "En Avant de Guingamp", "Pau FC", "Grenoble Foot 38", "Girondins de Bordeaux", "SC Bastia",
-           "FC Annecy", "AC Ajaccio", "Dunkerque", "ES Troyes AC", "US Quevilly-Rouen", "US Concarneau", "Valenciennes FC"],
-           "2022_2023" : ["Le Havre AC", "FC Metz", "Girondins de Bordeaux", "SC Bastia", "SM Caen", "En Avant de Guingamp", "Paris FC",
-           "AS Saint-Étienne", "FC Sochaux-Montbéliard", "Grenoble Foot 38", "US Quevilly-Rouen", "Amiens Sporting Club", "Pau FC",
-           "Rodez Aveyron", "Stade Lavallois Mayenne FC", "Valenciennes FC", "FC Annecy", "Dijon FCO", "Nîmes Olympique", "Chamois Niortais FC"],
-           "2021_2022" : ["Toulouse FC", "AC Ajaccio", "AJ Auxerre", "Paris FC", "FC Sochaux-Montbéliard", "En Avant de Guingamp",
-                             "SM Caen", "Le Havre AC", "Nîmes Olympique", "Pau FC", "Dijon FCO", "SC Bastia", "Chamois Niortais FC", 
-                             "Amiens Sporting Club", "Grenoble Foot 38", "Valenciennes FC", "Rodez Aveyron", "US Quevilly-Rouen",
-                             "Dunkerque", "AS Nancy-Lorraine"]}
 
 #----------------------------------------------- CHOIX SAISON ET MÉTRIQUE ------------------------------------------------------------------------------------
 
@@ -63,15 +29,15 @@ columns = st.columns([2, 4, 2, 3])
 with columns[0] :
     saison = st.radio("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022"], horizontal = True)
     saison = saison.replace("/", "_")
-    liste_équipe = dico_rank[saison]
+    liste_équipe = dico_rank_SK[saison]
 
 with columns[1] :
     func_change("select_cat_met", "cat_met")
-    cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True, key = 'select_cat_met',
+    cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True, key = 'select_cat_met',
                         on_change = func_change, args = ("cat_met", "select_cat_met"))
 
 with columns[2] :
-    moy_met = st.radio("Moyenne de la métrique", dico_met[cat_met][1].keys())
+    moy_met = st.radio("Moyenne de la métrique", dico_type[cat_met][1].keys())
 
 with columns[3] :
     ""
@@ -84,14 +50,15 @@ with columns[3] :
 
 @st.cache_data
 def import_df(saison_df, cat_met_df) :
-    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/Skill Corner/{dico_met[cat_met_df][0]}", index_col = [0, 1])
+    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/Skill Corner/{dico_type[cat_met_df][0]}", index_col = [0, 1])
 
 df = import_df(saison, cat_met)
 
 if win_met :
     df = df[df.result == "win"]
 
-df = df[df.columns[[(dico_met[cat_met][1][moy_met] in i) or ("ratio" in i) for i in df.columns]]]
+df = df[df.columns[[(dico_type[cat_met][1][moy_met] in i) or ("ratio" in i) for i in df.columns]]]
+
 
 #----------------------------------------------- CHOIX MÉTRIQUE ------------------------------------------------------------------------------------
 
@@ -102,7 +69,8 @@ if cat_met != "Physiques" :
     columns = st.columns([1, 2])
 
     with columns[0] :
-        type_met = st.selectbox(dico_met[cat_met][3], dico_met[cat_met][2])
+        type_met = st.selectbox(dico_type[cat_met][2], dico_type[cat_met][3])
+        type_met = dico_type[cat_met][3][type_met]
         df = df[df.columns[[type_met in i for i in df.columns]]]
     with columns[1] :
         choix_metrique = st.selectbox("Choisir la métrique", df.columns)
