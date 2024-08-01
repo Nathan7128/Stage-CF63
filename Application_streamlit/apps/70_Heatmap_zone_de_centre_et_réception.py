@@ -266,7 +266,7 @@ if len(df) > 0 :
             dico_label_heatmap2 = dico_label_heatmap2[count_type_d]
             bin_statistic2["statistic"] = dico_label_heatmap2["statistique"]
             str_format2 = dico_label_heatmap2["str_format"]
-            pitch.label_heatmap(bin_statistic2, exclude_zeros = True, fontsize = int(100/(bins_gh + bins_gv)) + 2,
+            pitch.label_heatmap(bin_statistic2, exclude_zeros = True, fontsize = int(100/(bins_dh + bins_dv)) + 2,
                 color='#f4edf0', ax = ax2, ha='center', va='center', str_format=str_format2, path_effects=path_effect_2)
             
         pitch.heatmap(bin_statistic1, ax = ax1, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)

@@ -16,7 +16,7 @@ from config_py.fonction import label_heatmap
 
 st.set_page_config(layout="wide")
 
-st.title("Heatmap des zones de début d'actions menant à un tir")
+st.title("Heatmap des zones de début d'action menant à un tir")
 st.divider()
 
 

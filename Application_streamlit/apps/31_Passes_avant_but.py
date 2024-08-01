@@ -6,7 +6,7 @@ from config_py.variable import dico_rank_SB
 
 st.set_page_config(layout="wide")
 
-st.title("Moyenne du nombre de passes avant un but d'une compétition")
+st.title("Moyenne du nombre de passe avant un but d'une compétition")
 
 
 def func_change(key1, key2) :

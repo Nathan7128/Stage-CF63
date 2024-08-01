@@ -11,7 +11,7 @@ st.set_page_config(layout = "wide")
 
 idx = pd.IndexSlice
 
-st.title("Évolutions des métriques au cours des journées")
+st.title("Évolution des métriques au cours des journées")
 st.divider()
 
 groupe_plot = []
