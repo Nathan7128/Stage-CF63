@@ -16,6 +16,8 @@ import numpy as np
 
 import matplotlib.patches as patches
 
+from config_py.variable import path_effect_2, dico_rank_SB, colormapblue, colormapred
+
 st.set_page_config(layout="wide")
 
 st.title("Heatmap des zones de départ/réception de centre")

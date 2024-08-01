@@ -12,6 +12,8 @@ import numpy as np
 
 from config_py.variable import path_effect_1, dico_rank_SB, colormapblue, colormapred
 
+from config_py.fonction import label_heatmap
+
 st.set_page_config(layout="wide")
 
 st.title("Heatmap des zones de début d'actions menant à un tir")
@@ -187,51 +189,47 @@ if len(df) > 0 :
         def heatmap_percen(data, bins_h, bins_v, count_type) :
             pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green", axis = True,
                 label = True, tick = True, goal_type = "box", linewidth = 1, spot_scale = 0.002)
-            fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
-            ax1.set_xticks(np.arange(80/(2*bins_h), 80 - 80/(2*bins_h) + 1, 80/bins_h), labels = np.arange(1, bins_h + 1, dtype = int))
-            ax1.set_yticks(np.arange(120/(2*bins_v), 120 - 120/(2*bins_v) + 1, 120/bins_v),
+            fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
+            ax.set_xticks(np.arange(80/(2*bins_h), 80 - 80/(2*bins_h) + 1, 80/bins_h), labels = np.arange(1, bins_h + 1, dtype = int))
+            ax.set_yticks(np.arange(120/(2*bins_v), 120 - 120/(2*bins_v) + 1, 120/bins_v),
                         labels = np.arange(1, bins_v + 1, dtype = int))
-            ax1.tick_params(axis = "y", right = False, labelright = False, labelsize = "xx-small")
-            ax1.spines[:].set_visible(False)
-            ax1.tick_params(axis = "x", top = False, labeltop = False, labelsize = "xx-small")
-            ax1.set_xlim(0, 80)
-            ax1.set_ylim(0, 125)
-            fig1.set_facecolor("none")
-            ax1.set_facecolor((1, 1, 1))
-            fig1.set_edgecolor("none")
+            ax.tick_params(axis = "y", right = False, labelright = False, labelsize = "xx-small")
+            ax.spines[:].set_visible(False)
+            ax.tick_params(axis = "x", top = False, labeltop = False, labelsize = "xx-small")
+            ax.set_xlim(0, 80)
+            ax.set_ylim(0, 125)
+            fig.set_facecolor("none")
+            ax.set_facecolor((1, 1, 1))
+            fig.set_edgecolor("none")
 
 
             bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_v, bins_h),
                                                 normalize = "Pourcentage" in count_type)
             
-            pitch.heatmap(bin_statistic1, ax = ax1, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
-
-            dico_label_heatmap1 = {
-                "Pourcentage" : {"statistique" : np.round(bin_statistic1["statistic"], 2), "str_format" : '{:.0%}'},
-                "Pourcentage sans %" : {"statistique" : 100*np.round(bin_statistic1["statistic"], 2), "str_format" : '{:.0f}'},
-                "Valeur" : {"statistique" : bin_statistic1["statistic"], "str_format" : '{:.0f}'},
-            }
+            pitch.heatmap(bin_statistic1, ax = ax, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
 
             if count_type != "Aucune valeur" :
-                dico_label_heatmap1 = dico_label_heatmap1[count_type]
-                bin_statistic1["statistic"] = dico_label_heatmap1["statistique"]
-                labels1 = pitch.label_heatmap(bin_statistic1, exclude_zeros = True, fontsize = int(50/(bins_v + bins_h)) + 2,
-                    color='#f4edf0', ax = ax1, ha='center', va='center', str_format=dico_label_heatmap1["str_format"], path_effects=path_effect_1)
+                dico_label_heatmap = label_heatmap(bin_statistic1["statistic"])
+                dico_label_heatmap = dico_label_heatmap[count_type]
+                bin_statistic1["statistic"] = dico_label_heatmap["statistique"]
+                str_format = dico_label_heatmap["str_format"]
+                pitch.label_heatmap(bin_statistic1, exclude_zeros = True, fontsize = int(50/(bins_v + bins_h)) + 2, color='#f4edf0',
+                                    ax = ax, ha='center', va='center', str_format=str_format, path_effects=path_effect_1)
 
-            return fig1, ax1
+            return fig, ax
 
         @st.cache_data
         def heatmap_smooth(data) :
             pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green",
                                 goal_type = "box", linewidth = 1, spot_scale = 0.002)
-            fig2, ax2 = pitch.draw(constrained_layout=True, tight_layout=False)
-            fig2.set_facecolor("none")
-            ax2.set_xlim([0, 87])
-            ax2.set_ylim([0, 125])
-            ax2.set_facecolor((1, 1, 1))
-            fig2.set_edgecolor("none")
-            kde = pitch.kdeplot(data.x, data.y, ax = ax2, fill = True, levels = 100, thresh = 0, cmap = colormapblue)
-            return fig2, ax2
+            fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
+            fig.set_facecolor("none")
+            ax.set_xlim([0, 87])
+            ax.set_ylim([0, 125])
+            ax.set_facecolor((1, 1, 1))
+            fig.set_edgecolor("none")
+            pitch.kdeplot(data.x, data.y, ax = ax, fill = True, levels = 100, thresh = 0, cmap = colormapblue)
+            return fig, ax
 
 
 
