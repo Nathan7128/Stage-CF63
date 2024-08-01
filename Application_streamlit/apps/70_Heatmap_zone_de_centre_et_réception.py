@@ -12,7 +12,7 @@ from config_py.variable import path_effect_2, dico_rank_SB, colormapblue, colorm
 
 import matplotlib.patches as patches
 
-from config_py.fonction import label_heatmap_centre
+from config_py.fonction import label_heatmap_centre, best_zone
 
 st.set_page_config(layout="wide")
 
@@ -205,7 +205,6 @@ if len(df) > 0 :
         count_type_d = "Aucune valeur"
 
 
-
 # ------------------------------------------------- AFFICHAGE DE LA HEATMAP --------------------------------------------------------
 
 
@@ -245,7 +244,6 @@ if len(df) > 0 :
 
         bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_gv*2, bins_gh),
                                                 normalize = count_type_g in liste_type_compt[:2])
-        
         bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh),
                                                 normalize = count_type_d in liste_type_compt[:2])
 
