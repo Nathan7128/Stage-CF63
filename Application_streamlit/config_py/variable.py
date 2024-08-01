@@ -5,8 +5,8 @@ from matplotlib.colors import LinearSegmentedColormap
 path_effect_1 = [path_effects.Stroke(linewidth=1, foreground='black'), path_effects.Normal()]
 path_effect_2 = [path_effects.Stroke(linewidth=1.5, foreground='black'), path_effects.Normal()]
 
-colormapblue = LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (0, 47/255, 103/255)])
-colormapred = LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (195/255, 1/255, 64/255)])
+colormapblue = LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (0, 45/255, 106/255)])
+colormapred = LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (198/255, 11/255, 70/255)])
 
 
 dico_type = {
