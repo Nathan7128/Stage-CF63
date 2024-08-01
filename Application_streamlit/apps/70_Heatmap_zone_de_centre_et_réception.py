@@ -130,12 +130,10 @@ if len(df) > 0 :
     with columns[0] :
         choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 5 évènements suivants le centre)")
         choix_sym_g = st.checkbox("Afficher tous les centres du même coté sur la Heatmap de gauche")
-        choix_sym_d = st.checkbox("Afficher tous les centres du même coté sur la Heatmap de droite")
 
     if choix_sym_g :
-        df.loc[df.y > 40, "y"] = 80 - df.loc[df.y > 40, "y"]
-    if choix_sym_d :
-        df.loc[df.y_end > 40, "y_end"] = 80 - df.loc[df.y_end > 40, "y_end"]
+        df.loc[df.y > 40, ["y", "y_end"]] = 80 - df.loc[df.y > 40, ["y", "y_end"]]
+
 
 
 
