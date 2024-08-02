@@ -14,6 +14,8 @@ import matplotlib.patches as patches
 
 from config_py.fonction import label_heatmap_centre, best_zone
 
+import time
+
 st.set_page_config(layout="wide")
 
 st.title("Heatmap des zones de départ/réception de centre")
@@ -124,6 +126,8 @@ else :
 #----------------------------------------------- FILTRAGE HEATMAPS ------------------------------------------------------------------------------------
 
 if len(df) > 0 :
+
+    df_zone = df.copy()
 
     columns = st.columns(2, vertical_alignment = "center")
 
@@ -270,6 +274,8 @@ if len(df) > 0 :
         pitch.heatmap(bin_statistic1, ax = ax1, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
 
         pitch.heatmap(bin_statistic2, ax = ax2, cmap = colormapblue, edgecolor='#000000', linewidth = 0.2)
+
+        # st.write(np.unravel_index(np.argmax(bin_statistic1["statistic"]), bin_statistic1["statistic"].shape))
             
         return(fig1, fig2, ax1, ax2)
 
@@ -292,3 +298,17 @@ if len(df) > 0 :
     if choix_bins_h > 0 and choix_bins_v > 0 and len(df_sort) > 0 and choix_groupe == "Choisir équipe" :
         st.dataframe(df_sort[["match_date", "match_week", "home_team", "away_team", "minute", "centreur", "tireur/buteur", "Équipe"]],
                      hide_index = True)
+        
+
+    expander = st.expander("Zones de centre optimales")
+
+    with expander :
+        columns = st.columns(3)
+        with columns[0] :
+            nb_but_zone = st.number_input("Nombre de but minimum par zone", min_value = 1, max_value = 30, value = 3)
+        with columns[1] :
+            taille_min_zone = st.number_input("Taille minimale zone de centre", min_value = 1.0, max_value = 15.0, value = 2.5, step = 0.5)
+        with columns[2] :
+            taille_max_zone = st.number_input("Taille maximale zone de centre", min_value = 1.0, max_value = 15.0, value = 5.0, step = 0.5)
+        df_zone_optimal = best_zone(df_zone, taille_min_zone, taille_max_zone, nb_but_zone)
+        df_zone_optimal
