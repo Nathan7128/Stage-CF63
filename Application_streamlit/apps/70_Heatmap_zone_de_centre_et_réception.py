@@ -274,8 +274,6 @@ if len(df) > 0 :
         pitch.heatmap(bin_statistic1, ax = ax1, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
 
         pitch.heatmap(bin_statistic2, ax = ax2, cmap = colormapblue, edgecolor='#000000', linewidth = 0.2)
-
-        # st.write(np.unravel_index(np.argmax(bin_statistic1["statistic"]), bin_statistic1["statistic"].shape))
             
         return(fig1, fig2, ax1, ax2)
 
@@ -311,4 +309,7 @@ if len(df) > 0 :
         with columns[2] :
             taille_max_zone = st.number_input("Taille maximale zone de centre", min_value = 1.0, max_value = 15.0, value = 5.0, step = 0.5)
         df_zone_optimal = best_zone(df_zone, taille_min_zone, taille_max_zone, nb_but_zone)
-        df_zone_optimal
+        df_zone_optimal.index = range(1, len(df_zone_optimal) + 1)
+        
+        with st.columns([1, 1, 8, 1])[2] :
+            st.dataframe(df_zone_optimal)

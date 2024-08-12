@@ -33,16 +33,22 @@ def label_heatmap_centre(bin_statistic, bin_statistic_but) :
 def best_zone(data, taille_min_centre, taille_max_centre, nb_but_min) :
     pitch = Pitch(pitch_type = "statsbomb")
 
-    df = pd.DataFrame([[0, 0, 0, 0, 0, 0]], columns = ["N° colonne", "N° ligne", "% de but", "Nombre de colonne", "Nombre de ligne", "Nombre de but"])
+    columns_df = ["N° colonne", "N° ligne", "% de but", "Nombre de colonne", "Nombre de ligne", "Nombre de but"]
+    df = pd.DataFrame([np.zeros(len(columns_df))], columns = columns_df)
 
     nb_zone = 10
 
     for bins_centre_v in range (int((52.5/taille_max_centre)), int((52.5/taille_min_centre)) + 1) :
+
         for bins_centre_h in range (int(68/taille_max_centre), int(68/taille_min_centre) + 1) :
-            bin_statistic = pitch.bin_statistic(data.x, data.y, values = None, statistic='count', bins=(bins_centre_v*2, bins_centre_h))["statistic"]
-            bin_statistic_but = pitch.bin_statistic(data[data.But == 1].x, data[data.But == 1].y, values = None, statistic='count',
-                                    bins=(bins_centre_v*2, bins_centre_h))["statistic"]
+
+            bin_pitch = pitch.bin_statistic(data.x, data.y, values = None, statistic='count', bins=(bins_centre_v*2, bins_centre_h))
+            bin_statistic = bin_pitch["statistic"]
+            bin_pitch_but = pitch.bin_statistic(data[data.But == 1].x, data[data.But == 1].y, values = None, statistic='count',
+                                    bins=(bins_centre_v*2, bins_centre_h))
+            bin_statistic_but = bin_pitch_but["statistic"]
             bin_statistic = np.nan_to_num(bin_statistic_but/bin_statistic, 0)
+
             df_centre = pd.DataFrame({
                 "N° colonne" : [j for j in range (1, bins_centre_h + 1) for i in range (1, bins_centre_v*2 + 1)],
                 "N° ligne" : [j - bins_centre_v for i in range (1, bins_centre_h + 1) for j in range (1, bins_centre_v*2 + 1)],
@@ -50,10 +56,14 @@ def best_zone(data, taille_min_centre, taille_max_centre, nb_but_min) :
                 "Nombre de but" : bin_statistic_but.ravel()
             })
             df_centre["Nombre de colonne"] = bins_centre_h
-            df_centre["Nombre de ligne"] = bins_centre_v
+            df_centre["Nombre de ligne"] = bins_centre_v    
+
             df_centre = df_centre[(df_centre["% de but"] > min(df["% de but"])) & (df_centre["Nombre de but"] >= nb_but_min)]
-            df = pd.concat([df, df_centre], axis = 0).sort_values(by = "% de but", ascending = False).head(nb_zone)
+
+    df = pd.concat([df, df_centre], axis = 0).sort_values(by = "% de but", ascending = False).head(nb_zone)
+
     df['% de but'] = (100*df['% de but']).round(1).astype(str) + " %"
+
     return df
 
 
