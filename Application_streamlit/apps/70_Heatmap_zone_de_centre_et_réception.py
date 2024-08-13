@@ -25,6 +25,7 @@ st.divider()
 
 #----------------------------------------------- DÉFINITION FONCTIONS ------------------------------------------------------------------------------------
 
+
 @st.cache_data
 def import_df(saison_df) :
     return pd.read_excel(f"Heatmap SB/centre/Tableaux/{saison_df}.xlsx", index_col = 0)
@@ -34,6 +35,7 @@ dico_df_saison = {}
 dico_info_matchs = {}
 
 liste_équipe = []
+
 
 #----------------------------------------------- FILTRAGE DES DATAS ------------------------------------------------------------------------------------
 
@@ -52,11 +54,10 @@ with columns[1] :
 for saison in liste_saison :
     df_import = import_df(saison)
     dico_df_saison[saison] = df_import
-    liste_équipe += df_import.Équipe.unique().tolist()
+    liste_équipe += df_import["Équipe attaquante"].unique().tolist()
     dico_info_matchs[saison] = pd.read_excel(f"Info matchs/Stats Bomb/{saison}.xlsx", index_col = 0)
 
 liste_équipe = list(set(liste_équipe))
-
 
 st.divider()
 
@@ -94,8 +95,8 @@ else :
 st.divider()
 
 
-
 #----------------------------------------------- FILTRAGE DF ------------------------------------------------------------------------------------
+
 
 df = pd.DataFrame()
 
@@ -105,40 +106,51 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
         df_saison = dico_df_saison[saison]
     
         if groupe_plot == "Top" :
-            df_saison = df_saison[df_saison.Équipe.isin(dico_rank_SB[saison][:df_groupe.loc["Top", "Taille"]])]
+            df_saison = df_saison[df_saison["Équipe attaquante"].isin(dico_rank_SB[saison][:df_groupe.loc["Top", "Taille"]])]
 
         elif groupe_plot == "Middle" :
-            df_saison = df_saison[df_saison.Équipe.isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]])]
+            df_saison = df_saison[df_saison["Équipe attaquante"].isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]])]
 
         elif groupe_plot == "Bottom" :  
-            df_saison = df_saison[df_saison.Équipe.isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
+            df_saison = df_saison[df_saison["Équipe attaquante"].isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
         df = pd.concat([df, df_saison], axis = 0)
 
     
 else :
     for saison in dico_df_saison.keys() :
         df_saison = dico_df_saison[saison]
-        df_saison = df_saison[df_saison.Équipe.isin(choix_équipe)]
-        df_saison = pd.merge(df_saison, dico_info_matchs[saison], on = "match_id")
+        df_saison = df_saison[df_saison["Équipe attaquante"].isin(choix_équipe)]
+        df_saison = pd.merge(df_saison, dico_info_matchs[saison][["match_id", "match_date", "match_week", "home_team", "away_team"]], on = "match_id", how = "left")
         df = pd.concat([df, df_saison], axis = 0)
+
+df = df.reset_index().set_index(["match_id", "centre_id"])
+df_centre = df.groupby(level = [0, 1]).head(1)
 
 
 #----------------------------------------------- FILTRAGE HEATMAPS ------------------------------------------------------------------------------------
 
-if len(df) > 0 :
 
-    df_zone = df.copy()
+if len(df_centre) > 0 :
 
-    columns = st.columns(2, vertical_alignment = "center")
+    df_zone_centre = df_centre.copy()
+
+    columns = st.columns(2, vertical_alignment = "center", gap = "large")
 
     with columns[0] :
         choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 5 évènements suivants le centre)")
         choix_sym_g = st.checkbox("Afficher tous les centres du même coté sur la Heatmap de gauche")
+        choix_body_part = st.selectbox("Partie du corps utilisée pour centrer", ["Pied gauche", "Pied droit", "All"], index = 2)
 
     if choix_sym_g :
-        df.loc[df.y > 40, ["y", "y_end"]] = 80 - df.loc[df.y > 40, ["y", "y_end"]]
+        df_centre.loc[df_centre.y > 40, ["y", "y_end"]] = 80 - df_centre.loc[df_centre.y > 40, ["y", "y_end"]]
 
+    if choix_goal :
+        df_centre = df_centre[df_centre.But == "Oui"]
 
+    if choix_body_part == "Pied droit" :
+        df_centre = df_centre[df_centre["Partie du corps"] == "Right Foot"]
+    elif choix_body_part == "Pied gauche" :
+        df_centre = df_centre[df_centre["Partie du corps"] == "Left Foot"]
 
 
     with columns[1] :
@@ -147,8 +159,6 @@ if len(df) > 0 :
         count_type_g = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt)
         count_type_d = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt)
 
-    if choix_goal :
-        df = df[df.But == 1]
 
     ""
     ""
@@ -199,13 +209,13 @@ if len(df) > 0 :
         st.markdown(f"<p style='text-align: center;'>Heatmap pour {éq_title[bool_len_éq]} sur {saison_title[bool_len_grp]}</p>", unsafe_allow_html=True)
 
 
-    df_sort = df.copy()
+    df_centre_sort = df_centre.copy()
     if (choix_bins_h != 0) & (choix_bins_v != 0) :
-        df_sort = df[(df.x >= (60 + (60/bins_gv)*(choix_bins_v - 1))) &
-                        (df.x < (60 + (60/bins_gv)*(choix_bins_v))) &
-                        (df.y >= (80/bins_gh)*(choix_bins_h - 1)) &
-                        (df.y < (80/bins_gh)*(choix_bins_h))]
-    if len(df_sort) == 0 :
+        df_centre_sort = df_centre[(df_centre.x >= (60 + (60/bins_gv)*(choix_bins_v - 1))) &
+                        (df_centre.x < (60 + (60/bins_gv)*(choix_bins_v))) &
+                        (df_centre.y >= (80/bins_gh)*(choix_bins_h - 1)) &
+                        (df_centre.y < (80/bins_gh)*(choix_bins_h))]
+    if len(df_centre_sort) == 0 :
         count_type_d = "Aucune valeur"
 
 
@@ -277,7 +287,7 @@ if len(df) > 0 :
             
         return(fig1, fig2, ax1, ax2)
 
-    fig1, fig2, ax1, ax2 = heatmap_percen(df, df_sort, bins_gh, bins_gv, bins_dh, bins_dv, count_type_g, count_type_d)
+    fig1, fig2, ax1, ax2 = heatmap_percen(df_centre, df_centre_sort, bins_gh, bins_gv, bins_dh, bins_dv, count_type_g, count_type_d)
 
     if (choix_bins_h != 0) & (choix_bins_v != 0) :
         rect = patches.Rectangle(((80/bins_gh)*(choix_bins_h - 1), 60 + (60/bins_gv)*(choix_bins_v - 1)),
@@ -290,26 +300,53 @@ if len(df) > 0 :
     with col6 :
         st.pyplot(fig2)
 
-    st.markdown(f"<p style='text-align: center;'>Nombre total de centres : {len(df)}</p>",
-                        unsafe_allow_html=True)
+    df_shot_select = df.loc[df_centre_sort.index]
+    df_shot_select = df_shot_select[~df_shot_select.Tireur.isna()]
+
+    if len(df_shot_select) > 0 and choix_bins_h > 0 and choix_bins_v > 0 and len(df_centre_sort) > 0 :
+
+        with col5 :
+            pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green", half = True,
+                    linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
+
+            fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
+
+            ax.set_ylim(min(df_shot_select.x) - 5, 125)
+
+            pitch.arrows(df_shot_select.x, df_shot_select.y, df_shot_select.x_end, df_shot_select.y_end, ax = ax, width = 1)
+
+            st.pyplot(fig)
+
     
-    if choix_bins_h > 0 and choix_bins_v > 0 and len(df_sort) > 0 and choix_groupe == "Choisir équipe" :
-        st.dataframe(df_sort[["match_date", "match_week", "home_team", "away_team", "minute", "centreur", "tireur/buteur", "Équipe"]],
-                     hide_index = True)
+        if choix_groupe == "Choisir équipe" :
+
+            st.divider()
+
+            expander = st.expander("Tableau des tirs/buts pour la zone sélectionnée")
+
+            with expander :
+
+                st.dataframe(df_shot_select[["match_date", "match_week", "home_team", "away_team", "minute", "Centreur", "Tireur", "Équipe attaquante"]],
+                            hide_index = True)
         
 
-    expander = st.expander("Zones de centre optimales")
 
-    with expander :
-        columns = st.columns(3)
-        with columns[0] :
-            nb_but_zone = st.number_input("Nombre de but minimum par zone", min_value = 1, max_value = 30, value = 3)
-        with columns[1] :
-            taille_min_zone = st.number_input("Taille minimale zone de centre", min_value = 1.0, max_value = 15.0, value = 2.5, step = 0.5)
-        with columns[2] :
-            taille_max_zone = st.number_input("Taille maximale zone de centre", min_value = 1.0, max_value = 15.0, value = 5.0, step = 0.5)
-        df_zone_optimal = best_zone(df_zone, taille_min_zone, taille_max_zone, nb_but_zone)
-        df_zone_optimal.index = range(1, len(df_zone_optimal) + 1)
+    st.divider()
+
+    # expander = st.expander("Zones de centre optimales")
+
+    # with expander :
+    #     columns = st.columns(3)
+    #     with columns[0] :
+    #         nb_but_zone = st.number_input("Nombre de but minimum par zone", min_value = 1, max_value = 30, value = 3)
+    #     with columns[1] :
+    #         taille_min_zone = st.number_input("Taille minimale zone de centre", min_value = 1.0, max_value = 15.0, value = 2.5, step = 0.5)
+    #     with columns[2] :
+    #         taille_max_zone = st.number_input("Taille maximale zone de centre", min_value = 1.0, max_value = 15.0, value = 5.0, step = 0.5)
+    #     df_zone_optimal = best_zone(df_zone_centre, taille_min_zone, taille_max_zone, nb_but_zone)
+    #     df_zone_optimal.index = range(1, len(df_zone_optimal) + 1)
         
-        with st.columns([1, 1, 8, 1])[2] :
-            st.dataframe(df_zone_optimal)
+    #     with st.columns([1, 1, 8, 1])[2] :
+    #         st.dataframe(df_zone_optimal)
+
+    st.markdown(f"<p style='text-align: center;'>Nombre total de centres : {len(df_centre)}</p>", unsafe_allow_html=True)
