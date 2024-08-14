@@ -12,24 +12,23 @@ for saison in liste_saison :
 
     event = event[~event.location.isna()]
 
-    event.sort_values(by = ["match_id", "index"], inplace = True)
-
-    event.index = range(len(event))
+    event = event.sort_values(by = ["match_id", "index"])
+    event["index"] = range(len(event))
 
     centre = event[(event.pass_cross == 1) & (event.pass_type != "Corner")]
 
     centre = pd.DataFrame({"attacking_team" : [i for i in centre.team for _ in range (6)],
-                        "centre_id" : [i for i in range (1, len(centre) + 1) for _ in range (6)]},
-                        index = [j + i for j in centre.index for i in range(6)])
+                        "centre_id" : [i for i in range (1, len(centre) + 1) for _ in range (6)],
+                        "match_id" : [i for i in centre.match_id for _ in range (6)],
+                        "index" : [j + i for j in centre["index"] for i in range (6)]})
 
-    df = pd.merge(centre, event, left_index = True, right_index = True).reset_index()
+    liste_centre_drop = centre.centre_id[centre["index"].duplicated()].unique() - 1
+    centre = centre.drop_duplicates("index", keep = "last")
 
-    liste_centre_drop = (df[df.level_0.duplicated()].centre_id - 1).unique()
-    df = df.drop_duplicates("level_0", keep = "last").set_index("level_0")
+    df = pd.merge(centre, event, on = ["index", "match_id"])
 
     df["But"] = "Non"
     df["Tireur"] = ""
-
 
     mask_shot = (df.type == "Shot") & (df.attacking_team == df.team)
 
@@ -46,12 +45,11 @@ for saison in liste_saison :
     df.loc[mask_shot, "y_end"] = df_loc_shot_end[1]
     df.loc[mask_shot, "z_end"] = df_loc_shot_end[2]
 
-
     df_goal = df[((df.shot_outcome == "Goal") | (df.type == "Own Goal For")) & (df.attacking_team == df.team)]
 
-    df.loc[df.centre_id.isin(df_goal.centre_id), "But"] = "Oui"
+    df.loc[(df.centre_id.isin(df_goal.centre_id)) & (df.pass_cross == 1), "But"] = "Oui"
+    df.loc[df_goal.index, "But"] = "Oui"
     df.loc[df_goal.index, "Tireur"] = df_goal.player
-
 
     mask_centre = df.pass_cross == 1
 
@@ -64,16 +62,15 @@ for saison in liste_saison :
     df.loc[mask_centre, "x_end"] = df_loc_centre_end[0]
     df.loc[mask_centre, "y_end"] = df_loc_centre_end[1]
 
-
     df_centre_drop = df[df.centre_id.isin(liste_centre_drop)]
     df.drop(df_centre_drop[df_centre_drop.But == "Non"].index, inplace = True)
 
     df_centreur = df.groupby("centre_id").head(1)[['player', 'centre_id']]
     df = pd.merge(df, df_centreur, on = "centre_id").set_index(df.index)
 
-    df = df[["match_id", "attacking_team", "shot_outcome", "But", "Tireur", "player_y", "minute", "pass_body_part", "x", "y", "x_end", "centre_id",
+    df = df[["pass_cross", "match_id", "attacking_team", "shot_outcome", "But", "Tireur", "player_y", "minute", "pass_body_part", "x", "y", "x_end", "centre_id",
              "y_end", "z_end"]]
-    df.rename(axis = 1, mapper = {"attacking_team" : "Équipe attaquante", "player_y" : "Centreur",
+    df.rename(axis = 1, mapper = {"pass_cross" : "Centre", "attacking_team" : "Équipe attaquante", "player_y" : "Centreur",
                                   "pass_body_part" : "Partie du corps"}, inplace = True)
 
     df.to_excel(f"Heatmap SB/centre/Tableaux/{saison}.xlsx")

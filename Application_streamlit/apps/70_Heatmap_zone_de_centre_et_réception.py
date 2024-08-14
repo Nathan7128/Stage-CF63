@@ -47,6 +47,9 @@ with columns[0] :
     saison_choice.sort()
     liste_saison = [i.replace("/", "_") for i in saison_choice]
 
+if not saison_choice :
+    st.stop()
+
 with columns[1] :
     choix_groupe = st.radio("Choix groupe", ["Choisir Top/Middle/Bottom", "Choisir équipe"], label_visibility = "hidden")
 
@@ -123,230 +126,293 @@ else :
         df_saison = pd.merge(df_saison, dico_info_matchs[saison][["match_id", "match_date", "match_week", "home_team", "away_team"]], on = "match_id", how = "left")
         df = pd.concat([df, df_saison], axis = 0)
 
-df = df.reset_index().set_index(["match_id", "centre_id"])
-df_centre = df.groupby(level = [0, 1]).head(1)
+df = df.reset_index(drop = True).set_index(["match_id", "centre_id"])
+df_centre = df[df.Centre == 1]
 
 
 #----------------------------------------------- FILTRAGE HEATMAPS ------------------------------------------------------------------------------------
 
 
-if len(df_centre) > 0 :
+if len(df_centre) == 0 :
+    st.stop()
 
-    df_zone_centre = df_centre.copy()
+df_zone_centre = df_centre.copy()
 
-    columns = st.columns(2, vertical_alignment = "center", gap = "large")
+columns = st.columns(2, vertical_alignment = "center", gap = "large")
 
-    with columns[0] :
-        choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 5 évènements suivants le centre)")
-        choix_sym_g = st.checkbox("Afficher tous les centres du même coté sur la Heatmap de gauche")
-        choix_body_part = st.selectbox("Partie du corps utilisée pour centrer", ["Pied gauche", "Pied droit", "All"], index = 2)
+with columns[0] :
+    choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 5 évènements suivants le centre)")
+    choix_sym_g = st.checkbox("Afficher tous les centres du même coté sur la Heatmap de gauche")
+    choix_body_part = st.selectbox("Partie du corps utilisée pour centrer", ["Pied gauche", "Pied droit", "All"], index = 2)
 
-    if choix_sym_g :
-        df_centre.loc[df_centre.y > 40, ["y", "y_end"]] = 80 - df_centre.loc[df_centre.y > 40, ["y", "y_end"]]
+if choix_sym_g :
+    df_centre.loc[df_centre.y > 40, ["y", "y_end"]] = 80 - df_centre.loc[df_centre.y > 40, ["y", "y_end"]]
 
-    if choix_goal :
-        df_centre = df_centre[df_centre.But == "Oui"]
+if choix_goal :
+    df_centre = df_centre[df_centre.But == "Oui"]
 
-    if choix_body_part == "Pied droit" :
-        df_centre = df_centre[df_centre["Partie du corps"] == "Right Foot"]
-    elif choix_body_part == "Pied gauche" :
-        df_centre = df_centre[df_centre["Partie du corps"] == "Left Foot"]
+if choix_body_part == "Pied droit" :
+    df_centre = df_centre[df_centre["Partie du corps"] == "Right Foot"]
+elif choix_body_part == "Pied gauche" :
+    df_centre = df_centre[df_centre["Partie du corps"] == "Left Foot"]
 
+if len(df_centre) == 0 :
+    st.stop()
 
-    with columns[1] :
-        liste_type_compt = (["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"] 
-                            + (1 - choix_goal)*["Pourcentage de but"] + (1 - choix_goal)*["Pourcentage de but sans %"])
-        count_type_g = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt)
-        count_type_d = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt)
+with columns[1] :
+    liste_type_compt = (["Pourcentage", "Pourcentage sans %", "Valeur", "Aucune valeur"] 
+                        + (1 - choix_goal)*["Pourcentage de but"] + (1 - choix_goal)*["Pourcentage de but sans %"])
+    count_type_g = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt)
+    count_type_d = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt)
 
+st.divider()
 
-    ""
-    ""
+""
+""
 
-    columns = st.columns(2, vertical_alignment = "center", gap = "large")
+columns = st.columns(2, vertical_alignment = "center", gap = "large")
 
-    with columns[0] :
-        columns2 = st.columns(2)
-        with columns2[0] :
-            bins_gv = st.number_input("Nombre de ligne pour la Heatmap de gauche",
-                                    min_value = 1, step = 1, value = 5)
-        with columns2[1] :
-            bins_gh = st.number_input("Nombre de colonne pour la Heatmap de gauche",
-                                min_value = 1, step = 1, value = 6)
-        choix_bins_v = st.number_input("Choisir une ligne",
-                                        min_value = 0, step = 1, max_value = bins_gv)
+with columns[0] :
+    columns2 = st.columns(2)
+    with columns2[0] :
+        nombre_ligne_gauche = st.number_input("Nombre de ligne pour la Heatmap de gauche", min_value = 1, step = 1, value = 5)
+    with columns2[1] :
+        nombre_col_gauche = st.number_input("Nombre de colonne pour la Heatmap de gauche", min_value = 1, step = 1, value = 6)
+    choix_ligne_gauche = st.number_input("Choisir une ligne pour la Heatmap de gauche", min_value = 0, step = 1,
+                                            max_value = nombre_ligne_gauche)
+    choix_col_gauche = st.number_input("Choisir une colonne pour la Heatmap de gauche", min_value = 0, step = 1,
+                                    max_value = nombre_col_gauche)
 
-    with columns[1] :
-        columns2 = st.columns(2)
-        with columns2[0] :
-            bins_dv = st.number_input("Nombre de ligne pour la Heatmap de droite",
-                                    min_value = 1, step = 1, value = 5)
-        with columns2[1] :
-            bins_dh = st.number_input("Nombre de colonne pour la Heatmap de droite",
-                                min_value = 1, step = 1, value = 6)
-        choix_bins_h = st.number_input("Choisir une colonne",
-                                    min_value = 0, step = 1, max_value = bins_gh)
-
-    st.divider()
+with columns[1] :
+    columns2 = st.columns(2)
+    with columns2[0] :
+        nombre_ligne_droite = st.number_input("Nombre de ligne pour la Heatmap de droite",
+                                min_value = 1, step = 1, value = 5)
+    with columns2[1] :
+        nombre_col_droite = st.number_input("Nombre de colonne pour la Heatmap de droite",
+                            min_value = 1, step = 1, value = 6)
+        
+st.divider()
 
 
 #----------------------------------------------- AFFICHAGE HEATMAPS ------------------------------------------------------------------------------------
 
+df_shot_select = pd.DataFrame()
+df_centre_zone_gauche = df_centre.copy()
+if (choix_ligne_gauche != 0) & (choix_col_gauche != 0) :
 
-    bool_len_grp = (len(saison_choice) > 1)
-    saison_title = []
-    saison_title.append(f'la saison {saison_choice[0]}')
-    saison_title.append(f'les saisons {", ".join(saison_choice[:-1])} et {saison_choice[-1]}')
+    df_centre_zone_gauche = df_centre[(df_centre.x >= (60 + (60/nombre_ligne_gauche)*(choix_ligne_gauche - 1))) &
+                    (df_centre.x < (60 + (60/nombre_ligne_gauche)*(choix_ligne_gauche))) &
+                    (df_centre.y >= (80/nombre_col_gauche)*(choix_col_gauche - 1)) &
+                    (df_centre.y < (80/nombre_col_gauche)*(choix_col_gauche))]
     
-    if choix_groupe != "Choisir équipe" :
-        st.markdown(f"<p style='text-align: center;'>Heatmap pour le {groupe_plot} de Ligue 2 sur {saison_title[bool_len_grp]}</p>", unsafe_allow_html=True)
+    with columns[1] :
+        choix_ligne_droite = st.number_input("Choisir une ligne pour la Heatmap de droite", min_value = 0, step = 1,
+                                        max_value = nombre_ligne_droite)
+        choix_col_droite = st.number_input("Choisir une colonne pour la Heatmap de droite", min_value = 0, step = 1,
+                                        max_value = nombre_col_droite)
+        
+    df_shot_select = df.loc[df_centre_zone_gauche.index]
+    df_shot_select = df_shot_select[~df_shot_select.Tireur.isna()]
+    if (choix_ligne_droite != 0) & (choix_col_droite != 0) :
+        df_shot_select = df_shot_select[(df_shot_select.x >= (60 + (60/nombre_ligne_droite)*(choix_ligne_droite - 1))) &
+                        (df_shot_select.x < (60 + (60/nombre_ligne_droite)*(choix_ligne_droite))) &
+                        (df_shot_select.y >= (80/nombre_col_droite)*(choix_col_droite - 1)) &
+                        (df_shot_select.y < (80/nombre_col_droite)*(choix_col_droite))]
 
-    else :
-        bool_len_éq = (len(choix_équipe) > 1)
-        éq_title = []
-        éq_title.append(f'{choix_équipe[0]}')
-        éq_title.append(f'{", ".join(choix_équipe[:-1])} et {choix_équipe[-1]}')
-        st.markdown(f"<p style='text-align: center;'>Heatmap pour {éq_title[bool_len_éq]} sur {saison_title[bool_len_grp]}</p>", unsafe_allow_html=True)
+
+if len(df_centre_zone_gauche) == 0 :
+    count_type_d = "Aucune valeur"
 
 
-    df_centre_sort = df_centre.copy()
-    if (choix_bins_h != 0) & (choix_bins_v != 0) :
-        df_centre_sort = df_centre[(df_centre.x >= (60 + (60/bins_gv)*(choix_bins_v - 1))) &
-                        (df_centre.x < (60 + (60/bins_gv)*(choix_bins_v))) &
-                        (df_centre.y >= (80/bins_gh)*(choix_bins_h - 1)) &
-                        (df_centre.y < (80/bins_gh)*(choix_bins_h))]
-    if len(df_centre_sort) == 0 :
-        count_type_d = "Aucune valeur"
+bool_len_grp = (len(saison_choice) > 1)
+saison_title = []
+saison_title.append(f'la saison {saison_choice[0]}')
+saison_title.append(f'les saisons {", ".join(saison_choice[:-1])} et {saison_choice[-1]}')
+
+if choix_groupe != "Choisir équipe" :
+    st.markdown(f"<p style='text-align: center;'>Heatmap pour le {groupe_plot} de Ligue 2 sur {saison_title[bool_len_grp]}</p>", unsafe_allow_html=True)
+
+else :
+    bool_len_éq = (len(choix_équipe) > 1)
+    éq_title = []
+    éq_title.append(f'{choix_équipe[0]}')
+    éq_title.append(f'{", ".join(choix_équipe[:-1])} et {choix_équipe[-1]}')
+    st.markdown(f"<p style='text-align: center;'>Heatmap pour {éq_title[bool_len_éq]} sur {saison_title[bool_len_grp]}</p>", unsafe_allow_html=True)
 
 
 # ------------------------------------------------- AFFICHAGE DE LA HEATMAP --------------------------------------------------------
 
 
-    @st.cache_data
-    def heatmap_percen(data, data2, bins_gh, bins_gv, bins_dh, bins_dv, count_type_g, count_type_d) :
-        pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green", half = True,
-                    axis = True, label = True, tick = True, linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
-        
-
-        fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
-        ax1.set_xticks(np.arange(80/(2*bins_gh), 80 - 80/(2*bins_gh) + 1, 80/bins_gh), labels = np.arange(1, bins_gh + 1, dtype = int))
-        ax1.set_yticks(np.arange(60 + 60/(2*bins_gv), 120 - 60/(2*bins_gv) + 1, 60/bins_gv),
-                    labels = np.arange(1, bins_gv + 1, dtype = int))
-        ax1.tick_params(axis = "y", right = False, labelright = False)
-        ax1.spines[:].set_visible(False)
-        ax1.tick_params(axis = "x", top = False, labeltop = False)
-        ax1.set_xlim(0, 80)
-        ax1.set_ylim(60, 125)
-        fig1.set_facecolor("none")
-        ax1.set_facecolor((1, 1, 1))
-        fig1.set_edgecolor("none")
-
-
-
-        fig2, ax2 = pitch.draw(constrained_layout=True, tight_layout=False)
-        ax2.set_xticks(np.arange(80/(2*bins_dh), 80 - 80/(2*bins_dh) + 1, 80/bins_dh), labels = np.arange(1, bins_dh + 1, dtype = int))
-        ax2.set_yticks(np.arange(60 + 60/(2*bins_dv), 120 - 60/(2*bins_dv) + 1, 60/bins_dv),
-                    labels = np.arange(1, bins_dv + 1, dtype = int))
-        ax2.tick_params(axis = "y", right = False, labelright = False)
-        ax2.spines[:].set_visible(False)
-        ax2.tick_params(axis = "x", top = False, labeltop = False)
-        ax2.set_xlim(0, 80)
-        ax2.set_ylim(60, 125)
-        fig2.set_facecolor("none")
-        ax2.set_facecolor((1, 1, 1))
-        fig2.set_edgecolor("none")
-
-        bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(bins_gv*2, bins_gh),
-                                                normalize = count_type_g in liste_type_compt[:2])
-        bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(bins_dv*2, bins_dh),
-                                                normalize = count_type_d in liste_type_compt[:2])
-
-        if count_type_g != "Aucune valeur" :
-            bin_statistic_but1 = pitch.bin_statistic(data[data.But == 1].x, data[data.But == 1].y, statistic='count',
-                                    bins=(bins_gv*2, bins_gh)) 
-            dico_label_heatmap1 = label_heatmap_centre(bin_statistic1["statistic"], bin_statistic_but1["statistic"])
-            dico_label_heatmap1 = dico_label_heatmap1[count_type_g]
-            bin_statistic1["statistic"] = dico_label_heatmap1["statistique"]
-            str_format1 = dico_label_heatmap1["str_format"]
-            pitch.label_heatmap(bin_statistic1, exclude_zeros = True, fontsize = int(100/(bins_gh + bins_gv)) + 2,
-                color='#f4edf0', ax = ax1, ha='center', va='center', str_format=str_format1, path_effects=path_effect_2)
-            
-        if count_type_d != "Aucune valeur" :
-            bin_statistic_but2 = pitch.bin_statistic(data2[data2.But == 1].x_end, data2[data2.But == 1].y_end, statistic='count',
-                                        bins=(bins_dv*2, bins_dh))
-            dico_label_heatmap2 = label_heatmap_centre(bin_statistic2["statistic"], bin_statistic_but2["statistic"])
-            dico_label_heatmap2 = dico_label_heatmap2[count_type_d]
-            bin_statistic2["statistic"] = dico_label_heatmap2["statistique"]
-            str_format2 = dico_label_heatmap2["str_format"]
-            pitch.label_heatmap(bin_statistic2, exclude_zeros = True, fontsize = int(100/(bins_dh + bins_dv)) + 2,
-                color='#f4edf0', ax = ax2, ha='center', va='center', str_format=str_format2, path_effects=path_effect_2)
-            
-        pitch.heatmap(bin_statistic1, ax = ax1, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
-
-        pitch.heatmap(bin_statistic2, ax = ax2, cmap = colormapblue, edgecolor='#000000', linewidth = 0.2)
-            
-        return(fig1, fig2, ax1, ax2)
-
-    fig1, fig2, ax1, ax2 = heatmap_percen(df_centre, df_centre_sort, bins_gh, bins_gv, bins_dh, bins_dv, count_type_g, count_type_d)
-
-    if (choix_bins_h != 0) & (choix_bins_v != 0) :
-        rect = patches.Rectangle(((80/bins_gh)*(choix_bins_h - 1), 60 + (60/bins_gv)*(choix_bins_v - 1)),
-                                    80/bins_gh, 60/bins_gv, linewidth=5, edgecolor='r', facecolor='r', alpha=0.6)
-        ax1.add_patch(rect)
-
-    col5, col6 = st.columns(2, vertical_alignment = "top", gap = "large")
-    with col5 :
-        st.pyplot(fig1)
-    with col6 :
-        st.pyplot(fig2)
-
-    df_shot_select = df.loc[df_centre_sort.index]
-    df_shot_select = df_shot_select[~df_shot_select.Tireur.isna()]
-
-    if len(df_shot_select) > 0 and choix_bins_h > 0 and choix_bins_v > 0 and len(df_centre_sort) > 0 :
-
-        with col5 :
-            pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green", half = True,
-                    linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
-
-            fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
-
-            ax.set_ylim(min(df_shot_select.x) - 5, 125)
-
-            pitch.arrows(df_shot_select.x, df_shot_select.y, df_shot_select.x_end, df_shot_select.y_end, ax = ax, width = 1)
-
-            st.pyplot(fig)
-
+@st.cache_data
+def heatmap_percen(data, data2, nombre_col_gauche, nombre_ligne_gauche, nombre_col_droite, nombre_ligne_droite,
+                    count_type_g, count_type_d) :
     
-        if choix_groupe == "Choisir équipe" :
+    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green", half = True,
+                axis = True, label = True, tick = True, linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
+    
 
-            st.divider()
+    fig1, ax1 = pitch.draw(constrained_layout=True, tight_layout=False)
+    ax1.set_xticks(np.arange(80/(2*nombre_col_gauche), 80 - 80/(2*nombre_col_gauche) + 1, 80/nombre_col_gauche), labels = np.arange(1, nombre_col_gauche + 1, dtype = int))
+    ax1.set_yticks(np.arange(60 + 60/(2*nombre_ligne_gauche), 120 - 60/(2*nombre_ligne_gauche) + 1, 60/nombre_ligne_gauche),
+                labels = np.arange(1, nombre_ligne_gauche + 1, dtype = int))
+    ax1.tick_params(axis = "y", right = False, labelright = False)
+    ax1.spines[:].set_visible(False)
+    ax1.tick_params(axis = "x", top = False, labeltop = False)
+    ax1.set_xlim(0, 80)
+    ax1.set_ylim(60, 125)
+    fig1.set_facecolor("none")
+    ax1.set_facecolor((1, 1, 1))
+    fig1.set_edgecolor("none")
 
-            expander = st.expander("Tableau des tirs/buts pour la zone sélectionnée")
 
-            with expander :
 
-                st.dataframe(df_shot_select[["match_date", "match_week", "home_team", "away_team", "minute", "Centreur", "Tireur", "Équipe attaquante"]],
-                            hide_index = True)
+    fig2, ax2 = pitch.draw(constrained_layout=True, tight_layout=False)
+    ax2.set_xticks(np.arange(80/(2*nombre_col_droite), 80 - 80/(2*nombre_col_droite) + 1, 80/nombre_col_droite), labels = np.arange(1, nombre_col_droite + 1, dtype = int))
+    ax2.set_yticks(np.arange(60 + 60/(2*nombre_ligne_droite), 120 - 60/(2*nombre_ligne_droite) + 1, 60/nombre_ligne_droite),
+                labels = np.arange(1, nombre_ligne_droite + 1, dtype = int))
+    ax2.tick_params(axis = "y", right = False, labelright = False)
+    ax2.spines[:].set_visible(False)
+    ax2.tick_params(axis = "x", top = False, labeltop = False)
+    ax2.set_xlim(0, 80)
+    ax2.set_ylim(60, 125)
+    fig2.set_facecolor("none")
+    ax2.set_facecolor((1, 1, 1))
+    fig2.set_edgecolor("none")
+
+    bin_statistic1 = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(nombre_ligne_gauche*2, nombre_col_gauche),
+                                            normalize = count_type_g in liste_type_compt[:2])
+    bin_statistic2 = pitch.bin_statistic(data2.x_end, data2.y_end, statistic='count', bins=(nombre_ligne_droite*2, nombre_col_droite),
+                                            normalize = count_type_d in liste_type_compt[:2])
+
+    if count_type_g != "Aucune valeur" :
+        bin_statistic_but1 = pitch.bin_statistic(data[data.But == "Oui"].x, data[data.But == "Oui"].y, statistic='count',
+                                bins=(nombre_ligne_gauche*2, nombre_col_gauche)) 
+        dico_label_heatmap1 = label_heatmap_centre(bin_statistic1["statistic"], bin_statistic_but1["statistic"])
+        dico_label_heatmap1 = dico_label_heatmap1[count_type_g]
+        bin_statistic1["statistic"] = dico_label_heatmap1["statistique"]
+        str_format1 = dico_label_heatmap1["str_format"]
+        pitch.label_heatmap(bin_statistic1, exclude_zeros = True, fontsize = int(100/(nombre_col_gauche + nombre_ligne_gauche)) + 2,
+            color='#f4edf0', ax = ax1, ha='center', va='center', str_format=str_format1, path_effects=path_effect_2)
         
+    if count_type_d != "Aucune valeur" :
+        bin_statistic_but2 = pitch.bin_statistic(data2[data2.But == "Oui"].x_end, data2[data2.But == "Oui"].y_end, statistic='count',
+                                    bins=(nombre_ligne_droite*2, nombre_col_droite))
+        dico_label_heatmap2 = label_heatmap_centre(bin_statistic2["statistic"], bin_statistic_but2["statistic"])
+        dico_label_heatmap2 = dico_label_heatmap2[count_type_d]
+        bin_statistic2["statistic"] = dico_label_heatmap2["statistique"]
+        str_format2 = dico_label_heatmap2["str_format"]
+        pitch.label_heatmap(bin_statistic2, exclude_zeros = True, fontsize = int(100/(nombre_col_droite + nombre_ligne_droite)) + 2,
+            color='#f4edf0', ax = ax2, ha='center', va='center', str_format=str_format2, path_effects=path_effect_2)
+        
+    pitch.heatmap(bin_statistic1, ax = ax1, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
 
+    pitch.heatmap(bin_statistic2, ax = ax2, cmap = colormapblue, edgecolor='#000000', linewidth = 0.2)
+        
+    return(fig1, fig2, ax1, ax2)
+
+fig1, fig2, ax1, ax2 = heatmap_percen(df_centre, df_centre_zone_gauche, nombre_col_gauche, nombre_ligne_gauche, nombre_col_droite, nombre_ligne_droite, count_type_g, count_type_d)
+
+if (choix_col_gauche != 0) & (choix_ligne_gauche != 0) :
+    rect = patches.Rectangle(((80/nombre_col_gauche)*(choix_col_gauche - 1), 60 + (60/nombre_ligne_gauche)*(choix_ligne_gauche - 1)),
+                                80/nombre_col_gauche, 60/nombre_ligne_gauche, linewidth=5, edgecolor='r', facecolor='r', alpha=0.6)
+    ax1.add_patch(rect)
+
+    if (choix_ligne_droite != 0) & (choix_col_droite != 0) :
+        rect = patches.Rectangle(((80/nombre_col_droite)*(choix_col_droite - 1), 60 + (60/nombre_ligne_droite)*(choix_ligne_droite - 1)),
+                                    80/nombre_col_droite, 60/nombre_ligne_droite, linewidth=5, edgecolor='r', facecolor='r', alpha=0.6)
+        ax2.add_patch(rect)
+
+col5, col6 = st.columns(2, vertical_alignment = "top", gap = "large")
+with col5 :
+    st.pyplot(fig1)
+with col6 :
+    st.pyplot(fig2)
+
+
+# ------------------------------------------------- AFFICHAGE INFORMATIONS TIRS --------------------------------------------------------
+
+
+if len(df_shot_select) > 0 :
 
     st.divider()
 
-    # expander = st.expander("Zones de centre optimales")
+    # df_shot_select = df_shot_select[df_shot_select.shot_outcome == "Saved"]
+    df_shot_select
 
-    # with expander :
-    #     columns = st.columns(3)
-    #     with columns[0] :
-    #         nb_but_zone = st.number_input("Nombre de but minimum par zone", min_value = 1, max_value = 30, value = 3)
-    #     with columns[1] :
-    #         taille_min_zone = st.number_input("Taille minimale zone de centre", min_value = 1.0, max_value = 15.0, value = 2.5, step = 0.5)
-    #     with columns[2] :
-    #         taille_max_zone = st.number_input("Taille maximale zone de centre", min_value = 1.0, max_value = 15.0, value = 5.0, step = 0.5)
-    #     df_zone_optimal = best_zone(df_zone_centre, taille_min_zone, taille_max_zone, nb_but_zone)
-    #     df_zone_optimal.index = range(1, len(df_zone_optimal) + 1)
+    col5, col6 = st.columns(2, vertical_alignment = "bottom", gap = "large")
+
+    with col5 :
+        pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=1, pitch_color=None, line_color = "green", half = True,
+                linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
+
+        fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
+
+        ax.set_ylim(min(df_shot_select.x) - 5, 125)
         
-    #     with st.columns([1, 1, 8, 1])[2] :
-    #         st.dataframe(df_zone_optimal)
+        arrows_color = pd.Series("red", index = df_shot_select.index)
+        arrows_color[df_shot_select.But == "Oui"] = "blue"
+        pitch.arrows(df_shot_select.x, df_shot_select.y, df_shot_select.x_end, df_shot_select.y_end, color = arrows_color,
+                        ax = ax, width = 1)
 
-    st.markdown(f"<p style='text-align: center;'>Nombre total de centres : {len(df_centre)}</p>", unsafe_allow_html=True)
+        st.pyplot(fig)
+
+    with col6 :
+        fig_cage = plt.figure(figsize=(20,12))
+
+        ax_cage = fig_cage.gca()
+        # ax_cage.set_axis_off()
+
+        x1=[36, 36, 44, 44]
+        y1=[0, 2.67, 2.67, 0]
+        ax_cage.plot(x1,y1,c="black",linewidth=1,zorder=1)
+            
+        # x2=[36,36]
+        # y2=[0,2.67]
+        # ax_cage.plot(x2,y2,c="black",linewidth=15,zorder=1)
+        
+        # x3=[44,36]
+        # y3=[2.67,2.67]
+        # ax_cage.plot(x3,y3,c="black",linewidth=15,zorder=1)
+
+        ax_cage.set_xlim(34.5,45.5)
+        ax_cage.set_ylim(-0.25,4.5)
+
+        df_shot_select = df_shot_select[~df_shot_select.z_end.isna()]
+        ax_cage.scatter(df_shot_select["y_end"], df_shot_select["z_end"])
+
+        st.pyplot(fig_cage)
+
+
+    if choix_groupe == "Choisir équipe" :
+
+        st.divider()
+
+        expander = st.expander("Tableau des tirs/buts pour la zone sélectionnée sur la Heatmap de gauche")
+
+        with expander :
+
+            st.dataframe(df_shot_select[["match_date", "match_week", "home_team", "away_team", "minute", "Centreur", "But", "Tireur", "Équipe attaquante"]],
+                        hide_index = True)
+    
+
+
+st.divider()
+
+# expander = st.expander("Zones de centre optimales")
+
+# with expander :
+#     columns = st.columns(3)
+#     with columns[0] :
+#         nb_but_zone = st.number_input("Nombre de but minimum par zone", min_value = 1, max_value = 30, value = 3)
+#     with columns[1] :
+#         taille_min_zone = st.number_input("Taille minimale zone de centre", min_value = 1.0, max_value = 15.0, value = 2.5, step = 0.5)
+#     with columns[2] :
+#         taille_max_zone = st.number_input("Taille maximale zone de centre", min_value = 1.0, max_value = 15.0, value = 5.0, step = 0.5)
+#     df_zone_optimal = best_zone(df_zone_centre, taille_min_zone, taille_max_zone, nb_but_zone)
+#     df_zone_optimal.index = range(1, len(df_zone_optimal) + 1)
+    
+#     with st.columns([1, 1, 8, 1])[2] :
+#         st.dataframe(df_zone_optimal)
+
+st.markdown(f"<p style='text-align: center;'>Nombre total de centres : {len(df_centre)}</p>", unsafe_allow_html=True)
