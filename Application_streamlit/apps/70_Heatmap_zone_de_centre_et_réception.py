@@ -14,8 +14,6 @@ import matplotlib.patches as patches
 
 from config_py.fonction import label_heatmap_centre, best_zone
 
-import time
-
 st.set_page_config(layout="wide")
 
 st.title("Heatmap des zones de départ/réception de centre")
@@ -197,8 +195,10 @@ st.divider()
 
 #----------------------------------------------- AFFICHAGE HEATMAPS ------------------------------------------------------------------------------------
 
-df_shot_select = pd.DataFrame()
+
 df_centre_zone_gauche = df_centre.copy()
+df_shot_select = pd.DataFrame()
+
 if (choix_ligne_gauche != 0) & (choix_col_gauche != 0) :
 
     df_centre_zone_gauche = df_centre[(df_centre.x >= (60 + (60/nombre_ligne_gauche)*(choix_ligne_gauche - 1))) &
@@ -211,9 +211,12 @@ if (choix_ligne_gauche != 0) & (choix_col_gauche != 0) :
                                         max_value = nombre_ligne_droite)
         choix_col_droite = st.number_input("Choisir une colonne pour la Heatmap de droite", min_value = 0, step = 1,
                                         max_value = nombre_col_droite)
-        
+
     df_shot_select = df.loc[df_centre_zone_gauche.index]
     df_shot_select = df_shot_select[~df_shot_select.Tireur.isna()]
+    if choix_goal :
+        df_shot_select = df_shot_select[df_shot_select.But == "Oui"]
+
     if (choix_ligne_droite != 0) & (choix_col_droite != 0) :
         df_shot_select = df_shot_select[(df_shot_select.x >= (60 + (60/nombre_ligne_droite)*(choix_ligne_droite - 1))) &
                         (df_shot_select.x < (60 + (60/nombre_ligne_droite)*(choix_ligne_droite))) &
@@ -337,12 +340,10 @@ if len(df_shot_select) > 0 :
 
     st.divider()
 
-    # df_shot_select = df_shot_select[df_shot_select.shot_outcome == "Saved"]
-    df_shot_select
-
     col5, col6 = st.columns(2, vertical_alignment = "bottom", gap = "large")
 
     with col5 :
+        
         pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=1, pitch_color=None, line_color = "green", half = True,
                 linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
 
@@ -358,28 +359,38 @@ if len(df_shot_select) > 0 :
         st.pyplot(fig)
 
     with col6 :
-        fig_cage = plt.figure(figsize=(20,12))
+        fig_cage = plt.figure(figsize=(20,8))
 
         ax_cage = fig_cage.gca()
-        # ax_cage.set_axis_off()
+        ax_cage.set_axis_off()
 
-        x1=[36, 36, 44, 44]
-        y1=[0, 2.67, 2.67, 0]
-        ax_cage.plot(x1,y1,c="black",linewidth=1,zorder=1)
-            
-        # x2=[36,36]
-        # y2=[0,2.67]
-        # ax_cage.plot(x2,y2,c="black",linewidth=15,zorder=1)
+        rapport_dim = 80/68
+        width_poteaux = rapport_dim*0.12
+        rayon_ballon = 0.11*rapport_dim
+
+        x1=[36, 36, 44, 44, 44 + width_poteaux, 44 + width_poteaux, 36 - width_poteaux, 36 - width_poteaux]
+        y1=[0, 2.67, 2.67, 0, 0, 2.67 + width_poteaux, 2.67 + width_poteaux, 0]
         
-        # x3=[44,36]
-        # y3=[2.67,2.67]
-        # ax_cage.plot(x3,y3,c="black",linewidth=15,zorder=1)
+        plot_poteaux = patches.Polygon(np.array([x1, y1]).T, color = "black")
+        ax_cage.add_patch(plot_poteaux)
 
-        ax_cage.set_xlim(34.5,45.5)
-        ax_cage.set_ylim(-0.25,4.5)
+        x_lim_min = 36 - rapport_dim
+        x_lim_max = 44 + rapport_dim
+        ax_cage.set_xlim(x_lim_min, x_lim_max)
 
-        df_shot_select = df_shot_select[~df_shot_select.z_end.isna()]
-        ax_cage.scatter(df_shot_select["y_end"], df_shot_select["z_end"])
+        y_lim_min = -0.2
+        y_lim_max = 2.67 + rapport_dim
+        ax_cage.set_ylim(y_lim_min, y_lim_max)
+
+        df_shot_select_cage = df_shot_select[(~df_shot_select.z_end.isna()) & (df_shot_select.x_end > 120 - rapport_dim) &
+            (df_shot_select.y_end > x_lim_min + rayon_ballon) & (df_shot_select.y_end < x_lim_max - rayon_ballon)
+            & (df_shot_select.z_end < y_lim_max - rayon_ballon)]
+        
+        shot_color = pd.Series("red", index = df_shot_select_cage.index)
+        shot_color[df_shot_select_cage.But == "Oui"] = "blue"
+
+        ax_cage.scatter(df_shot_select_cage["y_end"], df_shot_select_cage["z_end"], s = 27**2, marker = "o", edgecolors = "black", lw = 2,
+            color = shot_color)
 
         st.pyplot(fig_cage)
 
@@ -392,8 +403,8 @@ if len(df_shot_select) > 0 :
 
         with expander :
 
-            st.dataframe(df_shot_select[["match_date", "match_week", "home_team", "away_team", "minute", "Centreur", "But", "Tireur", "Équipe attaquante"]],
-                        hide_index = True)
+            st.dataframe(df_shot_select[["match_date", "match_week", "home_team", "away_team", "minute", "Centreur", "But", "Tireur",
+                        "Équipe attaquante"]], hide_index = True)
     
 
 
