@@ -2,9 +2,7 @@ import streamlit as st
 
 import pandas as pd
 
-from mplsoccer import Pitch, VerticalPitch
-
-import matplotlib.pyplot as plt
+from mplsoccer import VerticalPitch
 
 import matplotlib.patches as patches
 
