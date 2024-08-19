@@ -65,12 +65,10 @@ for dico in liste_dico :
      data.loc[["draw" in i for i in data.result], "result"] = "draw"
 
      data["Saison"] = dico["saison"]
-     data.set_index("Saison", append = True, inplace = True)
 
      df_final = pd.concat([df_final, data], axis = 0)
 
 df_final["Compet"] = "Ligue 2"
-df_final.set_index("Compet", append = True, inplace = True)
 
 df_final.to_sql(name = "Passes", con = connect, if_exists = "replace")
 

@@ -1,5 +1,11 @@
 import pandas as pd
 
+import sqlite3
+
+connect = sqlite3.connect("database.db")
+
+df_final = pd.DataFrame()
+
 liste_dico = [{"match_drop" : [1550555, 1546206],
                 "ranking" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Rodez Aveyron", "Paris FC", "SM Caen", "Stade Lavallois Mayenne FC",
            "Amiens Sporting Club", "En Avant de Guingamp", "Pau FC", "Grenoble Foot 38", "Girondins de Bordeaux", "SC Bastia",
@@ -59,4 +65,12 @@ for dico in liste_dico :
 
     data = pd.merge(info_result, data, on = ["Journée", "team_name"])
 
-    data.to_excel(f"Métriques discriminantes/Tableau métriques/{dico["saison"]}/Skill Corner/physical.xlsx")
+    data["Saison"] = dico["saison"]
+
+    df_final = pd.concat([df_final, data], axis = 0)
+
+df_final["Compet"] = "Ligue 2"
+
+df_final.to_sql(name = "Physical", con = connect, if_exists = "replace")
+
+connect.close()

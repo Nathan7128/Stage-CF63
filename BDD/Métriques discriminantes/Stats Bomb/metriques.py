@@ -1,5 +1,10 @@
 import pandas as pd
 
+import sqlite3
+
+connect = sqlite3.connect("database.db")
+
+df_final = pd.DataFrame()
 
 dico_rank = {
      "2023_2024" : ["Auxerre", "Angers", "Saint-Étienne", "Rodez", "Paris FC", "Caen", "Laval", "Amiens", "Guingamp", "Pau",
@@ -28,4 +33,12 @@ for saison in dico_rank.keys() :
 
      data = data.reindex(dico_rank[saison])
 
-     data.to_excel(f"Métriques discriminantes/Tableau métriques\\{saison}\\Stats Bomb\\metriques.xlsx")
+     data["Saison"] = saison
+
+     df_final = pd.concat([df_final, data], axis = 0)
+
+df_final["Compet"] = "Ligue 2"
+
+df_final.to_sql(name = "Métriques_SB", con = connect, if_exists = "replace")
+
+connect.close()

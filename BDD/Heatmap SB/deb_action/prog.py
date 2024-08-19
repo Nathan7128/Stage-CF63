@@ -1,7 +1,12 @@
 import pandas as pd
 
-liste_saison = ["2023_2024", "2022_2023", "2021_2022", "2020_2021"]
+import sqlite3
 
+connect = sqlite3.connect("database.db")
+
+df_final = pd.DataFrame()
+
+liste_saison = ["2023_2024", "2022_2023", "2021_2022", "2020_2021"]
 
 for saison in liste_saison :
 
@@ -31,4 +36,12 @@ for saison in liste_saison :
 
     df.drop_duplicates(inplace = True)
 
-    df.to_excel(f"Heatmap SB/deb_action/Tableaux/{saison}.xlsx")
+    df["Saison"] = saison
+
+    df_final = pd.concat([df_final, df], axis = 0)
+
+df_final["Compet"] = "Ligue 2"
+
+df_final.to_sql(name = "Debut_action", con = connect, if_exists = "replace")
+
+connect.close()
