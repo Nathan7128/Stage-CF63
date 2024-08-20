@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import sqlite3
 
 from config_py.fonction import func_change, execute_SQL, replace_saison
-from config_py.variable import dico_type, dico_rank_SK, dico_rank_SB
+from config_py.variable import dico_type, dico_rank_SK
 
 
 st.set_page_config(layout = "wide")
@@ -34,41 +34,11 @@ cursor = connect.cursor()
 # Choix de la saison et du fournisseur de donnée
 
 
-columns = st.columns(4, gap = "large")
+columns = st.columns(3, gap = "large")
 
-with columns[0] :
-    # Choix du fournisseur de données
-    func_change("select_data", "choix_data")
-    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True,
-                          key = "select_data", on_change = func_change, args = ("choix_data", "select_data"))
-    
-if choix_data == "Skill Corner" :
+table_met = dico_type[st.session_state.cat_met][0]
 
-    table_met = dico_type[st.session_state.cat_met][0]
-
-    dico_rank = dico_rank_SK
-
-    st.divider()
-
-    columns2 = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
-
-    with columns2[0] :
-        # Choix de la catégorie de métrique
-        func_change("select_cat_met", "cat_met")
-        cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True, key = 'select_cat_met',
-                            on_change = func_change, args = ("cat_met", "select_cat_met"))
-
-    with columns2[1] :
-        # Choix de la moyenne pour la catégorie de métrique choisie
-        cat_moy = st.radio("Moyenne de la métrique", dico_type[cat_met][1].keys(), horizontal = True)
-
-    with columns2[2] :
-        win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
-    
-else :
-    table_met = "Métriques_SB"
-    win_met = False
-    dico_rank = dico_rank_SB
+dico_rank = dico_rank_SK
     
 # Choix Compet
 params = []
@@ -76,7 +46,7 @@ stat = f"SELECT DISTINCT Compet FROM {table_met}"
 liste_compet = execute_SQL(cursor, stat, params).fetchall()
 liste_compet = [i[0] for i in liste_compet]
     
-with columns[1] :
+with columns[0] :
     choix_compet = st.selectbox("Choisir compétition", options = liste_compet, index = 0)
 
 # Choix d'une ou plusieurs saisons sur laquelle/lesquelles on va étudier les métriques pour Skill Corner
@@ -85,43 +55,34 @@ stat = f"SELECT DISTINCT Saison FROM {table_met} WHERE Compet = ?"
 liste_saison = execute_SQL(cursor, stat, params).fetchall()
 liste_saison = sorted([i[0] for i in liste_saison], reverse = True)
 
-with columns[2] :
+with columns[1] :
 
     choix_saison = st.selectbox("Choisir saison", replace_saison(liste_saison), index = 0)
     choix_saison = choix_saison.replace("/", "_")
 
-with columns[3] :
+with columns[2] :
     ""
-    choix_groupe_équipe = st.checkbox("Sélectionner équipe", value = False)
     choix_groupe_top = st.checkbox("Sélectionner Top/Middle/Bottom", value = False)
-
-# On regarde si au moins une saison est choisie
-if len(choix_saison) == 0 :
-    st.stop()
+    choix_groupe_équipe = st.checkbox("Sélectionner équipe", value = False)
 
 
-#----------------------------------------------- CHOIX MÉTRIQUE ------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Création du dataframe en choisissant le type de métrique qu'on souhaite étudier
 
 
-st.divider()
+params = [choix_compet, choix_saison]
+stat = f"SELECT * FROM {table_met} WHERE Compet = ? and Saison = ?"
+res = execute_SQL(cursor, stat, params)
 
-if cat_met != "Physiques" :
-    columns = st.columns([1, 2])
-
-    with columns[0] :
-        type_met = st.selectbox(dico_type[cat_met][2], dico_type[cat_met][3])
-        type_met = dico_type[cat_met][3][type_met]
-        df = df[df.columns[[type_met in i for i in df.columns]]]
-    with columns[1] :
-        choix_metrique = st.selectbox("Choisir la métrique", df.columns)
-
-else :
-    choix_metrique = st.selectbox("Choisir la métrique", df.columns)
-
-df = df[choix_metrique]
+df = pd.DataFrame(res.fetchall())
+df.columns = [i[0] for i in res.description]
+df.set_index(["Journée", "team_name"], inplace = True)
 
 
 #----------------------------------------------- CHOIX GROUPES ------------------------------------------------------------------------------------
+
+
+liste_équipe = df.reindex(dico_rank[choix_saison], level = 1, axis = 0).index.levels[1]
 
 if choix_groupe_top :
     st.divider()
@@ -149,6 +110,43 @@ if choix_groupe_top :
 if choix_groupe_équipe :
     st.divider()
     choix_équipe = st.multiselect("Choisir équipe", liste_équipe)
+
+
+#----------------------------------------------- CHOIX MÉTRIQUE ------------------------------------------------------------------------------------
+
+
+st.divider()
+
+columns = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
+
+with columns[0] :
+    # Choix de la catégorie de métrique
+    func_change("select_cat_met", "cat_met")
+    cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True, key = 'select_cat_met',
+                        on_change = func_change, args = ("cat_met", "select_cat_met"))
+
+with columns[1] :
+    # Choix de la moyenne pour la catégorie de métrique choisie
+    cat_moy = st.radio("Moyenne de la métrique", dico_type[cat_met][1].keys(), horizontal = True)
+
+with columns[2] :
+    if st.checkbox("Métriques pour les équipes qui gagnent les matchs") :
+        df = df[df.result == "win"]
+
+if cat_met != "Physiques" :
+    columns = st.columns([1, 2])
+
+    with columns[0] :
+        type_met = st.selectbox(dico_type[cat_met][2], dico_type[cat_met][3])
+        type_met = dico_type[cat_met][3][type_met]
+        df = df[df.columns[[type_met in i for i in df.columns]]]
+    with columns[1] :
+        choix_metrique = st.selectbox("Choisir la métrique", df.columns)
+
+else :
+    choix_metrique = st.selectbox("Choisir la métrique", df.columns)
+
+df = df[choix_metrique]
 
 
 #----------------------------------------------- FILTRAGE DATAFRAME GROUPE ------------------------------------------------------------------------------------
@@ -181,7 +179,7 @@ if len(groupe_plot) + len(choix_équipe) > 0 :
     grp_title = []
     grp_title.append(f'{df_final.columns[0]}')
     grp_title.append(f'{", ".join(df_final.columns[:-1])} et {df_final.columns[-1]}')
-    plt.title(f"Graphe de la métrique {choix_metrique}\npour{' le'*(len(groupe_plot) > 0)} {grp_title[bool_len_grp]} \nau cours des journées de la saison {saison.replace('_', '/')}",
+    plt.title(f"Graphe de la métrique {choix_metrique}\npour{' le'*(len(groupe_plot) > 0)} {grp_title[bool_len_grp]} \nau cours des journées de la saison {replace_saison(choix_saison)}",
                 fontweight = "heavy", y = 1.05, fontsize = 9)
     plt.legend(df_final.columns, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
 

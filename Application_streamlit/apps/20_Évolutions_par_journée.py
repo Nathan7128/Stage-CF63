@@ -23,7 +23,6 @@ choix_équipe = []
 #----------------------------------------------- CHOIX SAISON ET MÉTRIQUE ------------------------------------------------------------------------------------
 
 
-
 columns = st.columns([2, 4, 2, 3])
 
 with columns[0] :
@@ -58,7 +57,6 @@ if win_met :
     df = df[df.result == "win"]
 
 df = df[df.columns[[(dico_type[cat_met][1][moy_met] in i) or ("ratio" in i) for i in df.columns]]]
-
 
 #----------------------------------------------- CHOIX MÉTRIQUE ------------------------------------------------------------------------------------
 
