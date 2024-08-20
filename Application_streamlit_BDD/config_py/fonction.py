@@ -6,7 +6,13 @@ from mplsoccer import Pitch
 
 import pandas as pd
 
-def replace_saison(saison) :
+def replace_saison1(saison) :
+    if type(saison) == list :
+        return [i.replace("/", "_") for i in saison]
+    else :
+        return saison.replace("/", "_")
+
+def replace_saison2(saison) :
     if type(saison) == list :
         return [i.replace("_", "/") for i in saison]
 

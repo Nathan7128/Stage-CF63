@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from functools import partial
 import sqlite3
 
-from config_py.fonction import func_change, execute_SQL, replace_saison
+from config_py.fonction import func_change, execute_SQL, replace_saison2
 from config_py.variable import dico_type, dico_rank_SK, dico_cat_run, dico_cat_met_pressure, dico_type_passe, dico_rank_SB
 
 st.set_page_config(layout="wide")
@@ -179,7 +179,7 @@ df_metrique = df_metrique.drop("Compet", axis = 1).set_index(["Saison", "team_na
 
 df_nb_team = df_metrique.reset_index()[["Saison", "team_name"]].drop_duplicates().groupby("Saison").apply(len)
 
-max_team = max(df_nb_team)
+max_team = min(df_nb_team)
 
 columns = st.columns(2, gap = "large", vertical_alignment = "center")
 
@@ -378,7 +378,7 @@ for saison in liste_saison :
     df_final.loc[idx[:, "Middle"], saison] = df_metrique.loc[idx[saison, liste_rank[nb_top:nb_top + nb_middle.loc[saison]]], :].mean(axis = 0).values
     df_final.loc[idx[:, "Bottom"], saison] = df_metrique.loc[idx[saison, liste_rank[nb_top + nb_middle.loc[saison]:]], :].mean(axis = 0).values
 
-df_final.columns = replace_saison(liste_saison)
+df_final.columns = replace_saison2(liste_saison)
 
 df_final.dropna(axis = 0, how = "all", inplace = True)
 df_final.replace({0 : np.nan}, inplace = True)

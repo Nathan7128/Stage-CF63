@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sqlite3
 
-from config_py.fonction import func_change, execute_SQL, replace_saison
+from config_py.fonction import func_change, execute_SQL, replace_saison1, replace_saison2
 from config_py.variable import dico_type, dico_rank_SK
 
 
@@ -57,8 +57,8 @@ liste_saison = sorted([i[0] for i in liste_saison], reverse = True)
 
 with columns[1] :
 
-    choix_saison = st.selectbox("Choisir saison", replace_saison(liste_saison), index = 0)
-    choix_saison = choix_saison.replace("/", "_")
+    choix_saison = st.selectbox("Choisir saison", replace_saison2(liste_saison), index = 0)
+    choix_saison = replace_saison1(choix_saison)
 
 with columns[2] :
     ""
@@ -84,26 +84,28 @@ df.set_index(["Journée", "team_name"], inplace = True)
 
 liste_équipe = df.reindex(dico_rank[choix_saison], level = 1, axis = 0).index.levels[1]
 
+max_team = len(df.index.levels[1])
+
 if choix_groupe_top :
     st.divider()
     df_groupe = pd.DataFrame(0, index = ["Top", "Middle", "Bottom"], columns = ["Taille", "Slider"])
     df_groupe["Slider"] = "Nombre d'équipe dans le " + df_groupe.index
 
-    columns = st.columns(4, gap = "large", vertical_alignment = "center")
+    columns = st.columns(3, gap = "large", vertical_alignment = "center")
+
     with columns[0] :
-        df_groupe.loc["Top", "Taille"] = st.slider(df_groupe.loc["Top", "Slider"], min_value = 1, max_value = 20, value = 5)
+        df_groupe.loc["Top", "Taille"] = st.slider(df_groupe.loc["Top", "Slider"], min_value = 1, max_value = max_team, value = 5)
     with columns[1] :
-        if df_groupe.loc["Top", "Taille"] == 20 :
-            df_groupe.loc["Bottom", "Taille"] = 20 - df_groupe.loc["Top", "Taille"]
+        if df_groupe.loc["Top", "Taille"] == max_team :
+            df_groupe.loc["Bottom", "Taille"] = max_team - df_groupe.loc["Top", "Taille"]
             st.write(f"Nombre d'équipe dans le Bottom : {df_groupe.loc['Bottom', 'Taille']}")
         else :
             df_groupe.loc["Bottom", "Taille"] = st.slider(df_groupe.loc["Bottom", "Slider"], min_value = 0,
-                                                          max_value = 20 - df_groupe.loc["Top", "Taille"])
-    with columns[2] :
-        df_groupe.loc["Middle", "Taille"] = 20 - df_groupe.loc["Top", "Taille"] - df_groupe.loc["Bottom", "Taille"]
-        st.write(f"Nombre d'équipe dans le Middle : {df_groupe.loc['Middle', 'Taille']}")
+                                                          max_value = max_team - df_groupe.loc["Top", "Taille"])
+            
+    df_groupe.loc["Middle", "Taille"] = max_team - df_groupe.loc["Top", "Taille"] - df_groupe.loc["Bottom", "Taille"]
 
-    with columns[3] :
+    with columns[2] :
         groupe_non_vide = df_groupe[df_groupe.Taille > 0].index
         groupe_plot = st.multiselect("Groupe à afficher", groupe_non_vide)
 
@@ -132,6 +134,16 @@ with columns[1] :
 with columns[2] :
     if st.checkbox("Métriques pour les équipes qui gagnent les matchs") :
         df = df[df.result == "win"]
+    df.drop("result", axis = 1, inplace = True)
+
+# On garde les métriques avec la moyenne choisie
+cat_type = dico_type[cat_met][1][cat_moy]
+
+# col_keep est une liste de taille = nombre total de métrique et qui contient des True/False pour savoir si on garde ou non
+# la métrique correspondante
+# Les métriques ratios ne sont pas aggrégés par durée ou nombre d'évènement
+col_keep = [(cat_type in i) or ("ratio" in i) for i in df.columns]
+df = df[df.columns[col_keep]]
 
 if cat_met != "Physiques" :
     columns = st.columns([1, 2])
@@ -179,7 +191,7 @@ if len(groupe_plot) + len(choix_équipe) > 0 :
     grp_title = []
     grp_title.append(f'{df_final.columns[0]}')
     grp_title.append(f'{", ".join(df_final.columns[:-1])} et {df_final.columns[-1]}')
-    plt.title(f"Graphe de la métrique {choix_metrique}\npour{' le'*(len(groupe_plot) > 0)} {grp_title[bool_len_grp]} \nau cours des journées de la saison {replace_saison(choix_saison)}",
+    plt.title(f"Graphe de la métrique {choix_metrique}\npour{' le'*(len(groupe_plot) > 0)} {grp_title[bool_len_grp]} \nau cours des journées de la saison {replace_saison2(choix_saison)}",
                 fontweight = "heavy", y = 1.05, fontsize = 9)
     plt.legend(df_final.columns, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)
 

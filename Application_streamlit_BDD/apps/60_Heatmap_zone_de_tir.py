@@ -4,15 +4,17 @@ import numpy as np
 
 import pandas as pd
 
-from mplsoccer import Pitch, VerticalPitch
-
-import matplotlib.pyplot as plt
+from mplsoccer import VerticalPitch
 
 import matplotlib.patches as patches
 
+import sqlite3
+
 from config_py.variable import path_effect_2, dico_rank_SB, colormapblue, colormapred
 
-from config_py.fonction import label_heatmap
+from config_py.fonction import label_heatmap, execute_SQL, replace_saison1, replace_saison2
+
+idx = pd.IndexSlice
 
 st.set_page_config(layout="wide")
 
@@ -21,43 +23,61 @@ st.title("Heatmap des zones de tir")
 
 st.divider()
 
-#----------------------------------------------- DÉFINITION FONCTIONS ------------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Connection BDD
 
 
-@st.cache_data
-def import_df(saison_df) :
-    return pd.read_excel(f"Heatmap SB/zone_tir/Tableaux/{saison_df}.xlsx", index_col = 0)
+connect = sqlite3.connect("database.db")
+cursor = connect.cursor()
 
-
-dico_df_saison = {}
-dico_info_matchs = {}
-
-liste_équipe = []
 
 #----------------------------------------------- FILTRAGE DES DATAS ------------------------------------------------------------------------------------
 
 
-columns = st.columns(2, gap = "large")
+columns = st.columns([1, 2, 2], vertical_alignment = "center", gap = "large")
 
+# Choix Compet
+params = []
+stat = f"SELECT DISTINCT Compet FROM Zone_tir"
+liste_compet = execute_SQL(cursor, stat, params).fetchall()
+liste_compet = [i[0] for i in liste_compet]
+    
 with columns[0] :
-    saison_choice = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"], default = "2023/2024")
-    saison_choice.sort()
-    liste_saison = [i.replace("/", "_") for i in saison_choice]
+    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, index = 0)
+
+# Choix d'une ou plusieurs saisons sur laquelle/lesquelles on va étudier les métriques pour Skill Corner
+params = [choix_compet]
+stat = f"SELECT DISTINCT Saison FROM Zone_tir WHERE Compet = ?"
+liste_saison = execute_SQL(cursor, stat, params).fetchall()
+liste_saison = [i[0] for i in liste_saison]
 
 with columns[1] :
+    choix_saison = st.multiselect("Choisir saison", replace_saison2(liste_saison), default = replace_saison2(liste_saison))
+choix_saison = replace_saison1(choix_saison)
+
+with columns[2] :
     choix_groupe = st.radio("Choix groupe", ["Choisir Top/Middle/Bottom", "Choisir équipe"], label_visibility = "hidden")
 
-
-for saison in liste_saison :
-    df_import = import_df(saison)
-    dico_df_saison[saison] = df_import
-    liste_équipe += df_import.Équipe.unique().tolist()
-    dico_info_matchs[saison] = pd.read_excel(f"Info matchs/Stats Bomb/{saison}.xlsx", index_col = 0)
-
-liste_équipe = list(set(liste_équipe))
-
+# On regarde si au moins une saison est choisie
+if len(choix_saison) == 0 :
+    st.stop()
 
 st.divider()
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Création du dataframe en choisissant le type de métrique qu'on souhaite étudier
+
+
+params = [choix_compet] + choix_saison
+stat = f"SELECT * FROM Zone_tir WHERE Compet = ? and Saison IN ({', '.join('?' * len(choix_saison))})"
+res = execute_SQL(cursor, stat, params)
+
+df = pd.DataFrame(res.fetchall())
+df.columns = [i[0] for i in res.description]
+
+df = df.drop(["Compet", "index"], axis = 1).set_index(["Saison", "Équipe"])
 
 
 #----------------------------------------------- CHOIX GROUPE ------------------------------------------------------------------------------------

@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import sqlite3
 
-from config_py.fonction import func_change, execute_SQL, replace_saison
+from config_py.fonction import func_change, execute_SQL, replace_saison1, replace_saison2
 from config_py.variable import dico_type, dico_rank_SK, dico_rank_SB, dico_cat_run, dico_cat_met_pressure, dico_type_passe
 
 idx = pd.IndexSlice
@@ -94,8 +94,8 @@ liste_saison = execute_SQL(cursor, stat, params).fetchall()
 liste_saison = [i[0] for i in liste_saison]
 
 with columns[2] :
-    choix_saison = st.multiselect("Choisir saison", replace_saison(liste_saison), default = max(replace_saison(liste_saison)))
-choix_saison = [i.replace("/", "_") for i in choix_saison]
+    choix_saison = st.multiselect("Choisir saison", replace_saison2(liste_saison), default = max(replace_saison2(liste_saison)))
+choix_saison = replace_saison1(choix_saison)
 
 # On regarde si au moins une saison est choisie
 if len(choix_saison) == 0 :
@@ -123,7 +123,7 @@ df_metrique = df_metrique.drop("Compet", axis = 1).set_index(["Saison", "team_na
 
 df_nb_team = df_metrique.reset_index()[["Saison", "team_name"]].drop_duplicates().groupby("Saison").apply(len)
 
-max_team = max(df_nb_team)
+max_team = min(df_nb_team)
 
 columns = st.columns(2, gap = "large", vertical_alignment = "center")
 
@@ -418,7 +418,7 @@ if len(df_final_sort.selection.rows) == 0 :
 
 for saison in choix_saison :
     
-    saison_widg = replace_saison(saison)
+    saison_widg = replace_saison2(saison)
     st.divider()
     st.markdown(f"<p style='text-align: center;'>Tableau des métriques retenues, par équipes, en moyenne par match lors de la saison {saison_widg} </p>", unsafe_allow_html=True)
     metrique_df_final = df_metrique.loc[saison, :][df_final.index[df_final_sort.selection.rows]]
