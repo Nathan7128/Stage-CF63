@@ -158,7 +158,7 @@ if len(liste_saison) > 0 :
             df_metrique = df_metrique.divide(nb_matchs_team, axis = 0)
         
         else :
-            df_metrique.reset_index(level = 1)
+            df_metrique.reset_index(level = 1, inplace = True)
         
         # On ajoute le dataframe filtré à la liste
         liste_df_metrique.append(df_metrique)
