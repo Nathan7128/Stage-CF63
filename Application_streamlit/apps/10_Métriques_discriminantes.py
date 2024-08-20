@@ -157,6 +157,9 @@ if len(liste_saison) > 0 :
             # On divise pour faire la moyenne par saison pour chaque équipe pour chaque métrique
             df_metrique = df_metrique.divide(nb_matchs_team, axis = 0)
         
+        else :
+            df_metrique.reset_index(level = 1)
+        
         # On ajoute le dataframe filtré à la liste
         liste_df_metrique.append(df_metrique)
 

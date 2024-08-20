@@ -61,38 +61,51 @@ def couleur_diff(col) :
 # Choix de la saison et du fournisseur de donnée
 
 
-col1, col2 = st.columns([1, 3], gap = "large")
+columns = st.columns(3, gap = "large")
+st.divider()
+columns2 = st.columns(2, gap = "large", vertical_alignment = "center")
 
-with col1 :
+with columns[0] :
     # Choix du fournisseur de données
     func_change("select_data", "choix_data")
     choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True,
                           key = "select_data", on_change = func_change, args = ("choix_data", "select_data"))
     
-    if choix_data == "Skill Corner" :
-        table_met = dico_type[st.session_state.cat_met][0]
+if choix_data == "Skill Corner" :
+
+    table_met = dico_type[st.session_state.cat_met][0]
+
+    dico_rank = dico_rank_SK
+
+    st.divider()
+    columns3 = st.columns([2, 1, 1], vertical_alignment = "center", gap = "medium")
+
+    with columns3[2] :
         win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
-        dico_rank = dico_rank_SK
-    else :
-        table_met = "Métriques_SB"
-        win_met = False
-        dico_rank = dico_rank_SB
     
-    # Choix Compet
-    params = []
-    stat = f"SELECT DISTINCT Compet FROM {table_met}"
-    liste_compet = execute_SQL(cursor, stat, params).fetchall()
-    liste_compet = [i[0] for i in liste_compet]
+else :
+    table_met = "Métriques_SB"
+    win_met = False
+    dico_rank = dico_rank_SB
     
+# Choix Compet
+params = []
+stat = f"SELECT DISTINCT Compet FROM {table_met}"
+liste_compet = execute_SQL(cursor, stat, params).fetchall()
+liste_compet = [i[0] for i in liste_compet]
+    
+with columns[1] :
     choix_compet = st.selectbox("Choisir compétition", options = liste_compet, index = 0)
 
-    # Choix d'une ou plusieurs saisons sur laquelle/lesquelles on va étudier les métriques pour Skill Corner
-    params = [choix_compet]
-    stat = f"SELECT DISTINCT Saison FROM {table_met} WHERE Compet = ?"
-    liste_saison = execute_SQL(cursor, stat, params).fetchall()
-    liste_saison = [i[0] for i in liste_saison]
+# Choix d'une ou plusieurs saisons sur laquelle/lesquelles on va étudier les métriques pour Skill Corner
+params = [choix_compet]
+stat = f"SELECT DISTINCT Saison FROM {table_met} WHERE Compet = ?"
+liste_saison = execute_SQL(cursor, stat, params).fetchall()
+liste_saison = [i[0] for i in liste_saison]
+
+with columns[2] :
     choix_saison = st.multiselect("Choisir saison", replace_saison(liste_saison), default = max(replace_saison(liste_saison)))
-    choix_saison = [i.replace("/", "_") for i in choix_saison]
+choix_saison = [i.replace("/", "_") for i in choix_saison]
 
 # On regarde si au moins une saison est choisie
 if len(choix_saison) == 0 :
@@ -103,40 +116,31 @@ if len(choix_saison) == 0 :
 # Création du dataframe en choisissant le type de métrique qu'on souhaite étudier
 
 
-st.divider()
-
 params = [choix_compet] + choix_saison
 stat = f"SELECT * FROM {table_met} WHERE Compet = ? and Saison IN ({', '.join('?' * len(choix_saison))})"
 res = execute_SQL(cursor, stat, params)
 
 df_metrique = pd.DataFrame(res.fetchall())
 df_metrique.columns = [i[0] for i in res.description]
+df_metrique = df_metrique.drop("Compet", axis = 1).set_index(["Saison", "team_name"])
 
 if win_met :
     df_metrique = df_metrique[df_metrique.result == "win"]
-
-df_metrique.drop(["Compet", "Journée"], axis = 1, inplace = True)
-
-dico_df_saison = {}
-for saison in choix_saison :
-    dico_df_saison[saison] = df_metrique[df_metrique.Saison == saison]
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Choix de la taille des groupes sur lesquels aggréger les données
 
 
-df_nb_team = df_metrique[["Saison", "team_name"]].drop_duplicates().groupby("Saison").apply(len)
+df_nb_team = df_metrique.reset_index()[["Saison", "team_name"]].drop_duplicates().groupby("Saison").apply(len)
 
 max_team = max(df_nb_team)
 
-columns = st.columns(2, gap = "large", vertical_alignment = "center")
-
-with columns[0] :
+with columns2[0] :
     # Choix du nombre d'équipe dans le Top. Possible de choisir toutes les équipes du championnat
     nb_top = st.slider("Nombre d'équipe dans le Top :", min_value = 1, max_value = max_team, value = 5)
 
-with columns[1] :
+with columns2[1] :
     # On regarde si le top correspond à toutes les équipes du championnat ou non. Si oui, le slider bug donc d'ou le if/else
     if nb_top == max_team :
         nb_bottom = max_team - nb_top
@@ -150,66 +154,14 @@ with columns[1] :
 nb_middle = df_nb_team - nb_top - nb_bottom
 
 
-st.divider()
-
-# ALTERNATIVE CHOIX GROUPE POUR CHAQUE SAISON
-if False :
-    df_nb_team = df_metrique[["Saison", "team_name"]].drop_duplicates().groupby("Saison").apply(len)
-
-    df_groupe = pd.DataFrame(0, index = ["Top", "Middle", "Bottom"], columns = choix_saison)
-
-    for saison in choix_saison :
-
-        saison_widg = replace_saison([saison])[0]
-
-        max_team = df_nb_team.loc[saison]
-
-        columns = st.columns(3, gap = "large", vertical_alignment = "center")
-
-        with columns[0] :
-            # Choix du nombre d'équipe dans le Top. Possible de choisir toutes les équipes du championnat
-            df_groupe.loc["Top", saison] = st.slider(f"Nombre d'équipe dans le Top de la saison {saison_widg}", min_value = 1, max_value = max_team, value = 5)
-
-        with columns[1] :
-            # On regarde si le top correspond à toutes les équipes du championnat ou non. Si oui, le slider bug donc d'ou le if/else
-            if df_groupe.loc["Top", saison] == max_team :
-                df_groupe.loc["Bottom", saison] = max_team - df_groupe.loc["Top", saison]
-                st.write(f"Nombre d'équipe dans le Bottom de la saison {saison_widg} : {df_groupe.loc["Bottom", saison]}")
-
-            else :
-                # Choix de la taille du groupe bottom, initialisé à 0.
-                df_groupe.loc["Bottom", saison] = st.slider(f"Nombre d'équipe dans le Bottom de la saison {saison_widg}", min_value = 0, max_value = max_team - df_groupe.loc["Top", saison])
-
-        with columns[2] :
-            # Calcul par différence de la taille du groupe Middle
-            df_groupe.loc["Middle", saison] = max_team - df_groupe.loc["Top", saison] - df_groupe.loc["Bottom", saison]
-            st.write(f"Nombre d'équipe dans le Middle de la saison {saison_widg} : {df_groupe.loc["Middle", saison]}")
-
-        df_groupe.loc["Middle", saison] = max_team - df_groupe.loc["Top", saison] - df_groupe.loc["Bottom", saison]
-
-    st.divider()
-
-
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Création du dataframe qu'on va afficher sur la page
 
 
 if choix_data == "Skill Corner" :
 
-    df_metrique.drop("result", inplace = True, axis = 1)
-
-    with col2 :
-        # Choix de la catégorie de métrique
-        func_change("select_cat_met", "cat_met")
-        cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True, key = 'select_cat_met',
-                            on_change = func_change, args = ("cat_met", "select_cat_met"))
+    df_metrique.drop(["result", "Journée"], inplace = True, axis = 1)
         
-        # Choix de la moyenne pour la catégorie de métrique choisie
-        cat_moy = st.radio("Moyenne de la métrique", dico_type[cat_met][1].keys(), horizontal = True)
-        
-    # On enlève les colonnes qui nous intéresse pas, et on garde que les métriques dans les colonnes et on groupe par équipe
-    df_metrique = df_metrique.groupby(["Saison", "team_name"], as_index = True, sort = False)
-
     # Calcul du nombre de match joué par équipe sur la saison et tri des équipes en fonction de leur classement sur la saison
     nb_matchs_team = df_metrique.apply(len)
 
@@ -295,6 +247,17 @@ df_final.dropna(axis = 1, how = "all", inplace = True)
 
 # Filtrage des métriques uniquement dans le cas Skill Corner
 if choix_data == "Skill Corner" :
+
+    with columns3[0] :
+        # Choix de la catégorie de métrique
+        func_change("select_cat_met", "cat_met")
+        cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True, key = 'select_cat_met',
+                            on_change = func_change, args = ("cat_met", "select_cat_met"))
+
+    with columns3[1] :
+        # Choix de la moyenne pour la catégorie de métrique choisie
+        cat_moy = st.radio("Moyenne de la métrique", dico_type[cat_met][1].keys(), horizontal = True)
+
     # On garde les métriques avec la moyenne choisie
     cat_type = dico_type[cat_met][1][cat_moy]
 
@@ -419,6 +382,8 @@ if choix_data == "Skill Corner" :
 if len(df_final) == 0 :
     st.stop()
 
+st.divider()
+
 # On peut choisir le nombre final de métrique que l'on souhaite gardé parmis les métriques filtrées
 nb_metrique = st.slider("Nombre de métriques gardées", min_value=0, max_value = df_final.shape[0], value = df_final.shape[0])
 df_final = df_final.loc[df_final.index[:nb_metrique]]
@@ -457,7 +422,7 @@ if len(moyenne_sort_df.selection.rows) == 0 :
 
 for saison in choix_saison :
     
-    saison_widg = replace_saison([saison])[0]
+    saison_widg = replace_saison(saison)
     st.divider()
     st.markdown(f"<p style='text-align: center;'>Tableau des métriques retenues, par équipes, en moyenne par match lors de la saison {saison_widg} </p>", unsafe_allow_html=True)
     metrique_moyenne_sort = df_metrique.loc[saison, :][df_final.index[moyenne_sort_df.selection.rows]]

@@ -6,8 +6,12 @@ from mplsoccer import Pitch
 
 import pandas as pd
 
-def replace_saison(liste_saison) :
-    return [i.replace("_", "/") for i in liste_saison]
+def replace_saison(saison) :
+    if type(saison) == list :
+        return [i.replace("_", "/") for i in saison]
+
+    else :
+        return saison.replace("_", "/")
 
 def execute_SQL(cursor, stat, params) :
     return cursor.execute(stat, params)

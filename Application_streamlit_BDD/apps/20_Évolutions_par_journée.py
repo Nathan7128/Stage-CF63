@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import sqlite3
 
-from config_py.fonction import func_change
-from config_py.variable import dico_type, dico_rank_SK
+from config_py.fonction import func_change, execute_SQL, replace_saison
+from config_py.variable import dico_type, dico_rank_SK, dico_rank_SB
 
 
 st.set_page_config(layout = "wide")
@@ -20,44 +21,83 @@ groupe_non_vide = []
 
 choix_équipe = []
 
-#----------------------------------------------- CHOIX SAISON ET MÉTRIQUE ------------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Connection BDD
 
 
+connect = sqlite3.connect("database.db")
+cursor = connect.cursor()
 
-columns = st.columns([2, 4, 2, 3])
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Choix de la saison et du fournisseur de donnée
+
+
+columns = st.columns(4, gap = "large")
 
 with columns[0] :
-    saison = st.radio("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022"], horizontal = True)
-    saison = saison.replace("/", "_")
-    liste_équipe = dico_rank_SK[saison]
+    # Choix du fournisseur de données
+    func_change("select_data", "choix_data")
+    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True,
+                          key = "select_data", on_change = func_change, args = ("choix_data", "select_data"))
+    
+if choix_data == "Skill Corner" :
 
+    table_met = dico_type[st.session_state.cat_met][0]
+
+    dico_rank = dico_rank_SK
+
+    st.divider()
+
+    columns2 = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
+
+    with columns2[0] :
+        # Choix de la catégorie de métrique
+        func_change("select_cat_met", "cat_met")
+        cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True, key = 'select_cat_met',
+                            on_change = func_change, args = ("cat_met", "select_cat_met"))
+
+    with columns2[1] :
+        # Choix de la moyenne pour la catégorie de métrique choisie
+        cat_moy = st.radio("Moyenne de la métrique", dico_type[cat_met][1].keys(), horizontal = True)
+
+    with columns2[2] :
+        win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
+    
+else :
+    table_met = "Métriques_SB"
+    win_met = False
+    dico_rank = dico_rank_SB
+    
+# Choix Compet
+params = []
+stat = f"SELECT DISTINCT Compet FROM {table_met}"
+liste_compet = execute_SQL(cursor, stat, params).fetchall()
+liste_compet = [i[0] for i in liste_compet]
+    
 with columns[1] :
-    func_change("select_cat_met", "cat_met")
-    cat_met = st.radio("Catégorie de métrique", dico_type.keys(), horizontal = True, key = 'select_cat_met',
-                        on_change = func_change, args = ("cat_met", "select_cat_met"))
+    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, index = 0)
+
+# Choix d'une ou plusieurs saisons sur laquelle/lesquelles on va étudier les métriques pour Skill Corner
+params = [choix_compet]
+stat = f"SELECT DISTINCT Saison FROM {table_met} WHERE Compet = ?"
+liste_saison = execute_SQL(cursor, stat, params).fetchall()
+liste_saison = sorted([i[0] for i in liste_saison], reverse = True)
 
 with columns[2] :
-    moy_met = st.radio("Moyenne de la métrique", dico_type[cat_met][1].keys())
+
+    choix_saison = st.selectbox("Choisir saison", replace_saison(liste_saison), index = 0)
+    choix_saison = choix_saison.replace("/", "_")
 
 with columns[3] :
     ""
     choix_groupe_équipe = st.checkbox("Sélectionner équipe", value = False)
     choix_groupe_top = st.checkbox("Sélectionner Top/Middle/Bottom", value = False)
-    win_met = st.checkbox("Métriques pour les équipes qui gagnent les matchs")
 
-
-#----------------------------------------------- IMPORTATION DATAFRAME ------------------------------------------------------------------------------------
-
-@st.cache_data
-def import_df(saison_df, cat_met_df) :
-    return pd.read_excel(f"Métriques discriminantes/Tableau métriques/{saison_df}/Skill Corner/{dico_type[cat_met_df][0]}", index_col = [0, 1])
-
-df = import_df(saison, cat_met)
-
-if win_met :
-    df = df[df.result == "win"]
-
-df = df[df.columns[[(dico_type[cat_met][1][moy_met] in i) or ("ratio" in i) for i in df.columns]]]
+# On regarde si au moins une saison est choisie
+if len(choix_saison) == 0 :
+    st.stop()
 
 
 #----------------------------------------------- CHOIX MÉTRIQUE ------------------------------------------------------------------------------------
