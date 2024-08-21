@@ -39,7 +39,7 @@ cursor = connect.cursor()
 #----------------------------------------------- FILTRAGE DES DATAS ------------------------------------------------------------------------------------
 
 
-columns = st.columns([1, 2, 2], vertical_alignment = "center", gap = "large")
+columns = st.columns([2, 4, 3], vertical_alignment = "center", gap = "large")
 
 # Choix Compet
 params = []
@@ -190,10 +190,13 @@ if len(type_action) == 0 :
     st.stop()
     
 st.divider()
+
+choix_saison_title = replace_saison2(choix_saison)
+choix_saison_title.reverse()
 bool_len_grp = (len(choix_saison) > 1)
 saison_title = []
-saison_title.append(f'la saison {choix_saison[0]}')
-saison_title.append(f'les saisons {", ".join(choix_saison[:-1])} et {choix_saison[-1]}')
+saison_title.append(f'la saison {choix_saison_title[0]}')
+saison_title.append(f'les saisons {", ".join(choix_saison_title[:-1])} et {choix_saison_title[-1]}')
 
 if choix_groupe == "Choisir Top/Middle/Bottom" :
     bool_len = 0
@@ -275,7 +278,7 @@ st.markdown(f"<p style='text-align: center;'>Nombre total de {liste_goal_label[c
 
 if choix_groupe == "Choisir équipe" and choix_bins_h > 0 and choix_bins_v > 0 and len(df_sort) > 0  :
     df_sort.reset_index(inplace = True)
-    df_sort
+
     df_sort[["match_date", "match_week", "home_team", "away_team", "minute", "Équipe"]]
     st.dataframe(df_sort.reset_index()[["match_date", "match_week", "home_team", "away_team", "minute", "Équipe"]],
                     hide_index = True)
