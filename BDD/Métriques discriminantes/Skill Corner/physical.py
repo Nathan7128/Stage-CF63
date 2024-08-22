@@ -39,8 +39,9 @@ for dico in liste_dico :
     data = data_import[~(data_import.match_id.isin(dico["match_drop"]))]
     data.fillna(0, inplace = True)
 
-    drop = ["player_name", "player_short_name", "psv99", "player_id", "player_birthdate", "team_id", "match_name", "match_date", "competition_name", "competition_id", "season_name",
-            "season_id", "competition_edition_id", "position", "position_group", "minutes_full_tip", "minutes_full_otip", "physical_check_passed"]
+    drop = ["player_name", "player_short_name", "psv99", "player_id", "player_birthdate", "team_id", "match_name", "match_date",
+            "competition_name", "competition_id", "season_name", "season_id", "competition_edition_id", "position", "position_group",
+            "minutes_full_tip", "minutes_full_otip", "physical_check_passed"]
 
     data.drop(drop, inplace = True, axis = 1)
     sample = data.columns[["sample" in i for i in data.columns]]

@@ -3,8 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sqlite3
 
-from config_py.fonction import func_change, execute_SQL, replace_saison1, replace_saison2
-from config_py.variable import dico_rank_SB
+from fonction import func_change, execute_SQL, replace_saison1, replace_saison2
+from variable import dico_rank_SB
 
 idx = pd.IndexSlice
 

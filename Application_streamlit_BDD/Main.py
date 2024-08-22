@@ -1,8 +1,16 @@
 import streamlit as st
 
 dico_session_state = {
-    "choix_data" : "Skill Corner",
+    "provider" : "Skill Corner",
     "cat_met" : "Physiques",
+    "nb_top_met" : 3,
+    "nb_bottom_met" : 3,
+    "threat_run" : True,
+    "result_passe_pressure" : ["Attempts", "Completed"],
+    "ratio_passe_pressure" : True,
+    "ratio_conserv_pressure" : True,
+    "threat_passe" : True,
+    "ratio_passe" : True,
     'Type_action_deb_action' : ["Open play"],
     'Type_action_passes' : ["Open play"]
 }

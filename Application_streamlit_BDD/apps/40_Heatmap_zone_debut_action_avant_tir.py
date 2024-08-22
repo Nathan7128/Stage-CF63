@@ -10,9 +10,9 @@ import numpy as np
 
 import sqlite3
 
-from config_py.variable import path_effect_1, dico_rank_SB, colormapblue, colormapred
+from variable import path_effect_1, dico_rank_SB, colormapblue, colormapred, dico_label
 
-from config_py.fonction import label_heatmap, execute_SQL, replace_saison1, replace_saison2, func_change
+from fonction import label_heatmap, execute_SQL, replace_saison1, replace_saison2, func_change
 
 idx = pd.IndexSlice
 
@@ -20,12 +20,6 @@ st.set_page_config(layout="wide")
 
 st.title("Heatmap des zones de début d'action menant à un tir")
 st.divider()
-
-
-#----------------------------------------------- DÉFINITION DES DICOS ------------------------------------------------------------------------------------
-
-
-dico_label = {"Choisir Top/Middle/Bottom" : ["du"], "Choisir équipe" : ["de"]}
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -83,6 +77,13 @@ df.columns = [i[0] for i in res.description]
 
 df = df.drop(["Compet", "index"], axis = 1).set_index(["Saison", "Équipe"])
 
+params = [choix_compet] + choix_saison
+stat = f"SELECT * FROM Info_matchs_SB WHERE Compet = ? and Saison IN ({', '.join('?' * len(choix_saison))})"
+res = execute_SQL(cursor, stat, params)
+
+df_info_matchs = pd.DataFrame(res.fetchall())
+df_info_matchs.columns = [i[0] for i in res.description]
+
 
 #----------------------------------------------- CHOIX GROUPE ------------------------------------------------------------------------------------
 
@@ -127,14 +128,16 @@ st.divider()
 
 if choix_groupe == "Choisir Top/Middle/Bottom" :
     
-    for saison in choix_saison :
+    if groupe_plot != "Global" :
+    
+        for saison in choix_saison :
 
-        liste_rank = dico_rank_SB[saison]
+            liste_rank = dico_rank_SB[saison]
 
-        df.loc[idx[saison, liste_rank[:df_groupe.loc["Top", "Taille"]]], "Groupe"] = "Top"
-        df.loc[idx[saison, liste_rank[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + nb_middle.loc[saison]]], "Groupe"] = "Middle"
-        df.loc[idx[saison, liste_rank[df_groupe.loc["Top", "Taille"] + nb_middle.loc[saison]:]], "Groupe"] = "Bottom"
-    df = df[df.Groupe == groupe_plot]
+            df.loc[idx[saison, liste_rank[:df_groupe.loc["Top", "Taille"]]], "Groupe"] = "Top"
+            df.loc[idx[saison, liste_rank[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + nb_middle.loc[saison]]], "Groupe"] = "Middle"
+            df.loc[idx[saison, liste_rank[df_groupe.loc["Top", "Taille"] + nb_middle.loc[saison]:]], "Groupe"] = "Bottom"
+        df = df[df.Groupe == groupe_plot]
     
 else :
     df = df.loc[:, choix_équipe, :]
@@ -191,8 +194,8 @@ if len(type_action) == 0 :
     
 st.divider()
 
-choix_saison_title = replace_saison2(choix_saison)
-choix_saison_title.reverse()
+choix_saison_title = sorted(replace_saison2(choix_saison))
+
 bool_len_grp = (len(choix_saison) > 1)
 saison_title = []
 saison_title.append(f'la saison {choix_saison_title[0]}')
@@ -200,7 +203,7 @@ saison_title.append(f'les saisons {", ".join(choix_saison_title[:-1])} et {choix
 
 if choix_groupe == "Choisir Top/Middle/Bottom" :
     bool_len = 0
-    grp_title = [f"{groupe_plot} de ligue 2"]
+    grp_title = [groupe_plot]
 else :
     bool_len = (len(choix_équipe) > 1)
     grp_title = [f'{choix_équipe[0]}', f'{", ".join(choix_équipe[:-1])} et {choix_équipe[-1]}']
@@ -277,8 +280,13 @@ st.markdown(f"<p style='text-align: center;'>Nombre total de {liste_goal_label[c
                 unsafe_allow_html=True)
 
 if choix_groupe == "Choisir équipe" and choix_bins_h > 0 and choix_bins_v > 0 and len(df_sort) > 0  :
-    df_sort.reset_index(inplace = True)
 
-    df_sort[["match_date", "match_week", "home_team", "away_team", "minute", "Équipe"]]
-    st.dataframe(df_sort.reset_index()[["match_date", "match_week", "home_team", "away_team", "minute", "Équipe"]],
-                    hide_index = True)
+    st.divider()
+
+    expander = st.expander("Tableau informatif pour la zone sélectionnée sur la Heatmap de gauche")
+
+    with expander :
+
+        df_sort = pd.merge(df_sort.reset_index(), df_info_matchs, on = "match_id")
+        st.dataframe(df_sort[["match_date", "match_week", "home_team", "away_team", "minute", "Équipe"]],
+                        hide_index = True)

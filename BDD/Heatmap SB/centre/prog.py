@@ -73,7 +73,7 @@ for saison in liste_saison :
 
     df = df[["pass_cross", "match_id", "attacking_team", "shot_outcome", "But", "Tireur", "player_y", "minute", "pass_body_part", "x", "y", "x_end", "centre_id",
              "y_end", "z_end"]]
-    df.rename(axis = 1, mapper = {"pass_cross" : "Centre", "attacking_team" : "Équipe attaquante", "player_y" : "Centreur",
+    df.rename(axis = 1, mapper = {"pass_cross" : "Centre", "attacking_team" : "Équipe", "player_y" : "Centreur",
                                   "pass_body_part" : "Partie du corps"}, inplace = True)
     
     df["Saison"] = saison
