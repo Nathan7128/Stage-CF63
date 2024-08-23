@@ -159,7 +159,7 @@ def load_session_state_met(key, moy_cat) :
     """
 
     if key in st.session_state :
-        if moy_cat in st.session_state[key] or moy_cat not in st.session_state["widg_" + key] :
+        if moy_cat in st.session_state[key] or ("widg_" + key in st.session_state and moy_cat not in st.session_state["widg_" + key]) :
             st.session_state["widg_" + key] = st.session_state[key]
 
         else :
