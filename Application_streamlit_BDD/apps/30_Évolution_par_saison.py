@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from functools import partial
 import sqlite3
 
-from fonction import load_session_state, store_session_state, execute_SQL, replace_saison2
+from fonction import func_change, execute_SQL, replace_saison2
 from variable import dico_type, dico_rank_SK, dico_cat_run, dico_cat_met_pressure, dico_type_passe, dico_rank_SB
 
 st.set_page_config(layout="wide")
@@ -124,10 +124,10 @@ def couleur_text_df(row) :
 columns = st.columns([2, 2, 3], gap = "large")
 
 with columns[0] :
-
-    load_session_state("choix_data")
-    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True, key = "widg_choix_data",
-                          on_change = store_session_state, args = ["choix_data"])
+    # Choix du fournisseur de données
+    func_change("select_data", "choix_data")
+    choix_data = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True,
+                          key = "select_data", on_change = func_change, args = ("choix_data", "select_data"))
     
 if choix_data == "Skill Corner" :
 
@@ -141,19 +141,16 @@ else :
 # Choix Compet
 params = []
 stat = f"SELECT DISTINCT Compet FROM {table_met}"
-liste_compet = execute_SQL(cursor, stat, params)
+liste_compet = execute_SQL(cursor, stat, params).fetchall()
 liste_compet = [i[0] for i in liste_compet]
     
 with columns[1] :
-    load_session_state("compet")
-    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, key = "widg_compet", on_change = store_session_state,
-                                args = "compet")
-
+    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, index = 0)
 
 # Choix d'une ou plusieurs saisons sur laquelle/lesquelles on va étudier les métriques pour Skill Corner
 params = [choix_compet]
 stat = f"SELECT DISTINCT Saison FROM {table_met} WHERE Compet = ?"
-liste_saison = execute_SQL(cursor, stat, params)
+liste_saison = execute_SQL(cursor, stat, params).fetchall()
 liste_saison = [i[0] for i in liste_saison]
 
 with columns[2] :

@@ -8,15 +8,11 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-from variable import path_effect_2, dico_rank_SB, colormapblue, colormapred, dico_label
-
-from fonction import label_heatmap_centre, execute_SQL, replace_saison1, replace_saison2
+from config_py.variable import path_effect_2, dico_rank_SB, colormapblue, colormapred
 
 import matplotlib.patches as patches
 
-import sqlite3
-
-idx = pd.IndexSlice
+from config_py.fonction import label_heatmap_centre, best_zone
 
 st.set_page_config(layout="wide")
 
@@ -25,99 +21,73 @@ st.title("Heatmap des zones de départ/réception de centre")
 st.divider()
 
 
-# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Connection BDD
+#----------------------------------------------- DÉFINITION FONCTIONS ------------------------------------------------------------------------------------
 
 
-connect = sqlite3.connect("database.db")
-cursor = connect.cursor()
+@st.cache_data
+def import_df(saison_df) :
+    return pd.read_excel(f"Heatmap SB/centre/Tableaux/{saison_df}.xlsx", index_col = 0)
+
+
+dico_df_saison = {}
+dico_info_matchs = {}
+
+liste_équipe = []
 
 
 #----------------------------------------------- FILTRAGE DES DATAS ------------------------------------------------------------------------------------
 
 
-columns = st.columns([2, 4, 3], vertical_alignment = "center", gap = "large")
+columns = st.columns(2, gap = "large")
 
-# Choix Compet
-params = []
-stat = f"SELECT DISTINCT Compet FROM Zone_tir"
-liste_compet = execute_SQL(cursor, stat, params).fetchall()
-liste_compet = [i[0] for i in liste_compet]
-    
 with columns[0] :
-    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, index = 0)
+    saison_choice = st.multiselect("Choisir saison", options = ["2023/2024", "2022/2023", "2021/2022", "2020/2021"], default = "2023/2024")
+    saison_choice.sort()
+    liste_saison = [i.replace("/", "_") for i in saison_choice]
 
-# Choix d'une ou plusieurs saisons sur laquelle/lesquelles on va étudier les métriques pour Skill Corner
-params = [choix_compet]
-stat = f"SELECT DISTINCT Saison FROM Zone_tir WHERE Compet = ?"
-liste_saison = execute_SQL(cursor, stat, params).fetchall()
-liste_saison = [i[0] for i in liste_saison]
-
-with columns[1] :
-    choix_saison = st.multiselect("Choisir saison", replace_saison2(liste_saison), default = replace_saison2(liste_saison))
-choix_saison = replace_saison1(choix_saison)
-
-with columns[2] :
-    choix_groupe = st.radio("Choix groupe", ["Choisir Top/Middle/Bottom", "Choisir équipe"], label_visibility = "hidden")
-
-# On regarde si au moins une saison est choisie
-if len(choix_saison) == 0 :
+if not saison_choice :
     st.stop()
 
+with columns[1] :
+    choix_groupe = st.radio("Choix groupe", ["Choisir Top/Middle/Bottom", "Choisir équipe"], label_visibility = "hidden")
+
+
+for saison in liste_saison :
+    df_import = import_df(saison)
+    dico_df_saison[saison] = df_import
+    liste_équipe += df_import["Équipe attaquante"].unique().tolist()
+    dico_info_matchs[saison] = pd.read_excel(f"Info matchs/Stats Bomb/{saison}.xlsx", index_col = 0)
+
+liste_équipe = list(set(liste_équipe))
+
 st.divider()
-
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Création du dataframe en choisissant le type de métrique qu'on souhaite étudier
-
-
-params = [choix_compet] + choix_saison
-stat = f"SELECT * FROM Centre WHERE Compet = ? and Saison IN ({', '.join('?' * len(choix_saison))})"
-res = execute_SQL(cursor, stat, params)
-
-df = pd.DataFrame(res.fetchall())
-df.columns = [i[0] for i in res.description]
-
-df = df.drop(["Compet", "index"], axis = 1).set_index(["Saison", "Équipe"])
-
-params = [choix_compet] + choix_saison
-stat = f"SELECT * FROM Info_matchs_SB WHERE Compet = ? and Saison IN ({', '.join('?' * len(choix_saison))})"
-res = execute_SQL(cursor, stat, params)
-
-df_info_matchs = pd.DataFrame(res.fetchall())
-df_info_matchs.columns = [i[0] for i in res.description]
 
 
 #----------------------------------------------- CHOIX GROUPE ------------------------------------------------------------------------------------
 
 
-liste_équipe = df.index.levels[1]
-
 if choix_groupe == "Choisir Top/Middle/Bottom" :
-
-    df_nb_team = df.reset_index()[["Saison", "Équipe"]].drop_duplicates().groupby("Saison").apply(len)
-    max_team = min(df_nb_team)
 
     df_groupe = pd.DataFrame(0, index = ["Top", "Middle", "Bottom"], columns = ["Taille", "Slider"])
     df_groupe["Slider"] = "Nombre d'équipe dans le " + df_groupe.index
 
-    columns = st.columns(3, gap = "large", vertical_alignment = "center")
+    columns = st.columns(4, gap = "large", vertical_alignment = "center")
     with columns[0] :
-        df_groupe.loc["Top", "Taille"] = st.slider(df_groupe.loc["Top", "Slider"], min_value = 1, max_value = max_team, value = 5)
+        df_groupe.loc["Top", "Taille"] = st.slider(df_groupe.loc["Top", "Slider"], min_value = 1, max_value = 20, value = 5)
     with columns[1] :
-        if df_groupe.loc["Top", "Taille"] == max_team :
-            df_groupe.loc["Bottom", "Taille"] = max_team - df_groupe.loc["Top", "Taille"]
+        if df_groupe.loc["Top", "Taille"] == 20 :
+            df_groupe.loc["Bottom", "Taille"] = 20 - df_groupe.loc["Top", "Taille"]
             st.write(f"Nombre d'équipe dans le Bottom : {df_groupe.loc['Bottom', 'Taille']}")
         else :
             df_groupe.loc["Bottom", "Taille"] = st.slider(df_groupe.loc["Bottom", "Slider"], min_value = 0,
-                                                          max_value = max_team - df_groupe.loc["Top", "Taille"])
-    
-    nb_middle = df_nb_team - df_groupe.loc["Top", "Taille"] - df_groupe.loc["Bottom", "Taille"]
-    df_groupe.loc["Middle", "Taille"] = max(nb_middle)
-
+                                                          max_value = 20 - df_groupe.loc["Top", "Taille"])
     with columns[2] :
+        df_groupe.loc["Middle", "Taille"] = 20 - df_groupe.loc["Top", "Taille"] - df_groupe.loc["Bottom", "Taille"]
+        st.write(f"Nombre d'équipe dans le Middle : {df_groupe.loc['Middle', 'Taille']}")
+
+    with columns[3] :
         groupe_non_vide = df_groupe[df_groupe.Taille > 0].index
-        groupe_plot = st.radio("Groupe à afficher", groupe_non_vide.tolist()*(df_groupe.loc["Top", "Taille"] != max_team) + ["Global"],
+        groupe_plot = st.radio("Groupe à afficher", groupe_non_vide.tolist()*(df_groupe.loc["Top", "Taille"] != 20) + ["Global"],
                                horizontal = True)
 
 else :
@@ -129,23 +99,32 @@ st.divider()
 #----------------------------------------------- FILTRAGE DF ------------------------------------------------------------------------------------
 
 
+df = pd.DataFrame()
+
 if choix_groupe == "Choisir Top/Middle/Bottom" :
-
-    if groupe_plot != "Global" :
     
-        for saison in choix_saison :
+    for saison in dico_df_saison.keys() :
+        df_saison = dico_df_saison[saison]
+    
+        if groupe_plot == "Top" :
+            df_saison = df_saison[df_saison["Équipe attaquante"].isin(dico_rank_SB[saison][:df_groupe.loc["Top", "Taille"]])]
 
-            liste_rank = dico_rank_SB[saison]
+        elif groupe_plot == "Middle" :
+            df_saison = df_saison[df_saison["Équipe attaquante"].isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]])]
 
-            df.loc[idx[saison, liste_rank[:df_groupe.loc["Top", "Taille"]]], "Groupe"] = "Top"
-            df.loc[idx[saison, liste_rank[df_groupe.loc["Top", "Taille"]:df_groupe.loc["Top", "Taille"] + nb_middle.loc[saison]]], "Groupe"] = "Middle"
-            df.loc[idx[saison, liste_rank[df_groupe.loc["Top", "Taille"] + nb_middle.loc[saison]:]], "Groupe"] = "Bottom"
-        df = df[df.Groupe == groupe_plot]
+        elif groupe_plot == "Bottom" :  
+            df_saison = df_saison[df_saison["Équipe attaquante"].isin(dico_rank_SB[saison][df_groupe.loc["Top", "Taille"] + df_groupe.loc["Middle", "Taille"]:])]
+        df = pd.concat([df, df_saison], axis = 0)
+
     
 else :
-    df = df.loc[:, choix_équipe, :]
+    for saison in dico_df_saison.keys() :
+        df_saison = dico_df_saison[saison]
+        df_saison = df_saison[df_saison["Équipe attaquante"].isin(choix_équipe)]
+        df_saison = pd.merge(df_saison, dico_info_matchs[saison][["match_id", "match_date", "match_week", "home_team", "away_team"]], on = "match_id", how = "left")
+        df = pd.concat([df, df_saison], axis = 0)
 
-df = df.reset_index(    ).set_index(["match_id", "centre_id"])
+df = df.reset_index(drop = True).set_index(["match_id", "centre_id"])
 df_centre = df[df.Centre == 1]
 
 
@@ -234,8 +213,7 @@ if (choix_ligne_gauche != 0) & (choix_col_gauche != 0) :
                                         max_value = nombre_col_droite)
 
     df_shot_select = df.loc[df_centre_zone_gauche.index]
-    df_shot_select = df_shot_select[df_shot_select.Tireur != ""]
-    
+    df_shot_select = df_shot_select[~df_shot_select.Tireur.isna()]
     if choix_goal :
         df_shot_select = df_shot_select[df_shot_select.But == "Oui"]
 
@@ -250,21 +228,20 @@ if len(df_centre_zone_gauche) == 0 :
     count_type_d = "Aucune valeur"
 
 
-choix_saison_title = sorted(replace_saison2(choix_saison))
-bool_len_grp = (len(choix_saison) > 1)
+bool_len_grp = (len(saison_choice) > 1)
 saison_title = []
-saison_title.append(f'la saison {choix_saison_title[0]}')
-saison_title.append(f'les saisons {", ".join(choix_saison_title[:-1])} et {choix_saison_title[-1]}')
+saison_title.append(f'la saison {saison_choice[0]}')
+saison_title.append(f'les saisons {", ".join(saison_choice[:-1])} et {saison_choice[-1]}')
 
-if choix_groupe == "Choisir Top/Middle/Bottom" :
-    bool_len = 0
-    grp_title = [groupe_plot]
+if choix_groupe != "Choisir équipe" :
+    st.markdown(f"<p style='text-align: center;'>Heatmap pour le {groupe_plot} de Ligue 2 sur {saison_title[bool_len_grp]}</p>", unsafe_allow_html=True)
+
 else :
-    bool_len = (len(choix_équipe) > 1)
-    grp_title = [f'{choix_équipe[0]}', f'{", ".join(choix_équipe[:-1])} et {choix_équipe[-1]}']
-
-st.markdown(f"<p style='text-align: center;'>Heatmap {dico_label[choix_groupe][0]} {grp_title[bool_len]} sur {saison_title[bool_len_grp]}</p>",
-                unsafe_allow_html=True)
+    bool_len_éq = (len(choix_équipe) > 1)
+    éq_title = []
+    éq_title.append(f'{choix_équipe[0]}')
+    éq_title.append(f'{", ".join(choix_équipe[:-1])} et {choix_équipe[-1]}')
+    st.markdown(f"<p style='text-align: center;'>Heatmap pour {éq_title[bool_len_éq]} sur {saison_title[bool_len_grp]}</p>", unsafe_allow_html=True)
 
 
 # ------------------------------------------------- AFFICHAGE DE LA HEATMAP --------------------------------------------------------
@@ -359,80 +336,94 @@ with col6 :
 # ------------------------------------------------- AFFICHAGE INFORMATIONS TIRS --------------------------------------------------------
 
 
-if len(df_shot_select) == 0 :
-    st.stop()
-
-st.divider()
-
-col5, col6 = st.columns(2, vertical_alignment = "bottom", gap = "large")
-
-with col5 :
-    
-    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=1, pitch_color=None, line_color = "green", half = True,
-            linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
-
-    fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
-
-    ax.set_ylim(min(df_shot_select.x) - 5, 125)
-    
-    arrows_color = pd.Series("red", index = df_shot_select.index)
-    arrows_color[df_shot_select.But == "Oui"] = "blue"
-    pitch.arrows(df_shot_select.x, df_shot_select.y, df_shot_select.x_end, df_shot_select.y_end, color = arrows_color,
-                    ax = ax, width = 1)
-
-    st.pyplot(fig)
-
-with col6 :
-    fig_cage = plt.figure(figsize=(20,8))
-
-    ax_cage = fig_cage.gca()
-    ax_cage.set_axis_off()
-
-    rapport_dim = 80/68
-    width_poteaux = rapport_dim*0.12
-    rayon_ballon = 0.11*rapport_dim
-
-    x1=[36, 36, 44, 44, 44 + width_poteaux, 44 + width_poteaux, 36 - width_poteaux, 36 - width_poteaux]
-    y1=[0, 2.67, 2.67, 0, 0, 2.67 + width_poteaux, 2.67 + width_poteaux, 0]
-    
-    plot_poteaux = patches.Polygon(np.array([x1, y1]).T, color = "black")
-    ax_cage.add_patch(plot_poteaux)
-
-    x_lim_min = 36 - rapport_dim
-    x_lim_max = 44 + rapport_dim
-    ax_cage.set_xlim(x_lim_min, x_lim_max)
-
-    y_lim_min = -0.2
-    y_lim_max = 2.67 + rapport_dim
-    ax_cage.set_ylim(y_lim_min, y_lim_max)
-
-    df_shot_select_cage = df_shot_select[(~df_shot_select.z_end.isna()) & (df_shot_select.x_end > 120 - rapport_dim) &
-        (df_shot_select.y_end > x_lim_min + rayon_ballon) & (df_shot_select.y_end < x_lim_max - rayon_ballon)
-        & (df_shot_select.z_end < y_lim_max - rayon_ballon)]
-    
-    shot_color = pd.Series("red", index = df_shot_select_cage.index)
-    shot_color[df_shot_select_cage.But == "Oui"] = "blue"
-
-    ax_cage.scatter(df_shot_select_cage["y_end"], df_shot_select_cage["z_end"], s = 27**2, marker = "o", edgecolors = "black", lw = 2,
-        color = shot_color)
-
-    st.pyplot(fig_cage)
-
-
-if choix_groupe == "Choisir équipe" :
+if len(df_shot_select) > 0 :
 
     st.divider()
 
-    expander = st.expander("Tableau des tirs/buts pour la zone sélectionnée sur la Heatmap de gauche")
+    col5, col6 = st.columns(2, vertical_alignment = "bottom", gap = "large")
 
-    with expander :
+    with col5 :
         
-        df_shot_select = pd.merge(df_shot_select.reset_index(), df_info_matchs, on = "match_id")
+        pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=1, pitch_color=None, line_color = "green", half = True,
+                linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
+
+        fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
+
+        ax.set_ylim(min(df_shot_select.x) - 5, 125)
         
-        st.dataframe(df_shot_select[["match_date", "match_week", "home_team", "away_team", "minute", "Centreur", "But", "Tireur",
-                    "Équipe"]], hide_index = True)
+        arrows_color = pd.Series("red", index = df_shot_select.index)
+        arrows_color[df_shot_select.But == "Oui"] = "blue"
+        pitch.arrows(df_shot_select.x, df_shot_select.y, df_shot_select.x_end, df_shot_select.y_end, color = arrows_color,
+                        ax = ax, width = 1)
+
+        st.pyplot(fig)
+
+    with col6 :
+        fig_cage = plt.figure(figsize=(20,8))
+
+        ax_cage = fig_cage.gca()
+        ax_cage.set_axis_off()
+
+        rapport_dim = 80/68
+        width_poteaux = rapport_dim*0.12
+        rayon_ballon = 0.11*rapport_dim
+
+        x1=[36, 36, 44, 44, 44 + width_poteaux, 44 + width_poteaux, 36 - width_poteaux, 36 - width_poteaux]
+        y1=[0, 2.67, 2.67, 0, 0, 2.67 + width_poteaux, 2.67 + width_poteaux, 0]
+        
+        plot_poteaux = patches.Polygon(np.array([x1, y1]).T, color = "black")
+        ax_cage.add_patch(plot_poteaux)
+
+        x_lim_min = 36 - rapport_dim
+        x_lim_max = 44 + rapport_dim
+        ax_cage.set_xlim(x_lim_min, x_lim_max)
+
+        y_lim_min = -0.2
+        y_lim_max = 2.67 + rapport_dim
+        ax_cage.set_ylim(y_lim_min, y_lim_max)
+
+        df_shot_select_cage = df_shot_select[(~df_shot_select.z_end.isna()) & (df_shot_select.x_end > 120 - rapport_dim) &
+            (df_shot_select.y_end > x_lim_min + rayon_ballon) & (df_shot_select.y_end < x_lim_max - rayon_ballon)
+            & (df_shot_select.z_end < y_lim_max - rayon_ballon)]
+        
+        shot_color = pd.Series("red", index = df_shot_select_cage.index)
+        shot_color[df_shot_select_cage.But == "Oui"] = "blue"
+
+        ax_cage.scatter(df_shot_select_cage["y_end"], df_shot_select_cage["z_end"], s = 27**2, marker = "o", edgecolors = "black", lw = 2,
+            color = shot_color)
+
+        st.pyplot(fig_cage)
+
+
+    if choix_groupe == "Choisir équipe" :
+
+        st.divider()
+
+        expander = st.expander("Tableau des tirs/buts pour la zone sélectionnée sur la Heatmap de gauche")
+
+        with expander :
+
+            st.dataframe(df_shot_select[["match_date", "match_week", "home_team", "away_team", "minute", "Centreur", "But", "Tireur",
+                        "Équipe attaquante"]], hide_index = True)
+    
 
 
 st.divider()
+
+# expander = st.expander("Zones de centre optimales")
+
+# with expander :
+#     columns = st.columns(3)
+#     with columns[0] :
+#         nb_but_zone = st.number_input("Nombre de but minimum par zone", min_value = 1, max_value = 30, value = 3)
+#     with columns[1] :
+#         taille_min_zone = st.number_input("Taille minimale zone de centre", min_value = 1.0, max_value = 15.0, value = 2.5, step = 0.5)
+#     with columns[2] :
+#         taille_max_zone = st.number_input("Taille maximale zone de centre", min_value = 1.0, max_value = 15.0, value = 5.0, step = 0.5)
+#     df_zone_optimal = best_zone(df_zone_centre, taille_min_zone, taille_max_zone, nb_but_zone)
+#     df_zone_optimal.index = range(1, len(df_zone_optimal) + 1)
+    
+#     with st.columns([1, 1, 8, 1])[2] :
+#         st.dataframe(df_zone_optimal)
 
 st.markdown(f"<p style='text-align: center;'>Nombre total de centres : {len(df_centre)}</p>", unsafe_allow_html=True)

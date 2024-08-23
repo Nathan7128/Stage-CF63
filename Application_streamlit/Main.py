@@ -1,10 +1,23 @@
 import streamlit as st
 
 dico_session_state = {
-    "choix_data" : "Skill Corner",
+    "provider" : "Skill Corner",
     "cat_met" : "Physiques",
-    'Type_action_deb_action' : ["Open play"],
-    'Type_action_passes' : ["Open play"]
+    "nb_top_met" : 3,
+    "nb_bottom_met" : 3,
+    "threat_run" : True,
+    "result_passe_pressure" : ["Attempts", "Completed"],
+    "ratio_passe_pressure" : True,
+    "ratio_conserv_pressure" : True,
+    "threat_passe" : True,
+    "ratio_passe" : True,
+    "nb_top_nb_passe" : 3,
+    "nb_bottom_nb_passe" : 3,
+    'type_action_nb_passe' : ["Open play"],
+    "nb_top_heatmap" : 3,
+    "nb_bottom_heatmap" : 3,
+    'type_action_heatmap' : ["Open play"],
+    "partie_corps" : "All"
 }
 
 for key in dico_session_state.keys() :
@@ -23,4 +36,3 @@ liste_page.append(st.Page("apps/70_Heatmap_zone_de_centre_et_réception.py", tit
 pg = st.navigation(liste_page)
 
 pg.run()
-

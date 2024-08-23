@@ -10,7 +10,7 @@ colormapred = LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (198/
 
 dico_label = {"Choisir Top/Middle/Bottom" : ["du"], "Choisir équipe" : ["de"]}
 
-dico_met = {
+dico_type = {
     "Physiques" : ["Physical",
         {"30 min. tip" : "_per30tip", "30 min. otip" : "_per30otip", "Match all possession" : "_per_Match"}],
     
@@ -70,7 +70,7 @@ dico_cat_run = {"Dangerous" : "dangerous",
                                 "Leading to shot" : "leading_to_shot",
                                 "Leading to goal" : "leading_to_goal"}
 
-dico_cat_pressure = {"Passes" : "pass", "Conservation du ballon" : "ball_retention", "Perte de balle" : "forced_losses",
+dico_cat_met_pressure = {"Passes" : "pass", "Conservation du ballon" : "ball_retention", "Perte de balle" : "forced_losses",
                                         "Pression reçue" : "received_per"}
 
-dico_cat_passe = {"Attempts" : "attempt", "Completed" : "completed", "Opportunities" : "opportunities"}
+dico_type_passe = {"Attempts" : "attempt", "Completed" : "completed", "Opportunities" : "opportunities"}

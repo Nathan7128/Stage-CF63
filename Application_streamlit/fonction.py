@@ -14,13 +14,10 @@ import sqlite3
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Définitions des fonctions
+# Définitions des fonctions génériques
 
 
-# Fonctions utilisées sur toutes les pages
-
-
-def func_change(key1, key2) :
+def load_session_state(key) :
 
     """Associe à la clé d'un widget la valeur de l'élément du session state en question
     La clé du widget est toujours égale à "widg_" + la clé de l'élément du session_state
@@ -29,9 +26,45 @@ def func_change(key1, key2) :
         key : Clé du widget
     """
 
-    st.session_state[key1] = st.session_state[key2]
+    if key in st.session_state :
+        st.session_state["widg_" + key] = st.session_state[key]
 
 
+def store_session_state(key) :
+
+    """Modifie la valeur d'un élément du session state en le remplaçant par la sélection du widget en question
+    La clé du widget est toujours égale à "widg_" + la clé de l'élément du session_state
+    Args:
+        key : Clé du widget
+    """
+    st.session_state[key] = st.session_state["widg_" + key]    
+
+
+def init_session_state(key, value) :
+
+    """Initialise une valeur pour un élément du session state s'il n'est pas encore défini
+
+    Args:
+        key : Clé de l'élément
+        value : Valeur à initialiser
+    """
+    if key not in st.session_state :
+        st.session_state[key] = value
+
+    
+def filtre_session_state(key, liste) :
+    """Permet de vérifier que les valeurs d'une liste du session state soient bien comprises dans les valeurs disponible avec le
+    widget associé
+
+    Args:
+        key (_type_): Clé du de la liste du session state
+        liste (_type_): liste qui doit inclure le session state
+    """
+    if key in st.session_state :
+        st.session_state[key] = [i for i in st.session_state[key] if i in liste]
+
+
+@st.cache_data
 def execute_SQL(_cursor, stat, params) :
 
     """Éxécute une requête sql via un curseur et des paramètres
@@ -45,16 +78,20 @@ def execute_SQL(_cursor, stat, params) :
         _type_: Résultat de la requête
     """
 
-    return _cursor.execute(stat, params)
+    req = _cursor.execute(stat, params)
+    return req.fetchall(), req.description
 
 
 def replace_saison1(saison) :
-    if type(saison) == list :
-        return [i.replace("/", "_") for i in saison]
-    else :
-        return saison.replace("/", "_")
+    """Dans les tables, les noms des saisons sont de la forme xxxx_xxxx, cette fonction permet de remplacer le _ par un /, lorsqu'on
+    veut afficher les saisons sur l'interface, qui est un format plus soigné pour les saisons
 
-def replace_saison2(saison) :
+    Args:
+        saison (_type_): une ou plusieurs saison de la forme xxxx_xxxx à modifier
+
+    Returns:
+        renvoie la saison ou la liste de saison modifiée
+    """
     if type(saison) == list :
         return [i.replace("_", "/") for i in saison]
 
@@ -62,11 +99,25 @@ def replace_saison2(saison) :
         return saison.replace("_", "/")
 
 
+def replace_saison2(saison) :
+    """A l'inverse de replace_saison1, cette fonction remplace les / par des _ pour pouvoir travailler avec les saisons dans les
+    données
+
+    Args:
+        saison (_type_): une ou plusieurs saison de la forme xxxx/xxxx à modifier
+
+    Returns:
+        renvoie la saison ou la liste de saison modifiée
+    """
+    if type(saison) == list :
+        return [i.replace("/", "_") for i in saison]
+    else :
+        return saison.replace("/", "_")
 
 
-
-
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # 1/ Métriques discriminantes
+
 
 def couleur_diff(col) :
 
@@ -95,8 +146,33 @@ def couleur_diff(col) :
         return ['']*len(col)
 
 
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# 2/ Évolution par journée
 
 
+def load_session_state_met(key, moy_cat) :
+
+    """Variante de load_session_state : permet de garder la même métrique même si on change la moyenne de la catégorie de métrique
+    Args:
+        key : Clé du widget
+        moy_cat : moyenne de la métrique
+    """
+
+    if key in st.session_state :
+        if moy_cat in st.session_state[key] or moy_cat not in st.session_state["widg_" + key] :
+            st.session_state["widg_" + key] = st.session_state[key]
+
+        else :
+            st.session_state["widg_" + key] = st.session_state[key] + moy_cat
+
+def store_session_state_met(key, moy_cat) :
+
+    """Modifie la valeur d'un élément du session state en le remplaçant par la sélection du widget en question
+    La clé du widget est toujours égale à "widg_" + la clé de l'élément du session_state
+    Args:
+        key : Clé du widget
+    """
+    st.session_state[key] = st.session_state["widg_" + key].replace(moy_cat, "")
 
 
 
