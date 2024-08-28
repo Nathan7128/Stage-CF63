@@ -5,12 +5,11 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-from mplsoccer import VerticalPitch
 import matplotlib.patches as patches
 import sqlite3
 
-from fonction import execute_SQL, load_session_state, store_session_state, init_session_state, replace_saison1, replace_saison2, filtre_session_state, label_heatmap
-from variable import dico_rank_SB, dico_label, colormapred, path_effect_2, colormapblue
+from fonction import execute_SQL, load_session_state, store_session_state, init_session_state, filtre_session_state, heatmap_gauche_zone_tir, heatmap_droite_zone_tir
+from variable import dico_rank_SB, dico_label, df_taille_groupe
 
 # Index slicer pour la sélection de donnée sur les dataframes avec multi-index
 idx = pd.IndexSlice
@@ -57,12 +56,10 @@ liste_saison, desc = execute_SQL(cursor, stat, params)
 liste_saison = [i[0] for i in liste_saison]
 
 with columns[1] :
-    init_session_state("saison_heatmap", [max(replace_saison1(liste_saison))])
+    init_session_state("saison_heatmap", [max(liste_saison)])
     load_session_state("saison_heatmap")
-    choix_saison = st.multiselect("Choisir saison", replace_saison1(liste_saison), key = "widg_saison_heatmap",
-                                  on_change = store_session_state, args = ["saison_heatmap"])
-
-choix_saison = replace_saison2(choix_saison)
+    choix_saison = st.multiselect("Choisir saison", liste_saison, key = "widg_saison_heatmap", on_change = store_session_state,
+                                  args = ["saison_heatmap"])
 
 with columns[2] :
     load_session_state("groupe_heatmap")
@@ -87,12 +84,6 @@ df = pd.DataFrame(res)
 df.columns = [i[0] for i in desc]
 df = df.drop(["Compet", "index"], axis = 1).set_index(["Saison", "Équipe"])
 
-stat = f"SELECT * FROM Info_matchs_SB WHERE Compet = ? and Saison IN ({', '.join('?' * len(choix_saison))})"
-res, desc = execute_SQL(cursor, stat, params)
-
-df_info_matchs = pd.DataFrame(res)
-df_info_matchs.columns = [i[0] for i in desc]
-
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Choix taille des groupes et ceux à afficher ou choix des équipes
@@ -104,10 +95,6 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
     df_nb_team = df.reset_index()[["Saison", "Équipe"]].drop_duplicates().groupby("Saison").apply(len)
 
     max_nb_team = min(df_nb_team)
-
-    df_taille_groupe = pd.DataFrame(0, index = ["Top", "Middle", "Bottom"], columns = ["Taille", "Slider"])
-
-    df_taille_groupe["Slider"] = "Nombre d'équipe dans le " + df_taille_groupe.index
 
     columns = st.columns(3, gap = "large", vertical_alignment = "center")
 
@@ -223,10 +210,10 @@ if choix_groupe == "Choisir équipe" :
                             key = "widg_choix_ligne_zone_tir", on_change = store_session_state, args = ["choix_ligne_zone_tir"])
 
     if (choix_col != 0) & (choix_ligne != 0) :
-        df_sort = df[(df.x >= (80 + (40/nb_ligne)*(choix_ligne - 1))) &
-                        (df.x <= (80 + (40/nb_ligne)*(choix_ligne))) &
-                        (df.y >= (80/nb_col)*(choix_col - 1)) &
-                        (df.y <= (80/nb_col)*(choix_col))]
+        df_sort = df[(df.x_loc >= (80 + (40/nb_ligne)*(choix_ligne - 1))) &
+                        (df.x_loc <= (80 + (40/nb_ligne)*(choix_ligne))) &
+                        (df.y_loc >= (80/nb_col)*(choix_col - 1)) &
+                        (df.y_loc <= (80/nb_col)*(choix_col))]
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -235,7 +222,7 @@ if choix_groupe == "Choisir équipe" :
     
 st.divider()
 
-choix_saison = sorted(replace_saison1(choix_saison))
+choix_saison = sorted(choix_saison)
 
 bool_taille_saison = (len(choix_saison) > 1)
 saison_title = []
@@ -255,80 +242,13 @@ st.markdown(f"<p style='text-align: center;'>Heatmap {dico_label[choix_groupe][0
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Fonction pour la création de la heatmap de gauche
-
-
-@st.cache_data
-def heatmap_percen(data, nb_col, nb_ligne, type_compt) :
-    pitch = VerticalPitch(pitch_type='statsbomb', pitch_color = None, line_zorder=2, line_color = "green", half = True, axis = True,
-            label = True, tick = True, linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
-    
-    fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
-
-    ax.spines[:].set_visible(False)
-
-    fig.set_facecolor("none")
-    fig.set_edgecolor("none")
-    ax.set_facecolor((1, 1, 1))
-
-    ax.set_xticks(np.arange(80/(2*nb_col), 80 - 80/(2*nb_col) + 1, 80/nb_col), labels = np.arange(1, nb_col + 1, dtype = int))
-    ax.set_yticks(np.arange(80 + 40/(2*nb_ligne), 120 - 40/(2*nb_ligne) + 1, 40/nb_ligne),
-                labels = np.arange(1, nb_ligne + 1, dtype = int))
-    ax.tick_params(axis = "y", right = False, labelright = False)
-    ax.tick_params(axis = "x", top = False, labeltop = False)
-
-    ax.set_xlim(0, 80)
-    ax.set_ylim(80, 125)
-
-    bin_statistic = pitch.bin_statistic(data.x, data.y, statistic='count', bins=(nb_ligne*3, nb_col),
-                                            normalize = "Pourcentage" in type_compt)
-    
-    pitch.heatmap(bin_statistic, ax = ax, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
-
-    if type_compt != "Aucune valeur" :
-        dico_label_heatmap = label_heatmap(bin_statistic["statistic"])[type_compt]
-
-        bin_statistic["statistic"] = dico_label_heatmap["statistique"]
-
-        str_format = dico_label_heatmap["str_format"]
-
-        pitch.label_heatmap(bin_statistic, exclude_zeros = True, fontsize = int(100/(nb_col + nb_ligne)) + 2, color='#f4edf0',
-                            ax = ax, ha='center', va='center', str_format=str_format, path_effects=path_effect_2)
-
-    return fig, ax
-
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Fonction pour la création de la heatmap de droite
-
-
-@st.cache_data
-def heatmap_smooth(data) :
-    pitch = VerticalPitch(pitch_type='statsbomb', pitch_color = None, line_zorder=2, line_color = "green", half = True,
-                linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
-    
-    fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
-
-    fig.set_facecolor("none")
-    fig.set_edgecolor("none")
-    ax.set_facecolor((1, 1, 1))
-
-    ax.set_xlim([0, 80])
-    ax.set_ylim([80, 125])
-
-    pitch.kdeplot(data.x, data.y, ax = ax, fill = True, levels = 100, thresh = 0, cmap = colormapblue)
-    
-    return fig, ax
-
-
-# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Affichage des heatmaps
 
 
 columns = st.columns(2)
 
 with columns[0] :
-    fig_gauche, ax_gauche = heatmap_percen(df, nb_col, nb_ligne, type_compt)
+    fig_gauche, ax_gauche = heatmap_gauche_zone_tir(df, nb_col, nb_ligne, type_compt)
 
     if choix_groupe == "Choisir équipe" and (choix_col != 0) & (choix_ligne != 0) :
         rect = patches.Rectangle(((80/nb_col)*(choix_col - 1), 80 + (40/nb_ligne)*(choix_ligne - 1)), 80/nb_col, 40/nb_ligne,
@@ -338,7 +258,7 @@ with columns[0] :
     st.pyplot(fig_gauche)
 
 with columns[1] :
-    fig_droite, ax_droite = heatmap_smooth(df)
+    fig_droite, ax_droite = heatmap_droite_zone_tir(df)
 
     st.pyplot(fig_droite)
 
@@ -355,6 +275,4 @@ if choix_groupe == "Choisir équipe" and choix_col > 0 and choix_ligne > 0 and l
     expander = st.expander("Tableau des tirs/buts pour la zone sélectionnée sur la Heatmap de gauche")
 
     with expander :
-        df_sort = pd.merge(df_sort.reset_index(), df_info_matchs, on = "match_id")  
-
-        st.dataframe(df_sort[["match_date", "match_week", "home_team", "away_team", "minute", "joueur", "Équipe"]], hide_index = True)
+        st.dataframe(df_sort.reset_index()[["Date", "Journée", "Domicile", "Extérieur", "Minute", "Joueur", "Équipe"]], hide_index = True)

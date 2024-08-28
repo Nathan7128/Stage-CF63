@@ -8,8 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sqlite3
 
-from fonction import execute_SQL, load_session_state, store_session_state, init_session_state, replace_saison2, replace_saison1, filtre_session_state, load_session_state_met, store_session_state_met
-from variable import dico_met, dico_rank_SK
+from fonction import execute_SQL, load_session_state, store_session_state, init_session_state, filtre_session_state
+from variable import dico_met, dico_rank_SK, df_taille_groupe
 
 # Index slicer pour la sélection de donnée sur les dataframes avec multi-index
 idx = pd.IndexSlice
@@ -38,10 +38,13 @@ st.divider()
 # Définition des variables
 
 
-groupe_plot = []
-
+# Liste qui va contenir les groupes qui contiennent au moins une équipe, à la suite du choix des tailles des groupes
 groupe_non_vide = []
 
+# Liste qui va contenir le choix des groupes à afficher sur le graphique
+groupe_plot = []
+
+# Liste qui va contenir le choix des équipes à afficher sur le graphique
 équipe_plot = []
 
 
@@ -71,12 +74,10 @@ liste_saison, desc = execute_SQL(cursor, stat, params)
 liste_saison = [i[0] for i in liste_saison]
 
 with columns[1] :
-    init_session_state("saison_evo_jour", max(replace_saison1(liste_saison)))
+    init_session_state("saison_evo_jour", max(liste_saison))
     load_session_state("saison_evo_jour")
-    choix_saison = st.selectbox("Choisir saison", replace_saison1(liste_saison), key = "widg_saison_evo_jour",
-                                  on_change = store_session_state, args = ["saison_evo_jour"])
-
-choix_saison = replace_saison2(choix_saison)
+    choix_saison = st.selectbox("Choisir saison", liste_saison, key = "widg_saison_evo_jour", on_change = store_session_state,
+                                args = ["saison_evo_jour"])
 
 with columns[2] :
     ""
@@ -113,10 +114,6 @@ max_nb_team = len(df.index.levels[1])
 
 if choix_groupe_rank :
     st.divider()
-
-    df_taille_groupe = pd.DataFrame(0, index = ["Top", "Middle", "Bottom"], columns = ["Taille", "Slider"])
-
-    df_taille_groupe["Slider"] = "Nombre d'équipe dans le " + df_taille_groupe.index
 
     columns = st.columns(3, gap = "large", vertical_alignment = "center")
 
@@ -192,7 +189,7 @@ with columns[1] :
 # Choix de la métrique
 
 
-if cat_met != "Physiques" :
+if cat_met != "Physique" :
     columns = st.columns([1, 2])
 
     with columns[0] :
@@ -204,14 +201,14 @@ if cat_met != "Physiques" :
         df = df[df.columns[[type_cat in i for i in df.columns]]]
 
     with columns[1] :
-        load_session_state_met(f"met_{cat_met}{type_cat}_evo_jour", moy_cat)
-        choix_metrique = st.selectbox("Choisir la métrique", df.columns, key = f'widg_met_{cat_met}{type_cat}_evo_jour',
-                        on_change = store_session_state_met, args = [f"met_{cat_met}{type_cat}_evo_jour", moy_cat])
+        load_session_state(f"met_{cat_met}{type_cat}{moy_cat}_evo_jour")
+        choix_metrique = st.selectbox("Choisir la métrique", df.columns, key = f'widg_met_{cat_met}{type_cat}{moy_cat}_evo_jour',
+                        on_change = store_session_state, args = [f"met_{cat_met}{type_cat}{moy_cat}_evo_jour"])
 
 else :
-    load_session_state_met(f"met_{cat_met}_evo_jour", moy_cat)
-    choix_metrique = st.selectbox("Choisir la métrique", df.columns, key = f'widg_met_{cat_met}_evo_jour',
-                        on_change = store_session_state_met, args = [f"met_{cat_met}_evo_jour", moy_cat])
+    load_session_state(f"met_{cat_met}{moy_cat}_evo_jour")
+    choix_metrique = st.selectbox("Choisir la métrique", df.columns, key = f'widg_met_{cat_met}{moy_cat}_evo_jour',
+                        on_change = store_session_state, args = [f"met_{cat_met}{moy_cat}_evo_jour"])
 
 df = df[choix_metrique]
 
@@ -250,7 +247,7 @@ bool_taille_grp = len(df_final.columns) > 1
 grp_title = []
 grp_title.append(f'{df_final.columns[0]}')
 grp_title.append(f'{", ".join(df_final.columns[:-1])} et {df_final.columns[-1]}')
-plt.title(f"Graphe de la métrique {choix_metrique}\npour{' le'*(len(groupe_plot) > 0)} {grp_title[bool_taille_grp]} \nau cours des journées de la saison {replace_saison1(choix_saison)}",
+plt.title(f"Graphe de la métrique {choix_metrique}\npour{' le'*(len(groupe_plot) > 0)} {grp_title[bool_taille_grp]} \nau cours des journées de la saison {choix_saison}",
             fontweight = "heavy", y = 1.05, fontsize = 9)
 
 plt.legend(df_final.columns, bbox_to_anchor=(0.5, -0.25), fontsize = "small", ncol = 2)

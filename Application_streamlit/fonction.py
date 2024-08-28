@@ -3,14 +3,12 @@
 
 
 import streamlit as st
-
 import numpy as np
-
-from mplsoccer import Pitch
-
 import pandas as pd
-
 import sqlite3
+from mplsoccer import VerticalPitch
+
+from variable import colormapred, path_effect_1, colormapblue, path_effect_2
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -82,37 +80,48 @@ def execute_SQL(_cursor, stat, params) :
     return req.fetchall(), req.description
 
 
-def replace_saison1(saison) :
-    """Dans les tables, les noms des saisons sont de la forme xxxx_xxxx, cette fonction permet de remplacer le _ par un /, lorsqu'on
-    veut afficher les saisons sur l'interface, qui est un format plus soigné pour les saisons
+def label_heatmap1(bin_statistic) :
+    """Fonction qui permet de définir les paramètres d'affichage de la légende des heatmaps, en fonction du type de comptage choisi
+    pour les zones de début d'action et les zones de tir
+    Le dictionnaire contient comme clé les différents types de comptage, et comme valeur les statistiques à afficher et le format
+    du texte de la légende des heatmaps
 
     Args:
-        saison (_type_): une ou plusieurs saison de la forme xxxx_xxxx à modifier
+        bin_statistic (_type_): Valeur contenu dans chaque zone/bin du terrain
 
     Returns:
-        renvoie la saison ou la liste de saison modifiée
+        _type_: dictionnaire
     """
-    if type(saison) == list :
-        return [i.replace("_", "/") for i in saison]
 
-    else :
-        return saison.replace("_", "/")
+    dico_label_heatmap = {
+        "Pourcentage" : {"statistique" : np.round(bin_statistic, 2), "str_format" : '{:.0%}'},
+        "Pourcentage sans %" : {"statistique" : 100*np.round(bin_statistic, 2), "str_format" : '{:.0f}'},
+        "Valeur" : {"statistique" : bin_statistic, "str_format" : '{:.0f}'},
+    }
+    return dico_label_heatmap
 
 
-def replace_saison2(saison) :
-    """A l'inverse de replace_saison1, cette fonction remplace les / par des _ pour pouvoir travailler avec les saisons dans les
-    données
+def label_heatmap2(bin_statistic, bin_statistic_but) :
+    """Fonction qui permet de définir les paramètres d'affichage de la légende des heatmaps, en fonction du type de comptage choisi
+    pour les zones de centre
+    Le dictionnaire est une concaténation du dictionnaire pour les autres heatmaps, avec le rajout des types de comptage disponible
+    pour les heatmaps de centre
 
     Args:
-        saison (_type_): une ou plusieurs saison de la forme xxxx/xxxx à modifier
+        bin_statistic (_type_): Valeur contenu dans chaque zone/bin du terrain
+        bin_statistic_but (_type_): Valeur contenu dans chaque zone/bin du terrain pour les centres qui ont amenés à un but
 
     Returns:
-        renvoie la saison ou la liste de saison modifiée
+        _type_: dictionnaire
     """
-    if type(saison) == list :
-        return [i.replace("/", "_") for i in saison]
-    else :
-        return saison.replace("/", "_")
+    dico_label_heatmap = label_heatmap1(bin_statistic)
+    dico_label_heatmap.update({
+        "Pourcentage de but" : {"statistique" : np.round(np.nan_to_num((bin_statistic_but/bin_statistic), 0), 2),
+                                "str_format" : '{:.0%}'},
+        "Pourcentage de but sans %" : {"statistique" : 100*np.round(np.nan_to_num((bin_statistic_but/bin_statistic), 0), 2),
+                                       "str_format" : '{:.0f}'}
+    })
+    return dico_label_heatmap
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -147,118 +156,337 @@ def couleur_diff(col) :
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# 2/ Évolution par journée
+# 3/ Évolution par saison
 
 
-def load_session_state_met(key, moy_cat) :
+def couleur_bg_df(col, liste_saison, df) :
+    """Fonction qui modifie la couleur de la colonne "Évolution en %"
+    - Si augmentation constante au cours des saisons : vert
+    - Si diminution constante au cours des saisons : rouge
+    - Si fluctuation entre les saisons mais la valeur de la métrique pour la dernière saison est supérieure à celle de la 1ère
+    saison (tendance haussière) : jaune
+    - Sinon, donc si fluctuation entre les saisons mais la valeur de la métrique pour la dernière saison est inférieure à celle
+    de la 1ère saison (tendance baissière) : orange
 
-    """Variante de load_session_state : permet de garder la même métrique même si on change la moyenne de la catégorie de métrique
     Args:
-        key : Clé du widget
-        moy_cat : moyenne de la métrique
+        col (_type_): Colonnes du dataframe
+        liste_saison (_type_): liste des saisons étudiées
+        df (_type_): dataframe
+
+    Returns:
+        _type_: liste contenant les couleurs à appliquer à la colonne passée en paramètre de la fonction
     """
 
-    if key in st.session_state :
-        if moy_cat in st.session_state[key] or ("widg_" + key in st.session_state and moy_cat not in st.session_state["widg_" + key]) :
-            st.session_state["widg_" + key] = st.session_state[key]
+    if col.name == "Évolution en %" :
+        color = []
+        for met in col.index :
+            count_evo = 0
+            for i in range (len(liste_saison) - 1) :
+                count_evo += (df.loc[met, liste_saison[i + 1]] >= df.loc[met, liste_saison[i]])
+            if count_evo == (len(liste_saison) - 1) :
+                color.append("background-color: rgba(0, 255, 0, 0.3)")
+            elif count_evo == 0 :
+                color.append("background-color: rgba(255, 0, 0, 0.3)")
+            elif df.loc[met, liste_saison[-1]] >= df.loc[met, liste_saison[0]] :
+                color.append("background-color: rgba(255, 255, 0, 0.3)")
+            else :
+                color.append("background-color: rgba(255, 130, 0, 0.5)")
+        return(color)
+    
+    else :
+        return ['']*len(df)
 
+
+def couleur_text_df(row) :
+    """Fonction qui modifie, pour chaque métrique, la couleur de la valeur de cette métrique pour chaque saison sauf la 1ère
+    - Si la métrique à augmenté par rapport à la saison précédente : vert
+    - Si elle a diminué : rouge
+
+    Args:
+        row (_type_): ligne/métrique
+
+    Returns:
+        _type_: liste contenant les couleurs à appliquer à la ligne/métrique passée en paramètre de la fonction
+    """
+
+    color = ['']
+    for i in range (len(row) - 2) :
+        if row.iloc[i] < row.iloc[i + 1] :
+            color.append("color : rgba(0, 200, 0)")
         else :
-            st.session_state["widg_" + key] = st.session_state[key] + moy_cat
+            color.append("color : rgba(255, 0, 0)")
+    color.append('')
+    return color
 
-def store_session_state_met(key, moy_cat) :
 
-    """Modifie la valeur d'un élément du session state en le remplaçant par la sélection du widget en question
-    La clé du widget est toujours égale à "widg_" + la clé de l'élément du session_state
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# 5/ Heatmap des zones de début d'action
+
+
+@st.cache_data
+def heatmap_gauche_deb_action(data, nb_col, nb_ligne, type_compt) :
+    """Fonction permettant la création de la heatmap de gauche pour les zones de début d'action
+    Définit dans un premier temps le terrain et les caractéristiques de la figure, puis affiche les statistiques des données
+    passées en paramètre
+
     Args:
-        key : Clé du widget
+        data (_type_): dataframe contenant les informations sur chaque début d'action
+        nb_col (_type_): nombre de colonne de la heatmap
+        nb_ligne (_type_): nombre de ligne de la heatmap
+        type_compt (_type_): type de comptage sélectionner pour l'affichage de la légende de la heatmap
+
+    Returns:
+        _type_: retourne la figure et l'axe de la heatmap
     """
-    st.session_state[key] = st.session_state["widg_" + key].replace(moy_cat, "")
+
+    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green", axis = True, label = True,
+                          tick = True, goal_type = "box", linewidth = 1, spot_scale = 0.002)
+    
+    fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
+
+    ax.spines[:].set_visible(False)
+
+    fig.set_facecolor("none")
+    fig.set_edgecolor("none")
+    ax.set_facecolor((1, 1, 1))
+
+    ax.set_xticks(np.arange(80/(2*nb_col), 80 - 80/(2*nb_col) + 1, 80/nb_col), labels = np.arange(1, nb_col + 1, dtype = int))
+    ax.set_yticks(np.arange(120/(2*nb_ligne), 120 - 120/(2*nb_ligne) + 1, 120/nb_ligne),
+                  labels = np.arange(1, nb_ligne + 1, dtype = int))
+    ax.tick_params(axis = "y", right = False, labelright = False, labelsize = "xx-small")
+    ax.tick_params(axis = "x", top = False, labeltop = False, labelsize = "xx-small")
+
+    ax.set_xlim(0, 80)
+    ax.set_ylim(0, 125)
+
+    bin_statistic = pitch.bin_statistic(data.x_loc, data.y_loc, statistic='count', bins=(nb_ligne, nb_col),
+                                        normalize = "Pourcentage" in type_compt)
+    
+    pitch.heatmap(bin_statistic, ax = ax, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
+
+    if type_compt != "Aucune valeur" :
+        dico_label_heatmap = label_heatmap1(bin_statistic["statistic"])[type_compt]
+
+        bin_statistic["statistic"] = dico_label_heatmap["statistique"]
+
+        str_format = dico_label_heatmap["str_format"]
+
+        pitch.label_heatmap(bin_statistic, exclude_zeros = True, fontsize = int(50/(nb_ligne + nb_col)) + 2, color='#f4edf0',
+                            ax = ax, ha='center', va='center', str_format=str_format, path_effects=path_effect_1)
+
+    return fig, ax
 
 
+@st.cache_data
+def heatmap_droite_deb_action(data) :
+    """Fonction permettant la création de la heatmap "smooth" des zones de début d'action
 
-def label_heatmap(bin_statistic) :
-    dico_label_heatmap = {
-        "Pourcentage" : {"statistique" : np.round(bin_statistic, 2), "str_format" : '{:.0%}'},
-        "Pourcentage sans %" : {"statistique" : 100*np.round(bin_statistic, 2), "str_format" : '{:.0f}'},
-        "Valeur" : {"statistique" : bin_statistic, "str_format" : '{:.0f}'},
-    }
-    return dico_label_heatmap
+    Args:
+        data (_type_): dataframe contenant les informations sur chaque début d'action
 
-def label_heatmap_centre(bin_statistic, bin_statistic_but) :
-    dico_label_heatmap = label_heatmap(bin_statistic)
-    dico_label_heatmap.update({
-        "Pourcentage de but" : {"statistique" : np.round(np.nan_to_num((bin_statistic_but/bin_statistic), 0), 2),
-                                "str_format" : '{:.0%}'},
-        "Pourcentage de but sans %" : {"statistique" : 100*np.round(np.nan_to_num((bin_statistic_but/bin_statistic), 0), 2),
-                                       "str_format" : '{:.0f}'}
-    })
-    return dico_label_heatmap
+    Returns:
+        _type_: retourne la figure et l'axe de la heatmap
+    """
 
+    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green", goal_type = "box",
+                          linewidth = 1, spot_scale = 0.002)
+    
+    fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
 
+    fig.set_facecolor("none")
+    fig.set_edgecolor("none")
+    ax.set_facecolor((1, 1, 1))
 
+    ax.set_xlim([0, 87])
+    ax.set_ylim([0, 125])
+    
+    pitch.kdeplot(data.x_loc, data.y_loc, ax = ax, fill = True, levels = 100, thresh = 0, cmap = colormapblue)
 
-
-
-# def best_zone(data, taille_min_centre, taille_max_centre, nb_but_min) :
-#     pitch = Pitch(pitch_type = "statsbomb")
-
-#     columns_df = ["N° colonne", "N° ligne", "% de but", "Nombre de colonne", "Nombre de ligne", "Nombre de but"]
-#     df = pd.DataFrame([np.zeros(len(columns_df))], columns = columns_df)
-
-#     nb_zone = 10
-
-#     for bins_centre_v in range (int((52.5/taille_max_centre)), int((52.5/taille_min_centre)) + 1) :
-
-#         for bins_centre_h in range (int(68/taille_max_centre), int(68/taille_min_centre) + 1) :
-
-#             bin_pitch = pitch.bin_statistic(data.x, data.y, values = None, statistic='count', bins=(bins_centre_v*2, bins_centre_h))
-#             bin_statistic = bin_pitch["statistic"]
-#             bin_pitch_but = pitch.bin_statistic(data[data.But == 1].x, data[data.But == 1].y, values = None, statistic='count',
-#                                     bins=(bins_centre_v*2, bins_centre_h))
-#             bin_statistic_but = bin_pitch_but["statistic"]
-#             bin_statistic = np.nan_to_num(bin_statistic_but/bin_statistic, 0)
-
-#             df_centre = pd.DataFrame({
-#                 "N° colonne" : [j for j in range (1, bins_centre_h + 1) for i in range (1, bins_centre_v*2 + 1)],
-#                 "N° ligne" : [j - bins_centre_v for i in range (1, bins_centre_h + 1) for j in range (1, bins_centre_v*2 + 1)],
-#                 "% de but" : bin_statistic.ravel(),
-#                 "Nombre de but" : bin_statistic_but.ravel()
-#             })
-#             df_centre["Nombre de colonne"] = bins_centre_h
-#             df_centre["Nombre de ligne"] = bins_centre_v    
-
-#             df_centre = df_centre[(df_centre["% de but"] > min(df["% de but"])) & (df_centre["Nombre de but"] >= nb_but_min)]
-
-#     df = pd.concat([df, df_centre], axis = 0).sort_values(by = "% de but", ascending = False).head(nb_zone)
-
-#     df['% de but'] = (100*df['% de but']).round(1).astype(str) + " %"
-
-#     return df
+    return fig, ax
 
 
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# 6/ Heatmap des zones de tir
 
-# def best_zone(data, taille_min_centre, taille_max_centre, taille_min_recep, taille_max_recep, pas_centre, pas_recep) :
-#     pitch = Pitch(pitch_type = "statsbomb")
 
-#     df = pd.DataFrame([[0, 0, 0, 0, 0, 0, 0, 0]], columns = ["colonne", "ligne", "% de but", "taille_vert_centre", "taille_hor_centre", "bins_centre_v", "bins_centre_h", "nb_but"])
+@st.cache_data
+def heatmap_gauche_zone_tir(data, nb_col, nb_ligne, type_compt) :
+    """Fonction permettant la création de la heatmap de gauche pour les zones de tir
+    Définit dans un premier temps le terrain et les caractéristiques de la figure, puis affiche les statistiques des données
+    passées en paramètre
 
-#     for taille_vert_centre in np.arange (taille_min_centre, taille_max_centre, pas_centre) :
-#         bins_centre_v = int((52.5/taille_vert_centre))
-#         for taille_hor_centre in np.arange (taille_min_centre, taille_max_centre, pas_centre) :
-#             bins_centre_h = int(68/taille_hor_centre)
-#             bin_statistic = pitch.bin_statistic(data.x, data.y, values = None, statistic='count', bins=(bins_centre_v*2, bins_centre_h))["statistic"]
-#             bin_statistic_but = pitch.bin_statistic(data[data.But == 1].x, data[data.But == 1].y, values = None, statistic='count',
-#                                     bins=(bins_centre_v*2, bins_centre_h))["statistic"]
-#             bin_statistic = np.nan_to_num(bin_statistic_but/bin_statistic, 0)
-#             df_centre = pd.DataFrame({
-#                 "colonne" : [j for j in range (1, bins_centre_h + 1) for i in range (1, bins_centre_v*2 + 1)],
-#                 "ligne" : [j - bins_centre_v for i in range (1, bins_centre_h + 1) for j in range (1, bins_centre_v*2 + 1)],
-#                 "% de but" : bin_statistic.ravel(),
-#                 "nb_but" : bin_statistic_but.ravel()
-#             })
-#             df_centre["taille_vert_centre"] = taille_vert_centre
-#             df_centre["taille_hor_centre"] = taille_hor_centre
-#             df_centre["bins_centre_v"] = bins_centre_v
-#             df_centre["bins_centre_h"] = bins_centre_h
-#             df = pd.concat([df, df_centre[(df_centre["% de but"] > min(df["% de but"])) & (df_centre.nb_but > 10)]], axis = 0).sort_values(by = "% de but", ascending = False).head(10)
-#     st.write(df)
+    Args:
+        data (_type_): dataframe contenant les informations sur chaque tir
+        nb_col (_type_): nombre de colonne de la heatmap
+        nb_ligne (_type_): nombre de ligne de la heatmap
+        type_compt (_type_): type de comptage sélectionner pour l'affichage de la légende de la heatmap
+
+    Returns:
+        _type_: retourne la figure et l'axe de la heatmap
+    """
+
+    pitch = VerticalPitch(pitch_type='statsbomb', pitch_color = None, line_zorder=2, line_color = "green", half = True, axis = True,
+            label = True, tick = True, linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
+    
+    fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
+
+    ax.spines[:].set_visible(False)
+
+    fig.set_facecolor("none")
+    fig.set_edgecolor("none")
+    ax.set_facecolor((1, 1, 1))
+
+    ax.set_xticks(np.arange(80/(2*nb_col), 80 - 80/(2*nb_col) + 1, 80/nb_col), labels = np.arange(1, nb_col + 1, dtype = int))
+    ax.set_yticks(np.arange(80 + 40/(2*nb_ligne), 120 - 40/(2*nb_ligne) + 1, 40/nb_ligne),
+                labels = np.arange(1, nb_ligne + 1, dtype = int))
+    ax.tick_params(axis = "y", right = False, labelright = False)
+    ax.tick_params(axis = "x", top = False, labeltop = False)
+
+    ax.set_xlim(0, 80)
+    ax.set_ylim(80, 125)
+
+    bin_statistic = pitch.bin_statistic(data.x_loc, data.y_loc, statistic='count', bins=(nb_ligne*3, nb_col),
+                                            normalize = "Pourcentage" in type_compt)
+    
+    pitch.heatmap(bin_statistic, ax = ax, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
+
+    if type_compt != "Aucune valeur" :
+        dico_label_heatmap = label_heatmap1(bin_statistic["statistic"])[type_compt]
+
+        bin_statistic["statistic"] = dico_label_heatmap["statistique"]
+
+        str_format = dico_label_heatmap["str_format"]
+
+        pitch.label_heatmap(bin_statistic, exclude_zeros = True, fontsize = int(100/(nb_col + nb_ligne)) + 2, color='#f4edf0',
+                            ax = ax, ha='center', va='center', str_format=str_format, path_effects=path_effect_2)
+
+    return fig, ax
+
+
+@st.cache_data
+def heatmap_droite_zone_tir(data) :
+    """Fonction permettant la création de la heatmap "smooth" des zones de tir
+
+    Args:
+        data (_type_): dataframe contenant les informations sur chaque tir
+
+    Returns:
+        _type_: retourne la figure et l'axe de la heatmap
+    """
+
+    pitch = VerticalPitch(pitch_type='statsbomb', pitch_color = None, line_zorder=2, line_color = "green", half = True,
+                linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
+    
+    fig, ax = pitch.draw(constrained_layout=True, tight_layout=False)
+
+    fig.set_facecolor("none")
+    fig.set_edgecolor("none")
+    ax.set_facecolor((1, 1, 1))
+
+    ax.set_xlim([0, 80])
+    ax.set_ylim([80, 125])
+
+    pitch.kdeplot(data.x_loc, data.y_loc, ax = ax, fill = True, levels = 100, thresh = 0, cmap = colormapblue)
+    
+    return fig, ax
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# 7/ Heatmap des zones de centre
+
+
+@st.cache_data
+def heatmap_centre(data_centre, data_recep, nb_col_gauche, nb_ligne_gauche, nb_col_droite, nb_ligne_droite, type_compt_gauche,
+                   type_compt_droite, liste_type_compt) :
+    """Fonction permettant la création des heatmaps des zones de centre et de réception des centres
+    Définit dans un premier temps le terrain et les caractéristiques de la figure, puis affiche les statistiques des données
+    passées en paramètre
+
+    Args:
+        data_centre (_type_): Dataframe contenant les informations sur les zones de départ de centre
+        data_recep (_type_): Dataframe contenant les informations sur les zones de réception de centre
+        nb_col_gauche (_type_): nombre de colonne de la heatmap de gauche
+        nb_ligne_gauche (_type_): nombre de ligne de la heatmap de gauche
+        nb_col_droite (_type_): nombre de colonne de la heatmap de droite
+        nb_ligne_droite (_type_): nombre de ligne de la heatmap de droite
+        type_compt_gauche (_type_): Type de comptage de la heatmap de gauche
+        type_compt_droite (_type_): Type de comptage de la heatmap de droite
+        liste_type_compt (_type_): Liste contenant tous les types de comptage possibles
+    """
+
+    pitch = VerticalPitch(pitch_type='statsbomb', line_zorder=2, pitch_color=None, line_color = "green", half = True, axis = True,
+                          label = True, tick = True, linewidth = 1.5, spot_scale = 0.002, goal_type = "box")
+    
+    fig_centre, ax_centre = pitch.draw(constrained_layout=True, tight_layout=False)
+
+    ax_centre.spines[:].set_visible(False)
+
+    fig_centre.set_facecolor("none")
+    fig_centre.set_edgecolor("none")
+    ax_centre.set_facecolor((1, 1, 1))
+
+    ax_centre.set_xticks(np.arange(80/(2*nb_col_gauche), 80 - 80/(2*nb_col_gauche) + 1, 80/nb_col_gauche),
+                labels = np.arange(1, nb_col_gauche + 1, dtype = int))
+    ax_centre.set_yticks(np.arange(60 + 60/(2*nb_ligne_gauche), 120 - 60/(2*nb_ligne_gauche) + 1, 60/nb_ligne_gauche),
+                labels = np.arange(1, nb_ligne_gauche + 1, dtype = int))
+    ax_centre.tick_params(axis = "y", right = False, labelright = False)
+    ax_centre.tick_params(axis = "x", top = False, labeltop = False)
+
+    ax_centre.set_xlim(0, 80)
+    ax_centre.set_ylim(60, 125)
+
+    fig_recep, ax_recep = pitch.draw(constrained_layout=True, tight_layout=False)
+
+    ax_recep.spines[:].set_visible(False)
+
+    fig_recep.set_facecolor("none")
+    fig_recep.set_edgecolor("none")
+    ax_recep.set_facecolor((1, 1, 1))
+
+    ax_recep.set_xticks(np.arange(80/(2*nb_col_droite), 80 - 80/(2*nb_col_droite) + 1, 80/nb_col_droite),
+                        labels = np.arange(1, nb_col_droite + 1, dtype = int))
+    ax_recep.set_yticks(np.arange(60 + 60/(2*nb_ligne_droite), 120 - 60/(2*nb_ligne_droite) + 1, 60/nb_ligne_droite),
+                labels = np.arange(1, nb_ligne_droite + 1, dtype = int))
+    ax_recep.tick_params(axis = "y", right = False, labelright = False)
+    ax_recep.tick_params(axis = "x", top = False, labeltop = False)
+
+    ax_recep.set_xlim(0, 80)
+    ax_recep.set_ylim(60, 125)
+
+    bin_statistic_centre = pitch.bin_statistic(data_centre.x_loc, data_centre.y_loc, statistic='count',
+                        bins=(nb_ligne_gauche*2, nb_col_gauche), normalize = type_compt_gauche in liste_type_compt[:2])
+    
+    bin_statistic_recep = pitch.bin_statistic(data_recep.x_pass, data_recep.y_pass, statistic='count',
+                        bins=(nb_ligne_droite*2, nb_col_droite), normalize = type_compt_droite in liste_type_compt[:2])
+
+    if type_compt_gauche != "Aucune valeur" :
+        bin_statistic_but_centre = pitch.bin_statistic(data_centre[data_centre.But == "Oui"].x_loc,
+                            data_centre[data_centre.But == "Oui"].y_loc, statistic='count', bins=(nb_ligne_gauche*2, nb_col_gauche))
+         
+        dico_label_heatmap_centre = label_heatmap2(bin_statistic_centre["statistic"], bin_statistic_but_centre["statistic"])[type_compt_gauche]
+
+        bin_statistic_centre["statistic"] = dico_label_heatmap_centre["statistique"]
+
+        str_format_centre = dico_label_heatmap_centre["str_format"]
+
+        pitch.label_heatmap(bin_statistic_centre, exclude_zeros = True, fontsize = int(100/(nb_col_gauche + nb_ligne_gauche)) + 2,
+            color='#f4edf0', ax = ax_centre, ha='center', va='center', str_format=str_format_centre, path_effects=path_effect_2)
+        
+    if type_compt_droite != "Aucune valeur" :
+        bin_statistic_but_recep = pitch.bin_statistic(data_recep[data_recep.But == "Oui"].x_pass,
+                            data_recep[data_recep.But == "Oui"].y_pass, statistic='count', bins=(nb_ligne_droite*2, nb_col_droite))
+        
+        dico_label_heatmap_recep = label_heatmap2(bin_statistic_recep["statistic"], bin_statistic_but_recep["statistic"])[type_compt_droite]
+
+        bin_statistic_recep["statistic"] = dico_label_heatmap_recep["statistique"]
+
+        str_format_recep = dico_label_heatmap_recep["str_format"]
+
+        pitch.label_heatmap(bin_statistic_recep, exclude_zeros = True, fontsize = int(100/(nb_col_droite + nb_ligne_droite)) + 2,
+            color='#f4edf0', ax = ax_recep, ha='center', va='center', str_format=str_format_recep, path_effects=path_effect_2)
+        
+    pitch.heatmap(bin_statistic_centre, ax = ax_centre, cmap = colormapred, edgecolor='#000000', linewidth = 0.2)
+
+    pitch.heatmap(bin_statistic_recep, ax = ax_recep, cmap = colormapblue, edgecolor='#000000', linewidth = 0.2)
+        
+    return(fig_centre, fig_recep, ax_centre, ax_recep)

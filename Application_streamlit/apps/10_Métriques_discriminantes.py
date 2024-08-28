@@ -7,8 +7,8 @@ import pandas as pd
 import numpy as np
 import sqlite3
 
-from fonction import couleur_diff, load_session_state, store_session_state, execute_SQL, replace_saison2, replace_saison1, init_session_state
-from variable import dico_met, dico_rank_SK, dico_rank_SB, dico_cat_run, dico_cat_pressure, dico_cat_passe
+from fonction import couleur_diff, load_session_state, store_session_state, execute_SQL, init_session_state, filtre_session_state
+from variable import dico_met, dico_rank_SK, dico_rank_SB, liste_cat_run, dico_cat_run, dico_cat_pressure, dico_cat_passe, liste_type_passe_run, liste_cat_pressure, liste_cat_passe_pressure, liste_type_passe
 
 # Index slicer pour la sélection de donnée sur les dataframes avec multi-index
 idx = pd.IndexSlice
@@ -68,12 +68,11 @@ liste_saison, desc = execute_SQL(cursor, stat, params)
 liste_saison = [i[0] for i in liste_saison]
 
 with columns[2] :
-    init_session_state("saison_met", [max(replace_saison1(liste_saison))])
+    init_session_state("saison_met", [max(liste_saison)])
+    filtre_session_state("saison_met", liste_saison)
     load_session_state("saison_met")
-    choix_saison = st.multiselect("Choisir saison", replace_saison1(liste_saison), key = "widg_saison_met",
-                                  on_change = store_session_state, args = ["saison_met"])
-
-choix_saison = replace_saison2(choix_saison)
+    choix_saison = st.multiselect("Choisir saison", liste_saison, key = "widg_saison_met", on_change = store_session_state,
+                                  args = ["saison_met"])
 
 if len(choix_saison) == 0 :
     st.stop()
@@ -168,7 +167,7 @@ if choix_provider == "Skill Corner" :
 # Filtrage des types de course ou de pression dans le cas ou on a pas choisi les données Physical
 
 
-    if cat_met != "Physiques" :
+    if cat_met != "Physique" :
         col_keep = [False]*df_metrique.shape[1]
 
         liste_type_cat = list(dico_met[cat_met][3].keys())
@@ -191,14 +190,12 @@ if choix_provider == "Skill Corner" :
 # Filtrage des métriques dans le cas ou on a choisi les données de Running
 
 
-        if cat_met == "Courses sans ballon avec la possession" :
+        if cat_met == "Course sans ballon avec la possession" :
             col_keep = [True]*df_metrique.shape[1]
 
             columns = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
 
             with columns[0] :
-                liste_cat_run = ["All"] + list(dico_cat_run.keys())
-
                 init_session_state("cat_run", liste_cat_run)
                 load_session_state("cat_run")
                 choix_cat_run = st.multiselect("Catégorie du run", options = liste_cat_run, key = 'widg_cat_run',
@@ -216,12 +213,11 @@ if choix_provider == "Skill Corner" :
 
             with columns[1] :
                 load_session_state("threat_run")
-                if not(st.checkbox('Métrique "threat"', key = 'widg_threat_run', on_change = store_session_state, args = ["threat_run"])) :
+                if not(st.checkbox('Métrique "threat"', key = 'widg_threat_run', on_change = store_session_state,
+                            args = ["threat_run"])) :
                     col_keep = np.logical_and(col_keep, ["threat" not in i for i in df_metrique.columns])
 
             with columns[2] :
-                liste_type_passe_run = ["Targeted", "Received"]
-
                 init_session_state("type_passe_run", liste_type_passe_run)
                 load_session_state("type_passe_run")
                 type_passe_run = st.multiselect("Type de passe liée au run", liste_type_passe_run, key = 'widg_type_passe_run',
@@ -243,9 +239,7 @@ if choix_provider == "Skill Corner" :
 
             columns = st.columns(3, vertical_alignment = "center", gap = "large")
 
-            with columns[0] :
-                liste_cat_pressure = list(dico_cat_pressure.keys())
-                
+            with columns[0] :                
                 init_session_state("cat_pressure", liste_cat_pressure)
                 load_session_state("cat_pressure")
                 choix_cat_pressure = st.multiselect("Catégorie de métrique liée au pressing", liste_cat_pressure,
@@ -261,8 +255,6 @@ if choix_provider == "Skill Corner" :
                         "Dangerous" : ["dangerous" not in i for i in df_metrique.columns], 
                         "Difficult" : ["difficult" not in i for i in df_metrique.columns]}
                     
-                    liste_cat_passe_pressure = list(dico_cat_passe_pressure.keys())
-
                     init_session_state("cat_passe_pressure", liste_cat_passe_pressure)
                     load_session_state("cat_passe_pressure")
                     choix_type_passe_pressure = st.multiselect("Type de passe", liste_cat_passe_pressure,
@@ -306,8 +298,6 @@ if choix_provider == "Skill Corner" :
             columns = st.columns([2, 1, 1, 2], vertical_alignment = "center", gap = "large")
 
             with columns[0] :
-                liste_cat_run = ["All"] + list(dico_cat_run.keys())
-
                 init_session_state("cat_run_passe", liste_cat_run)
                 load_session_state("cat_run_passe")
                 choix_cat_run_passe = st.multiselect("Catégorie du run", options = liste_cat_run, key = 'widg_cat_run_passe',
@@ -324,9 +314,6 @@ if choix_provider == "Skill Corner" :
                         col_keep = np.logical_and(col_keep, [dico_cat_run[cat_run_passe] not in i for i in df_metrique.columns])
 
             with columns[3] :
-
-                liste_type_passe = list(dico_cat_passe.keys())
-
                 init_session_state("type_passe", liste_type_passe)
                 load_session_state("type_passe")
                 choix_type_passe = st.multiselect("Type de passe", dico_cat_passe.keys(), key = 'widg_type_passe',
@@ -474,9 +461,7 @@ if len(row_select_met) > 0 :
     st.divider()
 
     for saison in choix_saison :
-        saison_widg = replace_saison1(saison)
-
-        st.markdown(f"<p style='text-align: center;'>Tableau des métriques retenues, par équipes, en moyenne par match lors de la saison {saison_widg} </p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center;'>Tableau des métriques retenues, par équipes, en moyenne par match lors de la saison {saison} </p>", unsafe_allow_html=True)
         
         metrique_df_final = df_metrique.loc[saison, :][df_final.index[row_select_met]]
 

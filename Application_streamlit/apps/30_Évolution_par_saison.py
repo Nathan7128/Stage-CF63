@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 from functools import partial
 import sqlite3
 
-from fonction import load_session_state, store_session_state, execute_SQL, init_session_state, replace_saison2, replace_saison1
-from variable import dico_met, dico_rank_SK, dico_rank_SB, dico_cat_run, dico_cat_pressure, dico_cat_passe
+from fonction import load_session_state, store_session_state, execute_SQL, init_session_state, couleur_bg_df, couleur_text_df
+from variable import dico_met, dico_rank_SK, dico_rank_SB, dico_cat_run, dico_cat_pressure, dico_cat_passe, liste_cat_run, liste_type_passe_run, liste_cat_pressure, liste_cat_passe_pressure, liste_type_passe
 
 # Index slicer pour la sélection de donnée sur les dataframes avec multi-index
 idx = pd.IndexSlice
@@ -36,46 +36,19 @@ st.divider()
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Définition des variables
+
+
+# Taille de la police du code couleur de l'évolution des métriques
+font_size = "20px"
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Connection BDD
 
 
 connect = sqlite3.connect("database.db")
 cursor = connect.cursor()
-
-
-#----------------------------------------------- DÉFINITIONS DES FONCTIONS ------------------------------------------------------------------------------------
-
-
-
-def couleur_bg_df(col, liste_saison, df) :
-    if col.name == "Évolution en %" :
-        color = []
-        for met in col.index :
-            count_evo = 0
-            for i in range (len(liste_saison) - 1) :
-                count_evo += (df.loc[met, liste_saison[i + 1]] >= df.loc[met, liste_saison[i]])
-            if count_evo == (len(liste_saison) - 1) :
-                color.append("background-color: rgba(0, 255, 0, 0.3)")
-            elif count_evo == 0 :
-                color.append("background-color: rgba(255, 0, 0, 0.3)")
-            elif df.loc[met, liste_saison[-1]] >= df.loc[met, liste_saison[0]] :
-                color.append("background-color: rgba(255, 255, 0, 0.3)")
-            else :
-                color.append("background-color: rgba(255, 130, 0, 0.5)")
-        return(color)
-    
-    else :
-        return ['']*len(df)
-
-def couleur_text_df(row) :
-    color = ['']
-    for i in range (len(row) - 2) :
-        if row.iloc[i] < row.iloc[i + 1] :
-            color.append("color : rgba(0, 200, 0)")
-        else :
-            color.append("color : rgba(255, 0, 0)")
-    color.append('')
-    return color
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -114,6 +87,7 @@ liste_saison = [i[0] for i in liste_saison]
 
 with columns[2] :
     init_session_state("nb_saison_comp", len(liste_saison))
+    st.session_state["nb_saison_comp"] = min(st.session_state["nb_saison_comp"], len(liste_saison))
     load_session_state("nb_saison_comp")
     nb_saison_comp = st.number_input("Nombre de saison à comparer", min_value = 2, max_value = len(liste_saison),
                                      key = "widg_nb_saison_comp", on_change = store_session_state, args = ["nb_saison_comp"])
@@ -210,7 +184,7 @@ if choix_provider == "Skill Corner" :
 # Filtrage des types de course ou de pression dans le cas ou on a pas choisi les données Physical
 
 
-    if cat_met != "Physiques" :
+    if cat_met != "Physique" :
         col_keep = [False]*df_metrique.shape[1]
 
         liste_type_cat = list(dico_met[cat_met][3].keys())
@@ -233,14 +207,12 @@ if choix_provider == "Skill Corner" :
 # Filtrage des métriques dans le cas ou on a choisi les données de Running
 
 
-        if cat_met == "Courses sans ballon avec la possession" :
+        if cat_met == "Course sans ballon avec la possession" :
             col_keep = [True]*df_metrique.shape[1]
 
             columns = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
 
             with columns[0] :
-                liste_cat_run = ["All"] + list(dico_cat_run.keys())
-
                 init_session_state("cat_run", liste_cat_run)
                 load_session_state("cat_run")
                 choix_cat_run = st.multiselect("Catégorie du run", options = liste_cat_run, key = 'widg_cat_run',
@@ -262,8 +234,6 @@ if choix_provider == "Skill Corner" :
                     col_keep = np.logical_and(col_keep, ["threat" not in i for i in df_metrique.columns])
 
             with columns[2] :
-                liste_type_passe_run = ["Targeted", "Received"]
-
                 init_session_state("type_passe_run", liste_type_passe_run)
                 load_session_state("type_passe_run")
                 type_passe_run = st.multiselect("Type de passe liée au run", liste_type_passe_run, key = 'widg_type_passe_run',
@@ -285,9 +255,7 @@ if choix_provider == "Skill Corner" :
 
             columns = st.columns(3, vertical_alignment = "center", gap = "large")
 
-            with columns[0] :
-                liste_cat_pressure = list(dico_cat_pressure.keys())
-                
+            with columns[0] :                
                 init_session_state("cat_pressure", liste_cat_pressure)
                 load_session_state("cat_pressure")
                 choix_cat_pressure = st.multiselect("Catégorie de métrique liée au pressing", liste_cat_pressure,
@@ -303,8 +271,6 @@ if choix_provider == "Skill Corner" :
                         "Dangerous" : ["dangerous" not in i for i in df_metrique.columns], 
                         "Difficult" : ["difficult" not in i for i in df_metrique.columns]}
                     
-                    liste_cat_passe_pressure = list(dico_cat_passe_pressure.keys())
-
                     init_session_state("cat_passe_pressure", liste_cat_passe_pressure)
                     load_session_state("cat_passe_pressure")
                     choix_type_passe_pressure = st.multiselect("Type de passe", liste_cat_passe_pressure,
@@ -348,8 +314,6 @@ if choix_provider == "Skill Corner" :
             columns = st.columns([2, 1, 1, 2], vertical_alignment = "center", gap = "large")
 
             with columns[0] :
-                liste_cat_run = ["All"] + list(dico_cat_run.keys())
-
                 init_session_state("cat_run_passe", liste_cat_run)
                 load_session_state("cat_run_passe")
                 choix_cat_run_passe = st.multiselect("Catégorie du run", options = liste_cat_run, key = 'widg_cat_run_passe',
@@ -366,9 +330,6 @@ if choix_provider == "Skill Corner" :
                         col_keep = np.logical_and(col_keep, [dico_cat_run[cat_run_passe] not in i for i in df_metrique.columns])
 
             with columns[3] :
-
-                liste_type_passe = list(dico_cat_passe.keys())
-
                 init_session_state("type_passe", liste_type_passe)
                 load_session_state("type_passe")
                 choix_type_passe = st.multiselect("Type de passe", dico_cat_passe.keys(), key = 'widg_type_passe',
@@ -435,8 +396,6 @@ for saison in liste_saison :
     df_final.loc[idx[:, "Middle"], saison] = df_metrique.loc[idx[saison, liste_rank[df_nb_team[saison] - nb_bottom - nb_middle:df_nb_team[saison] - nb_bottom]], :].mean(axis = 0).values
     df_final.loc[idx[:, "Bottom"], saison] = df_metrique.loc[idx[saison, liste_rank[df_nb_team[saison] - nb_bottom:]], :].mean(axis = 0).values
 
-df_final.columns = replace_saison1(liste_saison)
-
 df_final = df_final.dropna(axis = 0, how = "all").replace({0 : np.nan})
 
 first_year = df_final.columns[0]
@@ -469,14 +428,10 @@ row_select_met = st.dataframe(df_style, width = 10000, on_select = "rerun", sele
 # Affichage du code couleur
 
 
-first_year = replace_saison1(first_year)
-last_year = replace_saison1(last_year)
 st.markdown(f"<p style='text-align: center;'>Code couleur de l'évolution des métriques entre la saison {first_year} et {last_year} :</p>",
             unsafe_allow_html=True)
 
 columns = st.columns(4, gap = "small")
-
-font_size = "20px"
 
 with columns[0] :
     st.markdown(f'<span style="background-color: rgba(0, 255, 0, 0.3); font-size: {font_size};">Augmentation constante</span>',
