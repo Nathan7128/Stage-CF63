@@ -35,7 +35,7 @@ st.divider()
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Définition des fonctions
+# Définition des fonctions de mofication du session state
 
 
 load_session_state = partial(load_session_state, suffixe = "_met_disc")
@@ -199,7 +199,6 @@ if choix_provider == "Skill Corner" :
             columns = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
 
             with columns[0] :
-                init_session_state("cat_run", liste_cat_run)
                 load_session_state("cat_run")
                 choix_cat_run = st.multiselect("Catégorie du run", options = liste_cat_run, **key_widg("cat_run"))
                 
@@ -219,7 +218,6 @@ if choix_provider == "Skill Corner" :
                     col_keep = np.logical_and(col_keep, ["threat" not in i for i in df_metrique.columns])
 
             with columns[2] :
-                init_session_state("type_passe_run", liste_type_passe_run)
                 load_session_state("type_passe_run")
                 type_passe_run = st.multiselect("Type de passe liée au run", liste_type_passe_run, **key_widg("type_passe_run"))
                 
@@ -240,7 +238,6 @@ if choix_provider == "Skill Corner" :
             columns = st.columns(3, vertical_alignment = "center", gap = "large")
 
             with columns[0] :                
-                init_session_state("cat_pressure", liste_cat_pressure)
                 load_session_state("cat_pressure")
                 choix_cat_pressure = st.multiselect("Catégorie de métrique liée au pressing", liste_cat_pressure,
                                                     **key_widg("cat_pressure"))
@@ -255,7 +252,6 @@ if choix_provider == "Skill Corner" :
                         "Dangerous" : ["dangerous" not in i for i in df_metrique.columns], 
                         "Difficult" : ["difficult" not in i for i in df_metrique.columns]}
                     
-                    init_session_state("cat_passe_pressure", liste_cat_passe_pressure)
                     load_session_state("cat_passe_pressure")
                     choix_type_passe_pressure = st.multiselect("Type de passe", liste_cat_passe_pressure, **key_widg("cat_passe_pressure"))
                     
@@ -295,7 +291,6 @@ if choix_provider == "Skill Corner" :
             columns = st.columns([2, 1, 1, 2], vertical_alignment = "center", gap = "large")
 
             with columns[0] :
-                init_session_state("cat_run_passe", liste_cat_run)
                 load_session_state("cat_run_passe")
                 choix_cat_run_passe = st.multiselect("Catégorie du run", options = liste_cat_run, **key_widg("cat_run_passe"))
                 
@@ -310,7 +305,6 @@ if choix_provider == "Skill Corner" :
                         col_keep = np.logical_and(col_keep, [dico_cat_run[cat_run_passe] not in i for i in df_metrique.columns])
 
             with columns[3] :
-                init_session_state("type_passe", liste_type_passe)
                 load_session_state("type_passe")
                 choix_type_passe = st.multiselect("Type de passe", dico_cat_passe.keys(), **key_widg("type_passe"))
                 

@@ -38,7 +38,7 @@ st.divider()
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Définition des fonctions
+# Définition des fonctions de mofication du session state
 
 
 load_session_state = partial(load_session_state, suffixe = "_zone_centre")
@@ -223,7 +223,6 @@ with columns[0] :
     columns2 = st.columns(2)
 
     with columns2[0] :
-        init_session_state("nb_col_gauche", 6)
         load_session_state("nb_col_gauche")
         nb_col_gauche = st.number_input("Nombre de colonne pour la Heatmap de gauche", min_value = 1, step = 1,
                                 **key_widg("nb_col_gauche"))
@@ -234,13 +233,11 @@ with columns[0] :
         nb_ligne_gauche = st.number_input("Nombre de ligne pour la Heatmap de gauche", min_value = 1, step = 1,
                 **key_widg("nb_ligne_gauche"))
     
-    init_session_state("choix_col_gauche", 0)
     push_session_state("choix_col_gauche", min(nb_col_gauche, get_session_state("choix_col_gauche")))
     load_session_state("choix_col_gauche")
     choix_col_gauche = st.number_input("Choisir une colonne pour la Heatmap de gauche", min_value = 0, step = 1,
         max_value = nb_col_gauche, **key_widg("choix_col_gauche"))
     
-    init_session_state("choix_ligne_gauche", 0)
     push_session_state("choix_ligne_gauche", min(nb_ligne_gauche, get_session_state("choix_ligne_gauche")))
     load_session_state("choix_ligne_gauche")
     choix_ligne_gauche = st.number_input("Choisir une ligne pour la Heatmap de gauche", min_value = 0, step = 1,
@@ -250,7 +247,6 @@ with columns[1] :
     columns2 = st.columns(2)
 
     with columns2[0] :
-        init_session_state("nb_col_droite", 6)
         load_session_state("nb_col_droite")
         nb_col_droite = st.number_input("Nombre de colonne pour la Heatmap de droite", min_value = 1, step = 1,
                 **key_widg("nb_col_droite"))
@@ -280,13 +276,11 @@ if (choix_ligne_gauche != 0) & (choix_col_gauche != 0) :
     
     with columns[1] :
 
-        init_session_state("choix_col_droite", 0)
         push_session_state("choix_col_droite", min(nb_col_droite, get_session_state("choix_col_droite")))
         load_session_state("choix_col_droite")
         choix_col_droite = st.number_input("Choisir une colonne pour la Heatmap de droite", min_value = 0, step = 1,
             max_value = nb_col_droite, **key_widg("choix_col_droite"))
         
-        init_session_state("choix_ligne_droite", 0)
         push_session_state("choix_ligne_droite", min(nb_ligne_droite, get_session_state("choix_ligne_droite")))
         load_session_state("choix_ligne_droite")
         choix_ligne_droite = st.number_input("Choisir une ligne pour la Heatmap de droite", min_value = 0, step = 1,
@@ -355,8 +349,6 @@ with columns[0] :
 
 with columns[1] :
     st.pyplot(fig_recep)
-
-st.divider()
 
 st.markdown(f"<p style='text-align: center;'>Nombre total de centres : {len(df_centre)}</p>", unsafe_allow_html=True)
 

@@ -11,17 +11,42 @@ from mplsoccer import VerticalPitch
 from variable import colormapred, path_effect_1, colormapblue, path_effect_2
 
 
+# ---------------------------------------------- Précision fonctionnement session state --------------------------------------------------------------------------------------
+"""J'ai mit en place des session states pour chaque page de l'application, qui sont
+indépendants au niveau des pages. Cela permets de garder ses choix de widget lorsqu'on switch de page, ou lorsque sur une page
+on modifie la valeur d'un widget et que par conséquent, en l'absence de session state, cela peut réinitialiser le choix
+de certains widgets de cette même page
+Les clés des éléments du session state de chaque pages on toujours pour suffixe le 'nom' de la page, pour les différencier de 
+page en page. Par exemple, le widget "nt_top" est initialisé une seule fois à 3 pour chaque page, et donc les éléments
+"nb_top_zone_centre", "nb_top_evo_saison"... seront tous initialisé à 3
+De plus, au début des codes de chaque page, je transforme les fonctions modifiant le session state en fonction partielle avec
+la fixation du paramètre "suffixe" avec le nom de la page en question
+Cela permets de ne pas avoir à définir le paramètre "suffixe" à chaque appel de ces fonctions, mais aussi de pouvoir "standardiser"
+les appels de fonctions entre certaines pages, car la clé de session state passée en argument de chaque fonction sera la clé
+globale qui ne contient pas le suffixe de la page
+Cette clé globale correspond au paramètre "key_init" de ces fonctions"""
+
+
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Définitions des fonctions génériques
 
 
 def load_session_state(key_init, suffixe) :
-    """Associe à la clé d'un widget la valeur de l'élément du session state en question
+    """Associe à la clé d'un widget la valeur de l'élément du session state correspondante
     La clé du widget est toujours égale à "widg_" + la clé de l'élément du session_state
+    Dans un premier temps, on regarde le cas ou l'élément du session state spécifique à la page n'a pas encore été défini, mais
+    qu'il possède bien une valeur par défaut dans le session state. Ex : l'élément "nb_top" n'a pas encore été défini pour la 1ère
+    page (donc l'élément "nb_top_met_disc") mais l'élément "nb_top" est initialisé par défaut à 3 dans le programme Main. L'élément
+    "nb_top_met_disc" sera donc initialisé à 3. A l'inverse, pour la page heatmap zone de début d'action par exemple, l'élément
+    "équipe" n'est pas initialisé par défaut dans le programme Main, la fonction n'associera donc pas de valeur par défaut
+    à l'élément "équipe_deb_action"
     L'association est réalisée dans l'unique cas ou la valeur de l'élément du session state a été initialisée
+
     Args:
-        key : Clé du widget
+        key_init (_type_): Clé globale de l'élément du session state, sans le suffixe correspondant à la page en question
+        suffixe (_type_): Suffixe correspondant à la page (ex : deb_action)
     """
+
     key = key_init + suffixe
 
     if key not in st.session_state and key_init in st.session_state :
@@ -41,11 +66,36 @@ def store_session_state(key) :
 
 
 def key_widg(key_init, suffixe) :
+    """Renvoie les paramètres génériques des fonctions "widgets" de Streamlit, permettant de ne pas avoir à écrire les paramètres
+    à chaque appel, mais aussi de stantardiser ces appels car sur les codes de chaque page, on appelle une fonction partielle
+    de key_widg, ou le suffixe est fixé en début de code, et le seule paramètre à écrire est donc "key_init", qui est le même entre
+    chaque page
+    Pour faire simple, lorsqu'on appel des fonctions widgets, au lieu d'écrire les paramètre "key", "on_change" et "args", on a
+    juste appeler la fonction key_widg avec comme paramètre la clé globale du widget dans cette fonction widget
+
+    Args:
+        key_init (_type_): Clé globale de l'élément du session state, sans le suffixe correspondant à la page en question
+        suffixe (_type_): Suffixe correspondant à la page (ex : deb_action)
+
+    Returns:
+        _type_: paramètres de la fonction widget
+    """
     key = key_init + suffixe
     return {"key" : "widg_" + key, "on_change" : store_session_state, "args" : [key]}
 
 
 def get_session_state(key_init, suffixe) :
+    """Retourne la valeur de l'élément du session state voulue
+    Permets de retourner la valeur de l'élément générique du session state (s'il existe) dans le cas ou l'élément du session state
+    spécifique à la page n'a pas encore été initialisé
+
+    Args:
+        key_init (_type_): Clé globale de l'élément du session state, sans le suffixe correspondant à la page en question
+        suffixe (_type_): Suffixe correspondant à la page (ex : deb_action)
+
+    Returns:
+        _type_: Valeur du session state correspondant à la clé passé en paramètre
+    """
     key = key_init + suffixe
     if key in st.session_state :
         return st.session_state[key]
@@ -54,6 +104,13 @@ def get_session_state(key_init, suffixe) :
     
 
 def push_session_state(key_init, value, suffixe) :
+    """Modifie la valeur d'un élément du session state
+
+    Args:
+        key_init (_type_): Clé globale de l'élément du session state, sans le suffixe correspondant à la page en question
+        value (_type_): Valeur à modifier
+        suffixe (_type_): Suffixe correspondant à la page (ex : deb_action)
+    """
     key = key_init + suffixe
     st.session_state[key] = value
 
@@ -62,8 +119,9 @@ def init_session_state(key_init, value, suffixe) :
     """Initialise une valeur pour un élément du session state s'il n'est pas encore défini
 
     Args:
-        key : Clé de l'élément
-        value : Valeur à initialiser
+        key_init (_type_): Clé globale de l'élément du session state, sans le suffixe correspondant à la page en question
+        value (_type_): Valeur à initialiser
+        suffixe (_type_): Suffixe correspondant à la page (ex : deb_action)
     """
 
     key = key_init + suffixe
@@ -76,8 +134,9 @@ def filtre_session_state(key_init, liste, suffixe) :
     widget associé
 
     Args:
-        key (_type_): Clé du de la liste du session state
+        key_init (_type_): Clé globale de l'élément du session state, sans le suffixe correspondant à la page en question
         liste (_type_): liste qui doit inclure le session state
+        suffixe (_type_): Suffixe correspondant à la page (ex : deb_action)
     """
 
     key = key_init + suffixe

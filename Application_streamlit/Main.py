@@ -1,10 +1,17 @@
 import streamlit as st
+from variable import liste_cat_run, liste_type_passe_run, liste_cat_pressure, liste_cat_passe_pressure, liste_cat_run, liste_type_passe
 
 dico_session_state = {
     "provider" : "Skill Corner",
     "cat_met" : "Physique",
     "nb_top" : 3,
     "nb_bottom" : 3,
+    "cat_run" : liste_cat_run,
+    "type_passe_run" : liste_type_passe_run,
+    "cat_pressure" : liste_cat_pressure,
+    "cat_passe_pressure" : liste_cat_passe_pressure,
+    "cat_run_passe" : liste_cat_run,
+    "type_passe" : liste_type_passe,
     "threat_run" : True,
     "result_passe_pressure" : ["Attempts", "Completed"],
     "ratio_passe_pressure" : True,
@@ -12,7 +19,16 @@ dico_session_state = {
     "threat_passe" : True,
     "ratio_passe" : True,
     'type_action' : ["Open play"],
-    "partie_corps" : "All"
+    "partie_corps" : "All",
+    "nb_col" : 5,
+    "choix_col" : 0,
+    "choix_ligne" : 0,
+    "nb_col_gauche" : 5,
+    "nb_col_droite" : 5,
+    "choix_col_gauche" : 0,
+    "choix_ligne_gauche" : 0,
+    "choix_col_droite" : 0,
+    "choix_ligne_droite" : 0    
 }
 
 for key in dico_session_state.keys() :

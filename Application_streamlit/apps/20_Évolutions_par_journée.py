@@ -36,7 +36,7 @@ st.divider()
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Définition des fonctions
+# Définition des fonctions de mofication du session state
 
 
 load_session_state = partial(load_session_state, suffixe = "_evo_jour")

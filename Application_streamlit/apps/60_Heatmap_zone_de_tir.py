@@ -36,7 +36,7 @@ st.divider()
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Définition des fonctions
+# Définition des fonctions de mofication du session state
 
 
 load_session_state = partial(load_session_state, suffixe = "_zone_tir")
@@ -173,7 +173,6 @@ if len(df) == 0 :
 columns = st.columns(2, gap = "large", vertical_alignment = "center")
 
 with columns[0] :
-    init_session_state("nb_col", 5)
     load_session_state("nb_col")
     nb_col = st.number_input("Nombre de colonne pour la Heatmap de gauche", min_value = 1, step = 1, **key_widg("nb_col"))
     
@@ -201,13 +200,11 @@ if choix_groupe == "Choisir équipe" :
     columns = st.columns(2)
 
     with columns[0] :
-        init_session_state("choix_col", 0)
         push_session_state("choix_col", min(nb_col, get_session_state("choix_col")))
         load_session_state("choix_col")
         choix_col = st.number_input("Choisir une colonne", min_value = 0, step = 1, max_value = nb_col, **key_widg("choix_col"))    
 
     with columns[1] :
-        init_session_state("choix_ligne", 0)
         push_session_state("choix_ligne", min(nb_ligne, get_session_state("choix_ligne")))
         load_session_state("choix_ligne")
         choix_ligne = st.number_input("Choisir une ligne", min_value = 0, step = 1, max_value = nb_ligne, **key_widg("choix_ligne"))

@@ -6,7 +6,7 @@ cursor = connect.cursor()
 
 colonnes = ["match_id", "period", "possession", "type", "shot_type", "team", "minute", "shot_outcome", "pass_type"]
 colonnes = ", ".join(colonnes)
-req = cursor.execute("SELECT * FROM raw_data_heatmap")
+req = cursor.execute(f"SELECT {colonnes} FROM raw_data_heatmap")
 res = req.fetchall()
 desc = req.description
 df = pd.DataFrame(res)
@@ -20,7 +20,7 @@ df_infos.columns = [i[0] for i in desc]
 
 df.set_index(["match_id", "period", "possession"], inplace = True)
 
-goal = df[(df.shot_type == "Open Play") & ((df.shot_outcome == "Goal") | (df.type == "Own Goal Against"))]
+goal = df[(df.shot_type == "Open Play") & ((df.shot_outcome == "Goal") | (df.type == "Own Goal For"))]
 
 df = df.loc[goal.index]
 
