@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from functools import partial
 import sqlite3
 
-from fonction import load_session_state, store_session_state, execute_SQL, init_session_state, couleur_bg_df, couleur_text_df
+from fonction import load_session_state, key_widg, get_session_state, execute_SQL, init_session_state, push_session_state, couleur_bg_df, couleur_text_df
 from variable import dico_met, dico_rank_SK, dico_rank_SB, dico_cat_run, dico_cat_pressure, dico_cat_passe, liste_cat_run, liste_type_passe_run, liste_cat_pressure, liste_cat_passe_pressure, liste_type_passe
 
 # Index slicer pour la sélection de donnée sur les dataframes avec multi-index
@@ -36,6 +36,17 @@ st.divider()
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Définition des fonctions
+
+
+load_session_state = partial(load_session_state, suffixe = "_evo_saison")
+key_widg = partial(key_widg, suffixe = "_evo_saison")
+get_session_state = partial(get_session_state, suffixe = "_evo_saison")
+init_session_state = partial(init_session_state, suffixe = "_evo_saison")
+push_session_state = partial(push_session_state, suffixe = "_evo_saison")
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Définition des variables
 
 
@@ -59,11 +70,10 @@ columns = st.columns([2, 2, 3], gap = "large")
 
 with columns[0] :
     load_session_state("provider")
-    choix_provider = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True, key = "widg_provider",
-                          on_change = store_session_state, args = ["provider"])
+    choix_provider = st.radio("Fournisseur data", options = ["Skill Corner", "Stats Bomb"], horizontal = True, **key_widg("provider"))
     
 if choix_provider == "Skill Corner" :
-    table_met = dico_met[st.session_state.cat_met][0]
+    table_met = dico_met[get_session_state("cat_met")][0]
     dico_rank = dico_rank_SK
     
 else :
@@ -76,9 +86,8 @@ liste_compet, desc = execute_SQL(cursor, stat, params)
 liste_compet = [i[0] for i in liste_compet]
     
 with columns[1] :
-    load_session_state("compet_met")
-    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, key = "widg_compet_met", on_change = store_session_state,
-                                args = ["compet_met"])
+    load_session_state("compet")
+    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, **key_widg("compet"))
 
 params = [choix_compet]
 stat = f"SELECT DISTINCT Saison FROM {table_met} WHERE Compet = ?"
@@ -87,10 +96,10 @@ liste_saison = [i[0] for i in liste_saison]
 
 with columns[2] :
     init_session_state("nb_saison_comp", len(liste_saison))
-    st.session_state["nb_saison_comp"] = min(st.session_state["nb_saison_comp"], len(liste_saison))
+    push_session_state("nb_saison_comp", min(get_session_state("nb_saison_comp"), len(liste_saison)))
     load_session_state("nb_saison_comp")
     nb_saison_comp = st.number_input("Nombre de saison à comparer", min_value = 2, max_value = len(liste_saison),
-                                     key = "widg_nb_saison_comp", on_change = store_session_state, args = ["nb_saison_comp"])
+                                     **key_widg("nb_saison_comp"))
     
     liste_saison = liste_saison[:nb_saison_comp]
 
@@ -121,21 +130,19 @@ max_nb_team = min(df_nb_team)
 columns = st.columns(2, gap = "large", vertical_alignment = "center")
 
 with columns[0] :
-    load_session_state("nb_top_met")
-    nb_top = st.slider("Nombre d'équipe dans le Top :", min_value = 1, max_value = max_nb_team, key = "widg_nb_top_met",
-                                  on_change = store_session_state, args = ["nb_top_met"])
+    load_session_state("nb_top")
+    nb_top = st.slider("Nombre d'équipe dans le Top :", min_value = 1, max_value = max_nb_team, **key_widg("nb_top"))
 
 with columns[1] :
     if nb_top == max_nb_team :
-        st.session_state["nb_bottom_met"] = max_nb_team - nb_top
+        push_session_state("nb_bottom", max_nb_team - nb_top)
 
     else :
-        st.session_state["nb_bottom_met"] = min(max_nb_team - nb_top, st.session_state["nb_bottom_met"])
-        load_session_state("nb_bottom_met")
-        st.slider(f"Nombre d'équipe dans le Bottom", min_value = 0, max_value = max_nb_team - nb_top, key = "widg_nb_bottom_met",
-                                  on_change = store_session_state, args = ["nb_bottom_met"])
+        push_session_state("nb_bottom", min(max_nb_team - nb_top, get_session_state("nb_bottom")))
+        load_session_state("nb_bottom")
+        st.slider(f"Nombre d'équipe dans le Bottom", min_value = 0, max_value = max_nb_team - nb_top, **key_widg("nb_bottom"))
 
-    nb_bottom = st.session_state["nb_bottom_met"]
+    nb_bottom = get_session_state("nb_bottom")
 
 nb_middle = max_nb_team - nb_top - nb_bottom
 
@@ -154,8 +161,7 @@ if choix_provider == "Skill Corner" :
 
     with columns[0] :
         load_session_state("cat_met")
-        cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True, key = 'widg_cat_met',
-                            on_change = store_session_state, args = ["cat_met"])
+        cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True, **key_widg("cat_met"))
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -164,21 +170,18 @@ if choix_provider == "Skill Corner" :
 
     with columns[1] :
         load_session_state(f"moy_cat_{cat_met}")
-        moy_cat = st.radio("Moyenne de la métrique", dico_met[cat_met][1].keys(), horizontal = True, key = f'widg_moy_cat_{cat_met}',
-                            on_change = store_session_state, args = [f"moy_cat_{cat_met}"])
+        moy_cat = st.radio("Moyenne de la métrique", dico_met[cat_met][1].keys(), horizontal = True, **key_widg(f"moy_cat_{cat_met}"))
         moy_cat = dico_met[cat_met][1][moy_cat]
 
     with columns[2] :
         load_session_state("win_match")
-        if st.checkbox("Métriques pour les équipes qui gagnent les matchs", key = 'widg_win_match', on_change = store_session_state,
-                       args = ["win_match"]) :
+        if st.checkbox("Métriques pour les équipes qui gagnent les matchs", **key_widg("win_match")) :
             df_metrique = df_metrique[df_metrique.result == "win"]
     
     df_metrique.drop(["Journée", "result"], axis = 1, inplace = True)
-    
     col_keep = [(moy_cat in i) or ("ratio" in i) for i in df_metrique.columns]
     df_metrique = df_metrique[df_metrique.columns[col_keep]]
-
+    
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Filtrage des types de course ou de pression dans le cas ou on a pas choisi les données Physical
@@ -186,18 +189,15 @@ if choix_provider == "Skill Corner" :
 
     if cat_met != "Physique" :
         col_keep = [False]*df_metrique.shape[1]
-
+        
         liste_type_cat = list(dico_met[cat_met][3].keys())
 
         init_session_state(f"type_cat_{cat_met}", liste_type_cat)
         load_session_state(f"type_cat_{cat_met}")
-        choix_type_cat = st.multiselect(dico_met[cat_met][2], liste_type_cat, key = f'widg_type_cat_{cat_met}',
-                                        on_change = store_session_state,
-                                        args = [f"type_cat_{cat_met}"])
+        choix_type_cat = st.multiselect(dico_met[cat_met][2], liste_type_cat, **key_widg(f"type_cat_{cat_met}"))
         
         for type_cat in choix_type_cat :
             type_cat = dico_met[cat_met][3][type_cat]
-
             col_keep = np.logical_or(col_keep, [(type_cat in i) or ("ratio" in i and type_cat in i) for i in df_metrique.columns])
 
         df_metrique = df_metrique[df_metrique.columns[col_keep]]
@@ -215,8 +215,7 @@ if choix_provider == "Skill Corner" :
             with columns[0] :
                 init_session_state("cat_run", liste_cat_run)
                 load_session_state("cat_run")
-                choix_cat_run = st.multiselect("Catégorie du run", options = liste_cat_run, key = 'widg_cat_run',
-                            on_change = store_session_state, args = ["cat_run"])
+                choix_cat_run = st.multiselect("Catégorie du run", options = liste_cat_run, **key_widg("cat_run"))
                 
                 if "All" not in choix_cat_run :
                     col_keep = [False]*df_metrique.shape[1]
@@ -230,14 +229,13 @@ if choix_provider == "Skill Corner" :
 
             with columns[1] :
                 load_session_state("threat_run")
-                if not(st.checkbox('Métrique "threat"', key = 'widg_threat_run', on_change = store_session_state, args = ["threat_run"])) :
+                if not(st.checkbox('Métrique "threat"', **key_widg("threat_run"))) :
                     col_keep = np.logical_and(col_keep, ["threat" not in i for i in df_metrique.columns])
 
             with columns[2] :
                 init_session_state("type_passe_run", liste_type_passe_run)
                 load_session_state("type_passe_run")
-                type_passe_run = st.multiselect("Type de passe liée au run", liste_type_passe_run, key = 'widg_type_passe_run',
-                                                on_change = store_session_state, args = ["type_passe_run"])
+                type_passe_run = st.multiselect("Type de passe liée au run", liste_type_passe_run, **key_widg("type_passe_run"))
                 
                 if "Targeted" not in type_passe_run :
                     col_keep = np.logical_and(col_keep, ["targeted" not in i for i in df_metrique.columns])
@@ -259,7 +257,7 @@ if choix_provider == "Skill Corner" :
                 init_session_state("cat_pressure", liste_cat_pressure)
                 load_session_state("cat_pressure")
                 choix_cat_pressure = st.multiselect("Catégorie de métrique liée au pressing", liste_cat_pressure,
-                                    key = 'widg_cat_pressure', on_change = store_session_state, args = ["cat_pressure"])
+                                                    **key_widg("cat_pressure"))
                 
                 for cat_pressure in choix_cat_pressure :
                     col_keep = np.logical_or(col_keep, [dico_cat_pressure[cat_pressure] in i for i in df_metrique.columns])
@@ -274,7 +272,7 @@ if choix_provider == "Skill Corner" :
                     init_session_state("cat_passe_pressure", liste_cat_passe_pressure)
                     load_session_state("cat_passe_pressure")
                     choix_type_passe_pressure = st.multiselect("Type de passe", liste_cat_passe_pressure,
-                        key = 'widg_cat_passe_pressure', on_change = store_session_state, args = ["cat_passe_pressure"])
+                                                               **key_widg("cat_passe_pressure"))
                     
                     for cat_passe_pressure in liste_cat_passe_pressure :
                         if cat_passe_pressure not in choix_type_passe_pressure :
@@ -282,7 +280,7 @@ if choix_provider == "Skill Corner" :
 
                     load_session_state("result_passe_pressure")
                     result_passe_pressure = st.multiselect("Résultat de la passe sous pression", ["Attempts", "Completed"],
-                        key = 'widg_result_passe_pressure', on_change = store_session_state, args = ["result_passe_pressure"])
+                        **key_widg("result_passe_pressure"))
                     
                     if "Attempts" not in result_passe_pressure :
                         col_keep = np.logical_and(col_keep, ["attempts" not in i for i in df_metrique.columns])
@@ -293,14 +291,12 @@ if choix_provider == "Skill Corner" :
             with columns[-1] :
                 if "Passes" in choix_cat_pressure :
                     load_session_state("ratio_passe_pressure")
-                    if not(st.checkbox("Ratio lié aux passes", key = 'widg_ratio_passe_pressure', on_change = store_session_state,
-                                       args = ["ratio_passe_pressure"])) :
+                    if not(st.checkbox("Ratio lié aux passes", **key_widg("ratio_passe_pressure"))) :
                         col_keep = np.logical_and(col_keep, [("pass" not in i) or ("ratio" not in i) for i in df_metrique.columns])                   
                 
                 if "Conservation du ballon" in choix_cat_pressure :
                     load_session_state("ratio_conserv_pressure")
-                    if not(st.checkbox("Ratio lié à la conservation du ballon", key = 'widg_ratio_conserv_pressure',
-                                       on_change = store_session_state, args = ["ratio_conserv_pressure"])) :
+                    if not(st.checkbox("Ratio lié à la conservation du ballon", **key_widg("ratio_conserv_pressure"))) :
                         col_keep = np.logical_and(col_keep, ["ball_retention_ratio" not in i for i in df_metrique.columns])
 
 
@@ -316,8 +312,7 @@ if choix_provider == "Skill Corner" :
             with columns[0] :
                 init_session_state("cat_run_passe", liste_cat_run)
                 load_session_state("cat_run_passe")
-                choix_cat_run_passe = st.multiselect("Catégorie du run", options = liste_cat_run, key = 'widg_cat_run_passe',
-                                       on_change = store_session_state, args = ["cat_run_passe"])
+                choix_cat_run_passe = st.multiselect("Catégorie du run", options = liste_cat_run, **key_widg("cat_run_passe"))
                 
                 if "All" not in choix_cat_run_passe :
                     col_keep = [False]*df_metrique.shape[1]
@@ -332,8 +327,7 @@ if choix_provider == "Skill Corner" :
             with columns[3] :
                 init_session_state("type_passe", liste_type_passe)
                 load_session_state("type_passe")
-                choix_type_passe = st.multiselect("Type de passe", dico_cat_passe.keys(), key = 'widg_type_passe',
-                                       on_change = store_session_state, args = ["type_passe"])
+                choix_type_passe = st.multiselect("Type de passe", dico_cat_passe.keys(), **key_widg("type_passe"))
                 
                 col_keep_passe = [False]*df_metrique.shape[1]
 
@@ -347,19 +341,17 @@ if choix_provider == "Skill Corner" :
 
             with columns[1] :
                 load_session_state("threat_passe")
-                if not(st.checkbox('Métrique "threat"', key = 'widg_threat_passe', on_change = store_session_state,
-                                   args = ["threat_passe"])) :
+                if not(st.checkbox('Métrique "threat"', **key_widg("threat_passe"))) :
                     col_keep = np.logical_and(col_keep, ["threat" not in i for i in df_metrique.columns])
 
             with columns[2] :
                 load_session_state("ratio_passe")
-                if st.checkbox("Ratio", key = 'widg_ratio_passe', on_change = store_session_state,
-                                   args = ["ratio_passe"]) :
+                if st.checkbox("Ratio", **key_widg("ratio_passe")) :
                     col_keep = np.logical_or(col_keep, ["ratio" in i for i in df_metrique.columns])
     
 
         df_metrique = df_metrique[df_metrique.columns[col_keep]]
-
+        
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Aggrégation des métriques sur une saison pour chaque équipe
@@ -372,7 +364,6 @@ if choix_provider == "Skill Corner" :
     df_metrique = df_metrique.sum()
 
     df_metrique = df_metrique.divide(nb_matchs_team, axis = 0)
-
 
 if df_metrique.shape[1] == 0 :
     st.stop()

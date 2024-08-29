@@ -6,8 +6,9 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import sqlite3
+from functools import partial
 
-from fonction import execute_SQL, load_session_state, store_session_state, init_session_state, filtre_session_state
+from fonction import execute_SQL, load_session_state, key_widg, init_session_state, filtre_session_state, push_session_state, get_session_state
 from variable import dico_rank_SB, df_taille_groupe
 
 # Index slicer pour la sélection de donnée sur les dataframes avec multi-index
@@ -34,6 +35,18 @@ st.divider()
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Définition des fonctions
+
+
+load_session_state = partial(load_session_state, suffixe = "_nb_passe")
+key_widg = partial(key_widg, suffixe = "_nb_passe")
+get_session_state = partial(get_session_state, suffixe = "_nb_passe")
+init_session_state = partial(init_session_state, suffixe = "_nb_passe")
+push_session_state = partial(push_session_state, suffixe = "_nb_passe")
+filtre_session_state = partial(filtre_session_state, suffixe = "_nb_passe")
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Choix de la compétition et de la ou des saisons
 
 
@@ -45,9 +58,8 @@ liste_compet, desc = execute_SQL(cursor, stat, params)
 liste_compet = [i[0] for i in liste_compet]
     
 with columns[0] :
-    load_session_state("compet_nb_passe")
-    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, key = "widg_compet_nb_passe",
-                                on_change = store_session_state, args = ["compet_nb_passe"])
+    load_session_state("compet")
+    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, **key_widg("compet"))
 
 params = [choix_compet]
 stat = f"SELECT DISTINCT Saison FROM Passes_avant_un_but WHERE Compet = ?"
@@ -55,10 +67,9 @@ liste_saison, desc = execute_SQL(cursor, stat, params)
 liste_saison = [i[0] for i in liste_saison]
 
 with columns[1] :
-    init_session_state("saison_nb_passe", [max(liste_saison)])
-    load_session_state("saison_nb_passe")
-    choix_saison = st.multiselect("Choisir saison", liste_saison, key = "widg_saison_nb_passe",
-                                  on_change = store_session_state, args = ["saison_nb_passe"])
+    init_session_state("saison", [max(liste_saison)])
+    load_session_state("saison")
+    choix_saison = st.multiselect("Choisir saison", liste_saison, **key_widg("saison"))
 
 if len(choix_saison) == 0 :
     st.stop()
@@ -90,21 +101,21 @@ max_nb_team = min(df_nb_team)
 columns = st.columns(2, gap = "large", vertical_alignment = "center")
 
 with columns[0] :
-    load_session_state("nb_top_nb_passe")
-    df_taille_groupe.loc["Top", "Taille"] = st.slider(df_taille_groupe.loc["Top", "Slider"], min_value = 1,
-            max_value = max_nb_team, key = "widg_nb_top_nb_passe", on_change = store_session_state, args = ["nb_top_nb_passe"])
+    load_session_state("nb_top")
+    df_taille_groupe.loc["Top", "Taille"] = st.slider(df_taille_groupe.loc["Top", "Slider"], min_value = 1, max_value = max_nb_team,
+                                                      **key_widg("nb_top"))
     
 with columns[1] :
     if df_taille_groupe.loc["Top", "Taille"] == max_nb_team :
-        st.session_state["nb_bottom_nb_passe"] = max_nb_team - df_taille_groupe.loc["Top", "Taille"]
+        push_session_state("nb_bottom", max_nb_team - df_taille_groupe.loc["Top", "Taille"])
 
     else :
-        load_session_state("nb_bottom_nb_passe")
+        push_session_state("nb_bottom", min(max_nb_team - df_taille_groupe.loc["Top", "Taille"], get_session_state("nb_bottom")))
+        load_session_state("nb_bottom")
         st.slider(df_taille_groupe.loc["Bottom", "Slider"], min_value = 0,
-                max_value = max_nb_team - df_taille_groupe.loc["Top", "Taille"], key = "widg_nb_bottom_nb_passe",
-                on_change = store_session_state, args = ["nb_bottom_nb_passe"])
+                max_value = max_nb_team - df_taille_groupe.loc["Top", "Taille"], **key_widg("nb_bottom"))
         
-    df_taille_groupe.loc["Bottom", "Taille"] = st.session_state["nb_bottom_nb_passe"]
+    df_taille_groupe.loc["Bottom", "Taille"] = get_session_state("nb_bottom")
         
 df_taille_groupe.loc["Middle", "Taille"] = max_nb_team - df_taille_groupe.loc["Top", "Taille"] - df_taille_groupe.loc["Bottom", "Taille"]
 
@@ -119,10 +130,9 @@ st.divider()
 
 liste_type_action = df.type_action.unique().tolist()
 
-filtre_session_state("type_action_nb_passe", liste_type_action)
-load_session_state("type_action_nb_passe")
-type_action = st.multiselect("Choisir le type de début d'action", options = liste_type_action, key = "widg_type_action_nb_passe",
-                             on_change = store_session_state, args = ["type_action_nb_passe"])
+filtre_session_state("type_action", liste_type_action)
+load_session_state("type_action")
+type_action = st.multiselect("Choisir le type de début d'action", options = liste_type_action, **key_widg("type_action"))
 
 if len(type_action) == 0 :
     st.stop()
@@ -154,19 +164,17 @@ st.divider()
 columns = st.columns([1, 2], vertical_alignment = "center", gap = "large")
 
 with columns[0] :
-    init_session_state("groupe_nb_passe", groupe_non_vide)
-    filtre_session_state("groupe_nb_passe", groupe_non_vide)
-    load_session_state("groupe_nb_passe")
-    choix_groupe = st.multiselect("Groupe à afficher", groupe_non_vide, key = "widg_groupe_nb_passe", on_change = store_session_state,
-                                  args = ["groupe_nb_passe"])
+    init_session_state("groupe", groupe_non_vide)
+    filtre_session_state("groupe", groupe_non_vide)
+    load_session_state("groupe")
+    choix_groupe = st.multiselect("Groupe à afficher", groupe_non_vide, **key_widg("groupe"))
 
 with columns[1] :
     liste_équipe = sorted(df.index.levels[1].tolist())
 
-    filtre_session_state("équipe_nb_passe", liste_équipe)
-    load_session_state("équipe_nb_passe")
-    choix_équipe = st.multiselect("Équipe à afficher", liste_équipe, key = "widg_équipe_nb_passe", on_change = store_session_state,
-                                  args = ["équipe_nb_passe"])
+    filtre_session_state("équipe", liste_équipe)
+    load_session_state("équipe")
+    choix_équipe = st.multiselect("Équipe à afficher", liste_équipe, **key_widg("équipe"))
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------

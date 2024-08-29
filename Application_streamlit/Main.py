@@ -3,20 +3,15 @@ import streamlit as st
 dico_session_state = {
     "provider" : "Skill Corner",
     "cat_met" : "Physique",
-    "nb_top_met" : 3,
-    "nb_bottom_met" : 3,
+    "nb_top" : 3,
+    "nb_bottom" : 3,
     "threat_run" : True,
     "result_passe_pressure" : ["Attempts", "Completed"],
     "ratio_passe_pressure" : True,
     "ratio_conserv_pressure" : True,
     "threat_passe" : True,
     "ratio_passe" : True,
-    "nb_top_nb_passe" : 3,
-    "nb_bottom_nb_passe" : 3,
-    'type_action_nb_passe' : ["Open play"],
-    "nb_top_heatmap" : 3,
-    "nb_bottom_heatmap" : 3,
-    'type_action_heatmap' : ["Open play"],
+    'type_action' : ["Open play"],
     "partie_corps" : "All"
 }
 

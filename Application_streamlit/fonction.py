@@ -15,42 +15,63 @@ from variable import colormapred, path_effect_1, colormapblue, path_effect_2
 # Définitions des fonctions génériques
 
 
-def load_session_state(key) :
-
+def load_session_state(key_init, suffixe) :
     """Associe à la clé d'un widget la valeur de l'élément du session state en question
     La clé du widget est toujours égale à "widg_" + la clé de l'élément du session_state
     L'association est réalisée dans l'unique cas ou la valeur de l'élément du session state a été initialisée
     Args:
         key : Clé du widget
     """
+    key = key_init + suffixe
+
+    if key not in st.session_state and key_init in st.session_state :
+        st.session_state[key] = st.session_state[key_init]
 
     if key in st.session_state :
         st.session_state["widg_" + key] = st.session_state[key]
 
 
 def store_session_state(key) :
-
     """Modifie la valeur d'un élément du session state en le remplaçant par la sélection du widget en question
     La clé du widget est toujours égale à "widg_" + la clé de l'élément du session_state
     Args:
         key : Clé du widget
     """
-    st.session_state[key] = st.session_state["widg_" + key]    
+    st.session_state[key] = st.session_state["widg_" + key]
 
 
-def init_session_state(key, value) :
+def key_widg(key_init, suffixe) :
+    key = key_init + suffixe
+    return {"key" : "widg_" + key, "on_change" : store_session_state, "args" : [key]}
 
+
+def get_session_state(key_init, suffixe) :
+    key = key_init + suffixe
+    if key in st.session_state :
+        return st.session_state[key]
+    elif key_init in st.session_state :
+        return st.session_state[key_init]
+    
+
+def push_session_state(key_init, value, suffixe) :
+    key = key_init + suffixe
+    st.session_state[key] = value
+
+
+def init_session_state(key_init, value, suffixe) :
     """Initialise une valeur pour un élément du session state s'il n'est pas encore défini
 
     Args:
         key : Clé de l'élément
         value : Valeur à initialiser
     """
+
+    key = key_init + suffixe
     if key not in st.session_state :
         st.session_state[key] = value
 
     
-def filtre_session_state(key, liste) :
+def filtre_session_state(key_init, liste, suffixe) :
     """Permet de vérifier que les valeurs d'une liste du session state soient bien comprises dans les valeurs disponible avec le
     widget associé
 
@@ -58,13 +79,14 @@ def filtre_session_state(key, liste) :
         key (_type_): Clé du de la liste du session state
         liste (_type_): liste qui doit inclure le session state
     """
+
+    key = key_init + suffixe
     if key in st.session_state :
         st.session_state[key] = [i for i in st.session_state[key] if i in liste]
 
 
 @st.cache_data
 def execute_SQL(_cursor, stat, params) :
-
     """Éxécute une requête sql via un curseur et des paramètres
 
     Args:

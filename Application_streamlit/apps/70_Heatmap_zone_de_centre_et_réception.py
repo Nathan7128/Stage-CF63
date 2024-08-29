@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as patches
 import sqlite3
+from functools import partial
 
-from fonction import execute_SQL, load_session_state, store_session_state, init_session_state, filtre_session_state, heatmap_centre
+from fonction import execute_SQL, load_session_state, key_widg, init_session_state, filtre_session_state, push_session_state, get_session_state, heatmap_centre
 from variable import dico_rank_SB, dico_label, df_taille_groupe
 
 # Index slicer pour la sélection de donnée sur les dataframes avec multi-index
@@ -37,6 +38,18 @@ st.divider()
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Définition des fonctions
+
+
+load_session_state = partial(load_session_state, suffixe = "_zone_centre")
+key_widg = partial(key_widg, suffixe = "_zone_centre")
+get_session_state = partial(get_session_state, suffixe = "_zone_centre")
+init_session_state = partial(init_session_state, suffixe = "_zone_centre")
+push_session_state = partial(push_session_state, suffixe = "_zone_centre")
+filtre_session_state = partial(filtre_session_state, suffixe = "_zone_centre")
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Choix de la compétition, de la saison et du groupe à afficher
 
 
@@ -48,9 +61,8 @@ liste_compet, desc = execute_SQL(cursor, stat, params)
 liste_compet = [i[0] for i in liste_compet]
     
 with columns[0] :
-    load_session_state("compet_heatmap")
-    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, key = "widg_compet_heatmap",
-                            on_change = store_session_state, args = ["compet_heatmap"])
+    load_session_state("compet")
+    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, **key_widg("compet"))
 
 params = [choix_compet]
 stat = f"SELECT DISTINCT Saison FROM Passes_avant_un_but WHERE Compet = ?"
@@ -58,15 +70,14 @@ liste_saison, desc = execute_SQL(cursor, stat, params)
 liste_saison = [i[0] for i in liste_saison]
 
 with columns[1] :
-    init_session_state("saison_heatmap", [max(liste_saison)])
-    load_session_state("saison_heatmap")
-    choix_saison = st.multiselect("Choisir saison", liste_saison, key = "widg_saison_heatmap", on_change = store_session_state,
-                                  args = ["saison_heatmap"])
+    init_session_state("saison", [max(liste_saison)])
+    load_session_state("saison")
+    choix_saison = st.multiselect("Choisir saison", liste_saison, **key_widg("saison"))
 
 with columns[2] :
-    load_session_state("groupe_heatmap")
+    load_session_state("groupe")
     choix_groupe = st.radio("Choix groupe", ["Choisir Top/Middle/Bottom", "Choisir équipe"], label_visibility = "hidden",
-                            key = "widg_groupe_heatmap", on_change = store_session_state, args = ["groupe_heatmap"])
+                            **key_widg("groupe"))
 
 if len(choix_saison) == 0 :
     st.stop()
@@ -101,40 +112,36 @@ if choix_groupe == "Choisir Top/Middle/Bottom" :
     columns = st.columns(3, gap = "large", vertical_alignment = "center")
 
     with columns[0] :
-        load_session_state("nb_top_heatmap")
+        load_session_state("nb_top")
         df_taille_groupe.loc["Top", "Taille"] = st.slider(df_taille_groupe.loc["Top", "Slider"], min_value = 1,
-                max_value = max_nb_team, key = "widg_nb_top_heatmap", on_change = store_session_state, args = ["nb_top_heatmap"])    
+                max_value = max_nb_team, **key_widg("nb_top"))    
         
     with columns[1] :
         if df_taille_groupe.loc["Top", "Taille"] == max_nb_team :
-            st.session_state["nb_bottom_heatmap"] = max_nb_team - df_taille_groupe.loc["Top", "Taille"]
+            push_session_state("nb_bottom", max_nb_team - df_taille_groupe.loc["Top", "Taille"])
 
         else :
-            st.session_state["nb_bottom_heatmap"] = min(max_nb_team - df_taille_groupe.loc["Top", "Taille"],
-                                                    st.session_state["nb_bottom_heatmap"])
-            load_session_state("nb_bottom_heatmap")
+            push_session_state("nb_bottom", min(max_nb_team - df_taille_groupe.loc["Top", "Taille"], get_session_state("nb_bottom")))
+            load_session_state("nb_bottom")
             st.slider(df_taille_groupe.loc["Bottom", "Slider"], min_value = 0,
-                    max_value = max_nb_team - df_taille_groupe.loc["Top", "Taille"], key = "widg_nb_bottom_heatmap",
-                    on_change = store_session_state, args = ["nb_bottom_heatmap"])
+                    max_value = max_nb_team - df_taille_groupe.loc["Top", "Taille"], **key_widg("nb_bottom"))
             
-        df_taille_groupe.loc["Bottom", "Taille"] = st.session_state["nb_bottom_heatmap"]
+        df_taille_groupe.loc["Bottom", "Taille"] = get_session_state("nb_bottom")
     
     df_taille_groupe.loc["Middle", "Taille"] = max_nb_team - df_taille_groupe.loc["Top", "Taille"] - df_taille_groupe.loc["Bottom", "Taille"]
 
     with columns[2] :
         groupe_non_vide = df_taille_groupe[df_taille_groupe.Taille > 0].index.tolist()*(df_taille_groupe.loc["Top", "Taille"] != max_nb_team) + ["Global"]
         
-        if "groupe_plot_heatmap" in st.session_state and st.session_state["groupe_plot_heatmap"] not in groupe_non_vide :
-            del st.session_state["groupe_plot_heatmap"]
-        load_session_state("groupe_plot_heatmap")
-        groupe_plot = st.radio("Groupe à afficher", groupe_non_vide, horizontal = True, key = "widg_groupe_plot_heatmap",
-                    on_change = store_session_state, args = ["groupe_plot_heatmap"])
+        if "groupe_plot_zone_centre" in st.session_state and st.session_state["groupe_plot_zone_centre"] not in groupe_non_vide :
+            del st.session_state["groupe_plot_zone_centre"]
+        load_session_state("groupe_plot")
+        groupe_plot = st.radio("Groupe à afficher", groupe_non_vide, horizontal = True, **key_widg("groupe_plot"))
 
 else :
-    filtre_session_state("équipe_heatmap", liste_équipe)
-    load_session_state("équipe_heatmap")
-    équipe_plot = st.multiselect("Équipe à afficher", liste_équipe, key = "widg_équipe_heatmap", on_change = store_session_state,
-                                     args = ["équipe_heatmap"])
+    filtre_session_state("équipe", liste_équipe)
+    load_session_state("équipe")
+    équipe_plot = st.multiselect("Équipe à afficher", liste_équipe, **key_widg("équipe"))
 
 st.divider()
 
@@ -172,18 +179,17 @@ if len(df_centre) == 0 :
 columns = st.columns(2, vertical_alignment = "center", gap = "large")
 
 with columns[0] :
-    load_session_state("choix_goal_centre")
+    load_session_state("choix_goal")
     choix_goal = st.checkbox("Filter les centres ayant amenés à un but (dans les 5 évènements suivants le centre)",
-            key = "widg_choix_goal_centre", on_change = store_session_state, args = ["choix_goal_centre"])
+            **key_widg("choix_goal"))
     
     load_session_state("choix_sym_gauche")
-    if st.checkbox("Afficher tous les centres du même coté sur la Heatmap de gauche", key = "widg_choix_sym_gauche",
-                              on_change = store_session_state, args = ["choix_sym_gauche"]) :
+    if st.checkbox("Afficher tous les centres du même coté sur la Heatmap de gauche", **key_widg("choix_sym_gauche")) :
         df_centre.loc[df_centre.y_loc > 40, ["y_loc", "y_pass"]] = 80 - df_centre.loc[df_centre.y_loc > 40, ["y_loc", "y_pass"]]
     
     load_session_state("partie_corps")
     partie_corps = st.selectbox("Partie du corps utilisée pour centrer", ["Pied gauche", "Pied droit", "All"],
-                    key = "widg_partie_corps", on_change = store_session_state, args = ["partie_corps"])
+                    **key_widg("partie_corps"))
 
 if choix_goal :
     df_centre = df_centre[df_centre.But == "Oui"]
@@ -199,12 +205,10 @@ with columns[1] :
                         + (1 - choix_goal)*["Pourcentage de but"] + (1 - choix_goal)*["Pourcentage de but sans %"])
     
     load_session_state("type_compt_gauche")
-    type_compt_gauche = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt, key = "widg_type_compt_gauche",
-                                     on_change = store_session_state, args = ["type_compt_gauche"])
+    type_compt_gauche = st.selectbox("Type de comptage Heatmap de gauche", liste_type_compt, **key_widg("type_compt_gauche"))
     
     load_session_state("type_compt_droite")
-    type_compt_droite = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt, key = "widg_type_compt_droite",
-                                     on_change = store_session_state, args = ["type_compt_droite"])
+    type_compt_droite = st.selectbox("Type de comptage Heatmap de droite", liste_type_compt, **key_widg("type_compt_droite"))
 
 st.divider()
 
@@ -222,25 +226,25 @@ with columns[0] :
         init_session_state("nb_col_gauche", 6)
         load_session_state("nb_col_gauche")
         nb_col_gauche = st.number_input("Nombre de colonne pour la Heatmap de gauche", min_value = 1, step = 1,
-                                key = "widg_nb_col_gauche", on_change = store_session_state, args = ["nb_col_gauche"])
+                                **key_widg("nb_col_gauche"))
 
     with columns2[1] :        
         init_session_state("nb_ligne_gauche", 5)
         load_session_state("nb_ligne_gauche")
         nb_ligne_gauche = st.number_input("Nombre de ligne pour la Heatmap de gauche", min_value = 1, step = 1,
-                key = "widg_nb_ligne_gauche", on_change = store_session_state, args = ["nb_ligne_gauche"])
+                **key_widg("nb_ligne_gauche"))
     
     init_session_state("choix_col_gauche", 0)
-    st.session_state["choix_col_gauche"] = min(nb_col_gauche, st.session_state["choix_col_gauche"])
+    push_session_state("choix_col_gauche", min(nb_col_gauche, get_session_state("choix_col_gauche")))
     load_session_state("choix_col_gauche")
     choix_col_gauche = st.number_input("Choisir une colonne pour la Heatmap de gauche", min_value = 0, step = 1,
-        max_value = nb_col_gauche, key = "widg_choix_col_gauche", on_change = store_session_state, args = ["choix_col_gauche"])
+        max_value = nb_col_gauche, **key_widg("choix_col_gauche"))
     
     init_session_state("choix_ligne_gauche", 0)
-    st.session_state["choix_ligne_gauche"] = min(nb_ligne_gauche, st.session_state["choix_ligne_gauche"])
+    push_session_state("choix_ligne_gauche", min(nb_ligne_gauche, get_session_state("choix_ligne_gauche")))
     load_session_state("choix_ligne_gauche")
     choix_ligne_gauche = st.number_input("Choisir une ligne pour la Heatmap de gauche", min_value = 0, step = 1,
-        max_value = nb_ligne_gauche, key = "widg_choix_ligne_gauche", on_change = store_session_state, args = ["choix_ligne_gauche"])
+        max_value = nb_ligne_gauche, **key_widg("choix_ligne_gauche"))
 
 with columns[1] :
     columns2 = st.columns(2)
@@ -249,13 +253,13 @@ with columns[1] :
         init_session_state("nb_col_droite", 6)
         load_session_state("nb_col_droite")
         nb_col_droite = st.number_input("Nombre de colonne pour la Heatmap de droite", min_value = 1, step = 1,
-                                key = "widg_nb_col_droite", on_change = store_session_state, args = ["nb_col_droite"])
+                **key_widg("nb_col_droite"))
 
     with columns2[1] :        
         init_session_state("nb_ligne_droite", 5)
         load_session_state("nb_ligne_droite")
         nb_ligne_droite = st.number_input("Nombre de ligne pour la Heatmap de droite", min_value = 1, step = 1,
-                key = "widg_nb_ligne_droite", on_change = store_session_state, args = ["nb_ligne_droite"])
+                **key_widg("nb_ligne_droite"))
         
 st.divider()
 
@@ -277,30 +281,28 @@ if (choix_ligne_gauche != 0) & (choix_col_gauche != 0) :
     with columns[1] :
 
         init_session_state("choix_col_droite", 0)
-        st.session_state["choix_col_droite"] = min(nb_col_droite, st.session_state["choix_col_droite"])
+        push_session_state("choix_col_droite", min(nb_col_droite, get_session_state("choix_col_droite")))
         load_session_state("choix_col_droite")
         choix_col_droite = st.number_input("Choisir une colonne pour la Heatmap de droite", min_value = 0, step = 1,
-            max_value = nb_col_droite, key = "widg_choix_col_droite", on_change = store_session_state, args = ["choix_col_droite"])
+            max_value = nb_col_droite, **key_widg("choix_col_droite"))
         
         init_session_state("choix_ligne_droite", 0)
-        st.session_state["choix_ligne_droite"] = min(nb_ligne_droite, st.session_state["choix_ligne_droite"])
+        push_session_state("choix_ligne_droite", min(nb_ligne_droite, get_session_state("choix_ligne_droite")))
         load_session_state("choix_ligne_droite")
         choix_ligne_droite = st.number_input("Choisir une ligne pour la Heatmap de droite", min_value = 0, step = 1,
-            max_value = nb_ligne_droite, key = "widg_choix_ligne_droite", on_change = store_session_state,
-            args = ["choix_ligne_droite"])
+            max_value = nb_ligne_droite, **key_widg("choix_ligne_droite"))
 
     df_shot_select = df.loc[df_recep_select.index]
     df_shot_select = df_shot_select[df_shot_select.Tireur != ""]
     
     if choix_goal :
         df_shot_select = df_shot_select[df_shot_select.But == "Oui"]
-
+    
     if (choix_ligne_droite != 0) & (choix_col_droite != 0) :
         df_shot_select = df_shot_select[(df_shot_select.x_loc >= (60 + (60/nb_ligne_droite)*(choix_ligne_droite - 1))) &
                         (df_shot_select.x_loc < (60 + (60/nb_ligne_droite)*(choix_ligne_droite))) &
                         (df_shot_select.y_loc >= (80/nb_col_droite)*(choix_col_droite - 1)) &
                         (df_shot_select.y_loc < (80/nb_col_droite)*(choix_col_droite))]
-
 
 if len(df_recep_select) == 0 :
     type_compt_droite = "Aucune valeur"
@@ -353,6 +355,10 @@ with columns[0] :
 
 with columns[1] :
     st.pyplot(fig_recep)
+
+st.divider()
+
+st.markdown(f"<p style='text-align: center;'>Nombre total de centres : {len(df_centre)}</p>", unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -429,7 +435,6 @@ with columns[1] :
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Affichage des informations sur les tirs venant de la zone de centre sélectionnée dans le cas ou une équipe a été sélectionnée
-# Affichage également du nombre de centre total
 
 
 if choix_groupe == "Choisir équipe" :
@@ -441,7 +446,3 @@ if choix_groupe == "Choisir équipe" :
     with expander :        
         st.dataframe(df_shot_select[["Date", "Journée", "Domicile", "Extérieur", "Minute", "Centreur", "But", "Tireur", "Équipe"]],
                      hide_index = True)
-
-st.divider()
-
-st.markdown(f"<p style='text-align: center;'>Nombre total de centres : {len(df_centre)}</p>", unsafe_allow_html=True)

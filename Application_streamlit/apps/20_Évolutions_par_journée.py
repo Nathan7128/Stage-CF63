@@ -7,8 +7,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import sqlite3
+from functools import partial
 
-from fonction import execute_SQL, load_session_state, store_session_state, init_session_state, filtre_session_state
+from fonction import execute_SQL, load_session_state, key_widg, get_session_state, init_session_state, filtre_session_state, push_session_state
 from variable import dico_met, dico_rank_SK, df_taille_groupe
 
 # Index slicer pour la sélection de donnée sur les dataframes avec multi-index
@@ -35,6 +36,18 @@ st.divider()
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Définition des fonctions
+
+
+load_session_state = partial(load_session_state, suffixe = "_evo_jour")
+key_widg = partial(key_widg, suffixe = "_evo_jour")
+get_session_state = partial(get_session_state, suffixe = "_evo_jour")
+init_session_state = partial(init_session_state, suffixe = "_evo_jour")
+filtre_session_state = partial(filtre_session_state, suffixe = "_evo_jour")
+push_session_state = partial(push_session_state, suffixe = "_evo_jour")
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Définition des variables
 
 
@@ -54,7 +67,7 @@ groupe_plot = []
 
 columns = st.columns(3, gap = "large")
 
-table_met = dico_met[st.session_state.cat_met][0]
+table_met = dico_met[get_session_state("cat_met")][0]
 
 dico_rank = dico_rank_SK
     
@@ -64,9 +77,8 @@ liste_compet, desc = execute_SQL(cursor, stat, params)
 liste_compet = [i[0] for i in liste_compet]
     
 with columns[0] :
-    load_session_state("compet_met")
-    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, key = "widg_compet_met", on_change = store_session_state,
-                                args = ["compet_met"])
+    load_session_state("compet")
+    choix_compet = st.selectbox("Choisir compétition", options = liste_compet, **key_widg("compet"))
 
 params = [choix_compet]
 stat = f"SELECT DISTINCT Saison FROM {table_met} WHERE Compet = ?"
@@ -74,21 +86,18 @@ liste_saison, desc = execute_SQL(cursor, stat, params)
 liste_saison = [i[0] for i in liste_saison]
 
 with columns[1] :
-    init_session_state("saison_evo_jour", max(liste_saison))
-    load_session_state("saison_evo_jour")
-    choix_saison = st.selectbox("Choisir saison", liste_saison, key = "widg_saison_evo_jour", on_change = store_session_state,
-                                args = ["saison_evo_jour"])
+    init_session_state("saison", max(liste_saison))
+    load_session_state("saison")
+    choix_saison = st.selectbox("Choisir saison", liste_saison, **key_widg("saison"))
 
 with columns[2] :
     ""
 
-    load_session_state("groupe_rank_evo_jour")
-    choix_groupe_rank = st.checkbox("Sélectionner Top/Middle/Bottom", key = "widg_groupe_rank_evo_jour", on_change = store_session_state,
-                                    args = ["groupe_rank_evo_jour"])
+    load_session_state("groupe_rank")
+    choix_groupe_rank = st.checkbox("Sélectionner Top/Middle/Bottom", **key_widg("groupe_rank"))
     
-    load_session_state("groupe_équipe_evo_jour")
-    choix_groupe_équipe = st.checkbox("Sélectionner équipe", key = "widg_groupe_équipe_evo_jour", on_change = store_session_state,
-                                    args = ["groupe_équipe_evo_jour"])
+    load_session_state("groupe_équipe")
+    choix_groupe_équipe = st.checkbox("Sélectionner équipe", **key_widg("groupe_équipe"))
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -118,41 +127,37 @@ if choix_groupe_rank :
     columns = st.columns(3, gap = "large", vertical_alignment = "center")
 
     with columns[0] :
-        load_session_state("nb_top_met")
+        load_session_state("nb_top")
         df_taille_groupe.loc["Top", "Taille"] = st.slider(df_taille_groupe.loc["Top", "Slider"], min_value = 1,
-                max_value = max_nb_team, key = "widg_nb_top_met", on_change = store_session_state, args = ["nb_top_met"])
+                max_value = max_nb_team, **key_widg("nb_top"))
         
     with columns[1] :
         if df_taille_groupe.loc["Top", "Taille"] == max_nb_team :
-            st.session_state["nb_bottom_met"] = max_nb_team - df_taille_groupe.loc["Top", "Taille"]
+            push_session_state("nb_bottom", max_nb_team - df_taille_groupe.loc["Top", "Taille"])
 
         else :
-            st.session_state["nb_bottom_met"] = min(max_nb_team - df_taille_groupe.loc["Top", "Taille"],
-                                                    st.session_state["nb_bottom_met"])
-            load_session_state("nb_bottom_met")
+            push_session_state("nb_bottom", min(max_nb_team - df_taille_groupe.loc["Top", "Taille"], get_session_state("nb_bottom")))
+            load_session_state("nb_bottom")
             st.slider(df_taille_groupe.loc["Bottom", "Slider"], min_value = 0,
-                    max_value = max_nb_team - df_taille_groupe.loc["Top", "Taille"], key = "widg_nb_bottom_met",
-                    on_change = store_session_state, args = ["nb_bottom_met"])
+                    max_value = max_nb_team - df_taille_groupe.loc["Top", "Taille"], **key_widg("nb_bottom"))
             
-        df_taille_groupe.loc["Bottom", "Taille"] = st.session_state["nb_bottom_met"]
+        df_taille_groupe.loc["Bottom", "Taille"] = get_session_state("nb_bottom")
             
     df_taille_groupe.loc["Middle", "Taille"] = max_nb_team - df_taille_groupe.loc["Top", "Taille"] - df_taille_groupe.loc["Bottom", "Taille"]
 
     with columns[2] :
         groupe_non_vide = df_taille_groupe[df_taille_groupe.Taille > 0].index
 
-        filtre_session_state("groupe_evo_jour", groupe_non_vide)
-        load_session_state("groupe_evo_jour")
-        groupe_plot = st.multiselect("Groupe à afficher", groupe_non_vide, key = "widg_groupe_evo_jour", on_change = store_session_state,
-                                     args = ["groupe_evo_jour"])
+        filtre_session_state("groupe", groupe_non_vide)
+        load_session_state("groupe")
+        groupe_plot = st.multiselect("Groupe à afficher", groupe_non_vide, **key_widg("groupe"))
 
 if choix_groupe_équipe :
     st.divider()
 
-    filtre_session_state("équipe_evo_jour", liste_équipe)
-    load_session_state("équipe_evo_jour")
-    équipe_plot = st.multiselect("Équipe à afficher", liste_équipe, key = "widg_équipe_evo_jour", on_change = store_session_state,
-                                     args = ["équipe_evo_jour"])
+    filtre_session_state("équipe", liste_équipe)
+    load_session_state("équipe")
+    équipe_plot = st.multiselect("Équipe à afficher", liste_équipe, **key_widg("équipe"))
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -165,19 +170,16 @@ columns = st.columns([2, 1, 1], vertical_alignment = "center", gap = "large")
 
 with columns[0] :
     load_session_state("cat_met")
-    cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True, key = "widg_cat_met",
-                on_change = store_session_state, args = ["cat_met"])
+    cat_met = st.radio("Catégorie de métrique", dico_met.keys(), horizontal = True, **key_widg("cat_met"))
 
 with columns[2] :
     load_session_state("win_match")
-    if st.checkbox("Métriques pour les équipes qui gagnent les matchs", key = 'widg_win_match', on_change = store_session_state,
-                   args = ["win_match"]) :
+    if st.checkbox("Métriques pour les équipes qui gagnent les matchs", **key_widg("win_match")) :
         df = df[df.result == "win"]
 
 with columns[1] :
     load_session_state(f"moy_cat_{cat_met}")
-    moy_cat = st.radio("Moyenne de la métrique", dico_met[cat_met][1].keys(), horizontal = True, key = f'widg_moy_cat_{cat_met}',
-                        on_change = store_session_state, args = [f"moy_cat_{cat_met}"])
+    moy_cat = st.radio("Moyenne de la métrique", dico_met[cat_met][1].keys(), horizontal = True, **key_widg(f"moy_cat_{cat_met}"))
 
     moy_cat = dico_met[cat_met][1][moy_cat]
 
@@ -193,22 +195,19 @@ if cat_met != "Physique" :
     columns = st.columns([1, 2])
 
     with columns[0] :
-        load_session_state(f"type_cat_{cat_met}_evo_jour")
-        type_cat = st.selectbox(dico_met[cat_met][2], dico_met[cat_met][3], key = f'widg_type_cat_{cat_met}_evo_jour',
-                        on_change = store_session_state, args = [f"type_cat_{cat_met}_evo_jour"])
+        load_session_state(f"type_cat_{cat_met}")
+        type_cat = st.selectbox(dico_met[cat_met][2], dico_met[cat_met][3], **key_widg(f"type_cat_{cat_met}"))
         
         type_cat = dico_met[cat_met][3][type_cat]
         df = df[df.columns[[type_cat in i for i in df.columns]]]
 
     with columns[1] :
-        load_session_state(f"met_{cat_met}{type_cat}{moy_cat}_evo_jour")
-        choix_metrique = st.selectbox("Choisir la métrique", df.columns, key = f'widg_met_{cat_met}{type_cat}{moy_cat}_evo_jour',
-                        on_change = store_session_state, args = [f"met_{cat_met}{type_cat}{moy_cat}_evo_jour"])
+        load_session_state(f"met_{cat_met}{type_cat}{moy_cat}")
+        choix_metrique = st.selectbox("Choisir la métrique", df.columns, **key_widg(f"met_{cat_met}{type_cat}{moy_cat}"))
 
 else :
-    load_session_state(f"met_{cat_met}{moy_cat}_evo_jour")
-    choix_metrique = st.selectbox("Choisir la métrique", df.columns, key = f'widg_met_{cat_met}{moy_cat}_evo_jour',
-                        on_change = store_session_state, args = [f"met_{cat_met}{moy_cat}_evo_jour"])
+    load_session_state(f"met_{cat_met}{moy_cat}")
+    choix_metrique = st.selectbox("Choisir la métrique", df.columns, **key_widg(f"met_{cat_met}{moy_cat}"))
 
 df = df[choix_metrique]
 

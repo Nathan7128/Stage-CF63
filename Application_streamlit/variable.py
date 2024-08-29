@@ -47,7 +47,6 @@ dico_met = {
 }
 
 
-
 # Dictionnaire contenant pour chaque saison le classement de ligue 2 avec les noms d'équipe au format Skill Corner
 dico_rank_SK = {
     "2023/2024" : ["AJ Auxerre", "Angers SCO", "AS Saint-Étienne", "Rodez Aveyron", "Paris FC", "SM Caen",
@@ -63,7 +62,6 @@ dico_rank_SK = {
                    "Amiens Sporting Club", "Grenoble Foot 38", "Valenciennes FC", "Rodez Aveyron", "US Quevilly-Rouen", "Dunkerque",
                    "AS Nancy-Lorraine"]
                    }
-
 
 
 # Dictionnaire contenant pour chaque saison le classement de ligue 2 avec les noms d'équipe au format Stats Bomb
@@ -139,9 +137,3 @@ colormapblue = LinearSegmentedColormap.from_list('custom_cmap', [(1, 1, 1), (0, 
 
 # Dictionnaire pour l'affichage des titres des heatmaps
 dico_label = {"Choisir Top/Middle/Bottom" : ["du"], "Choisir équipe" : ["de"]}
-
-
-
-
-
-
