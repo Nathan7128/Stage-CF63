@@ -35,15 +35,21 @@ for key in dico_session_state.keys() :
     if key not in st.session_state :
         st.session_state[key] = dico_session_state[key]
 
-liste_page = []
-liste_page.append(st.Page("apps/10_Métriques_discriminantes.py", title = "Métriques discriminantes"))
-liste_page.append(st.Page("apps/20_Évolutions_par_journée.py", title = "Évolution des métriques par journée"))
-liste_page.append(st.Page("apps/30_Évolution_par_saison.py", title = "Évolution des métriques par saison"))
-liste_page.append(st.Page("apps/40_Passes_avant_but.py", title = "Nombre de passe avant un but"))
-liste_page.append(st.Page("apps/50_Heatmap_zone_debut_action_avant_tir.py", title = "Heatmap des zones de début d'action avant un but"))
-liste_page.append(st.Page("apps/60_Heatmap_zone_de_tir.py", title = "Heatmap des zones de tir"))
-liste_page.append(st.Page("apps/70_Heatmap_zone_de_centre_et_réception.py", title = "Heatmap des zones de centres"))
+liste_page_matching = []
+liste_page_matching.append(st.Page("apps/00_compet.py", title = "Compétition"))
 
-pg = st.navigation(liste_page)
+liste_page_app = []
+liste_page_app.append(st.Page("apps/10_Métriques_discriminantes.py", title = "Métriques discriminantes"))
+liste_page_app.append(st.Page("apps/20_Évolutions_par_journée.py", title = "Évolution des métriques par journée"))
+liste_page_app.append(st.Page("apps/30_Évolution_par_saison.py", title = "Évolution des métriques par saison"))
+liste_page_app.append(st.Page("apps/40_Passes_avant_but.py", title = "Nombre de passe avant un but"))
+liste_page_app.append(st.Page("apps/50_Heatmap_zone_debut_action_avant_tir.py", title = "Heatmap des zones de début d'action avant un but"))
+liste_page_app.append(st.Page("apps/60_Heatmap_zone_de_tir.py", title = "Heatmap des zones de tir"))
+liste_page_app.append(st.Page("apps/70_Heatmap_zone_de_centre_et_réception.py", title = "Heatmap des zones de centres"))
+
+pg = st.navigation({
+    # "Matching Skill Corner / Stats Bomb" : liste_page_matching,
+    "Applications" : liste_page_app
+})
 
 pg.run()
