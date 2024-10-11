@@ -9,9 +9,9 @@ client = SkillcornerClient(username = "Nathan.talbot@etu.uca.fr", password = sec
 connect = sqlite3.connect("raw-database.db")
 
 dico_saison = {
-    "2023_2024" : 549,
-    "2022_2023" : 393,
-    "2021_2022" : 243
+    "2023/2024" : 549,
+    "2022/2023" : 393,
+    "2021/2022" : 243
 }
 
 df_final = pd.DataFrame()
